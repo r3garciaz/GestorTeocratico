@@ -1,0 +1,7 @@
+﻿services:
+  preachingprogram:
+    image: preachingprogram
+    build:
+      context: .
+      dockerfile: PreachingProgram/Dockerfile
+
