@@ -4,12 +4,19 @@ using Microsoft.EntityFrameworkCore;
 using PreachingProgram.Components;
 using PreachingProgram.Components.Account;
 using PreachingProgram.Data;
+using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddRadzenComponents();
+builder.Services.AddRadzenCookieThemeService(options =>
+{
+    options.Name = "RadzenBlazorStudioTheme";
+    options.Duration = TimeSpan.FromDays(365);
+});
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
