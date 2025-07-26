@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using GestorTeocratico.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,21 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        
+        // Apply global query filter for soft delete
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(SoftDeleteEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                var parameter = Expression.Parameter(entityType.ClrType, "e");
+                var isDeletedProperty = Expression.Property(parameter, nameof(SoftDeleteEntity.IsDeleted));
+                var filter = Expression.Lambda(
+                    Expression.Equal(isDeletedProperty, Expression.Constant(false)),
+                    parameter
+                );
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
+            }
+        }
         modelBuilder.Entity<Congregation>(entity =>
         {
             entity.Property(p => p.Name).HasMaxLength(250).IsRequired();
@@ -94,7 +110,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             entity.Property(r => r.Name).HasMaxLength(100).IsRequired();
             entity.Property(r => r.Description).HasMaxLength(500);
-            entity.Property(r => r.IsActive).IsRequired();
             entity.HasMany(r => r.PublisherResponsibilities)
                 .WithOne(pr => pr.Responsibility)
                 .HasForeignKey(pr => pr.ResponsibilityId)

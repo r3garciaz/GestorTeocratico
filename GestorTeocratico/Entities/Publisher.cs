@@ -6,7 +6,7 @@ namespace GestorTeocratico.Entities;
 /// <summary>
 /// Represents a publisher entity with personal and congregation-related information.
 /// </summary>
-public class Publisher
+public class Publisher : SoftDeleteEntity
 {
     public Guid PublisherId { get; set; } = Guid.CreateVersion7();
     [MaxLength(250)] public required string FirstName { get; set; }
@@ -16,7 +16,6 @@ public class Publisher
     [DataType(DataType.EmailAddress)] public string? Email { get; set; }
     public required Gender Gender { get; set; }
     public Privilege? Privilege { get; set; }
-    public bool IsActive { get; set; } = true;
 
     public ICollection<Department> ResponsibleDepartments { get; set; } = [];
     public ICollection<PublisherResponsibility> PublisherResponsibilities { get; set; } = [];
