@@ -17,9 +17,7 @@ public class Publisher
     public required Gender Gender { get; set; }
     public Privilege? Privilege { get; set; }
     public bool IsActive { get; set; } = true;
-    public required Guid CongregationId { get; set; }
 
-    public required Congregation Congregation { get; set; }
     public ICollection<Department> ResponsibleDepartments { get; set; } = [];
     public ICollection<PublisherResponsibility> PublisherResponsibilities { get; set; } = [];
 }

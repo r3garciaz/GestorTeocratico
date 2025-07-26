@@ -11,5 +11,5 @@ public class MeetingType
     [MaxLength(250)] public required string Name { get; set; }
     [MaxLength(500)] public string? Description { get; set; }
     public bool IsActive { get; set; } = true;
-    public required MeetingType Type { get; set; }
+    public required Shared.Enums.MeetingType Type { get; set; }
 }
