@@ -135,9 +135,6 @@ namespace GestorTeocratico.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CongregationId")
-                        .HasColumnType("uuid");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -151,8 +148,6 @@ namespace GestorTeocratico.Data.Migrations
 
                     b.HasKey("DepartmentId");
 
-                    b.HasIndex("CongregationId");
-
                     b.HasIndex("ResponsiblePublisherId");
 
                     b.ToTable("Departments");
@@ -162,9 +157,6 @@ namespace GestorTeocratico.Data.Migrations
                 {
                     b.Property<Guid>("MeetingScheduleId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CongregationId")
                         .HasColumnType("uuid");
 
                     b.Property<DateOnly>("Date")
@@ -183,8 +175,6 @@ namespace GestorTeocratico.Data.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("MeetingScheduleId");
-
-                    b.HasIndex("CongregationId");
 
                     b.HasIndex("MeetingTypeId");
 
@@ -209,12 +199,10 @@ namespace GestorTeocratico.Data.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)");
 
-                    b.Property<Guid>("TypeMeetingTypeId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
 
                     b.HasKey("MeetingTypeId");
-
-                    b.HasIndex("TypeMeetingTypeId");
 
                     b.ToTable("MeetingTypes");
                 });
@@ -223,9 +211,6 @@ namespace GestorTeocratico.Data.Migrations
                 {
                     b.Property<Guid>("PublisherId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CongregationId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Email")
@@ -259,8 +244,6 @@ namespace GestorTeocratico.Data.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("PublisherId");
-
-                    b.HasIndex("CongregationId");
 
                     b.ToTable("Publishers");
                 });
@@ -326,26 +309,6 @@ namespace GestorTeocratico.Data.Migrations
                     b.HasIndex("ResponsibilityId");
 
                     b.ToTable("ResponsibilityAssignments");
-                });
-
-            modelBuilder.Entity("GestorTeocratico.Entities.ResponsibilityAssignmentConfig", b =>
-                {
-                    b.Property<Guid>("ResponsibilityId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MeetingTypeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Quantity")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(1);
-
-                    b.HasKey("ResponsibilityId", "MeetingTypeId");
-
-                    b.HasIndex("MeetingTypeId");
-
-                    b.ToTable("ResponsibilityAssignmentConfigs");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -482,60 +445,22 @@ namespace GestorTeocratico.Data.Migrations
 
             modelBuilder.Entity("GestorTeocratico.Entities.Department", b =>
                 {
-                    b.HasOne("GestorTeocratico.Entities.Congregation", "Congregation")
-                        .WithMany("Departments")
-                        .HasForeignKey("CongregationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("GestorTeocratico.Entities.Publisher", "ResponsiblePublisher")
                         .WithMany("ResponsibleDepartments")
                         .HasForeignKey("ResponsiblePublisherId");
-
-                    b.Navigation("Congregation");
 
                     b.Navigation("ResponsiblePublisher");
                 });
 
             modelBuilder.Entity("GestorTeocratico.Entities.MeetingSchedule", b =>
                 {
-                    b.HasOne("GestorTeocratico.Entities.Congregation", "Congregation")
-                        .WithMany("MeetingSchedules")
-                        .HasForeignKey("CongregationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("GestorTeocratico.Entities.MeetingType", "MeetingType")
                         .WithMany()
                         .HasForeignKey("MeetingTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Congregation");
-
                     b.Navigation("MeetingType");
-                });
-
-            modelBuilder.Entity("GestorTeocratico.Entities.MeetingType", b =>
-                {
-                    b.HasOne("GestorTeocratico.Entities.MeetingType", "Type")
-                        .WithMany()
-                        .HasForeignKey("TypeMeetingTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Type");
-                });
-
-            modelBuilder.Entity("GestorTeocratico.Entities.Publisher", b =>
-                {
-                    b.HasOne("GestorTeocratico.Entities.Congregation", "Congregation")
-                        .WithMany("Publishers")
-                        .HasForeignKey("CongregationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Congregation");
                 });
 
             modelBuilder.Entity("GestorTeocratico.Entities.PublisherResponsibility", b =>
@@ -594,25 +519,6 @@ namespace GestorTeocratico.Data.Migrations
                     b.Navigation("Responsibility");
                 });
 
-            modelBuilder.Entity("GestorTeocratico.Entities.ResponsibilityAssignmentConfig", b =>
-                {
-                    b.HasOne("GestorTeocratico.Entities.MeetingType", "MeetingType")
-                        .WithMany()
-                        .HasForeignKey("MeetingTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GestorTeocratico.Entities.Responsibility", "Responsibility")
-                        .WithMany()
-                        .HasForeignKey("ResponsibilityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("MeetingType");
-
-                    b.Navigation("Responsibility");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -662,15 +568,6 @@ namespace GestorTeocratico.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("GestorTeocratico.Entities.Congregation", b =>
-                {
-                    b.Navigation("Departments");
-
-                    b.Navigation("MeetingSchedules");
-
-                    b.Navigation("Publishers");
                 });
 
             modelBuilder.Entity("GestorTeocratico.Entities.Department", b =>

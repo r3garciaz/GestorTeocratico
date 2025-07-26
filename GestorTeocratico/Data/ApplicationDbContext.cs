@@ -16,7 +16,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PublisherResponsibility> PublisherResponsibilities { get; set; }
     public DbSet<Responsibility> Responsibilities { get; set; }
     public DbSet<ResponsibilityAssignment> ResponsibilityAssignments { get; set; }
-    public DbSet<ResponsibilityAssignmentConfig> ResponsibilityAssignmentConfigs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,21 +29,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(c => c.WeekendMeetingDayOddYear).IsRequired().HasConversion<string>();
             entity.Property(p => p.Address).HasMaxLength(500);
             entity.Property(p => p.City).HasMaxLength(250);
-
-            entity.HasMany(c => c.Departments)
-                .WithOne(d => d.Congregation)
-                .HasForeignKey(d => d.CongregationId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasMany(c => c.Publishers)
-                .WithOne(p => p.Congregation)
-                .HasForeignKey(p => p.CongregationId)
-                .OnDelete(DeleteBehavior.Restrict);
-            
-            entity.HasMany(c => c.MeetingSchedules)
-                .WithOne(ms => ms.Congregation)
-                .HasForeignKey(ms => ms.CongregationId)
-                .OnDelete(DeleteBehavior.Restrict);
         });
         
         modelBuilder.Entity<Department>(entity =>
@@ -86,11 +70,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(p => p.Email).HasMaxLength(250);
             entity.Property(p => p.Gender).IsRequired();
             entity.Property(p => p.Privilege).IsRequired();
-            
-            entity.HasOne(p => p.Congregation)
-                .WithMany(c => c.Publishers)
-                .HasForeignKey(p => p.CongregationId)
-                .OnDelete(DeleteBehavior.Restrict);
             
             entity.HasMany(p => p.PublisherResponsibilities)
                 .WithOne(pr => pr.Publisher)
@@ -140,12 +119,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(ra => ra.ResponsibilityId)
                 .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        modelBuilder.Entity<ResponsibilityAssignmentConfig>(entity =>
-        {
-            entity.HasKey(rac => new { rac.ResponsibilityId, rac.MeetingTypeId });
-            entity.Property(rac => rac.Quantity).IsRequired().HasDefaultValue(1);
         });
     }
 }

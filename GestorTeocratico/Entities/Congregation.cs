@@ -14,8 +14,4 @@ public class Congregation
     public string? Address { get; set; }
     public string? City { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public ICollection<Department> Departments { get; set; } = [];
-    public ICollection<Publisher> Publishers { get; set; } = [];
-    public ICollection<MeetingSchedule> MeetingSchedules { get; set; } = [];
 }

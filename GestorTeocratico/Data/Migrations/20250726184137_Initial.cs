@@ -1,16 +1,56 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace GestorTeocratico.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class AddEntities : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "AspNetRoles",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    NormalizedName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetRoles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUsers",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "text", nullable: false),
+                    UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    NormalizedEmail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
+                    EmailConfirmed = table.Column<bool>(type: "boolean", nullable: false),
+                    PasswordHash = table.Column<string>(type: "text", nullable: true),
+                    SecurityStamp = table.Column<string>(type: "text", nullable: true),
+                    ConcurrencyStamp = table.Column<string>(type: "text", nullable: true),
+                    PhoneNumber = table.Column<string>(type: "text", nullable: true),
+                    PhoneNumberConfirmed = table.Column<bool>(type: "boolean", nullable: false),
+                    TwoFactorEnabled = table.Column<bool>(type: "boolean", nullable: false),
+                    LockoutEnd = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    LockoutEnabled = table.Column<bool>(type: "boolean", nullable: false),
+                    AccessFailedCount = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Congregations",
                 columns: table => new
@@ -38,17 +78,11 @@ namespace GestorTeocratico.Data.Migrations
                     Name = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    TypeMeetingTypeId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Type = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MeetingTypes", x => x.MeetingTypeId);
-                    table.ForeignKey(
-                        name: "FK_MeetingTypes_MeetingTypes_TypeMeetingTypeId",
-                        column: x => x.TypeMeetingTypeId,
-                        principalTable: "MeetingTypes",
-                        principalColumn: "MeetingTypeId",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -63,18 +97,117 @@ namespace GestorTeocratico.Data.Migrations
                     Email = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true),
                     Gender = table.Column<int>(type: "integer", nullable: false),
                     Privilege = table.Column<int>(type: "integer", nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    CongregationId = table.Column<Guid>(type: "uuid", nullable: false)
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Publishers", x => x.PublisherId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetRoleClaims",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    RoleId = table.Column<string>(type: "text", nullable: false),
+                    ClaimType = table.Column<string>(type: "text", nullable: true),
+                    ClaimValue = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetRoleClaims", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Publishers_Congregations_CongregationId",
-                        column: x => x.CongregationId,
-                        principalTable: "Congregations",
-                        principalColumn: "CongregationId",
-                        onDelete: ReferentialAction.Restrict);
+                        name: "FK_AspNetRoleClaims_AspNetRoles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserClaims",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    ClaimType = table.Column<string>(type: "text", nullable: true),
+                    ClaimValue = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserClaims", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AspNetUserClaims_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserLogins",
+                columns: table => new
+                {
+                    LoginProvider = table.Column<string>(type: "text", nullable: false),
+                    ProviderKey = table.Column<string>(type: "text", nullable: false),
+                    ProviderDisplayName = table.Column<string>(type: "text", nullable: true),
+                    UserId = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserLogins", x => new { x.LoginProvider, x.ProviderKey });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserLogins_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserRoles",
+                columns: table => new
+                {
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    RoleId = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserRoles", x => new { x.UserId, x.RoleId });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserRoles_AspNetRoles_RoleId",
+                        column: x => x.RoleId,
+                        principalTable: "AspNetRoles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AspNetUserRoles_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AspNetUserTokens",
+                columns: table => new
+                {
+                    UserId = table.Column<string>(type: "text", nullable: false),
+                    LoginProvider = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Value = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AspNetUserTokens", x => new { x.UserId, x.LoginProvider, x.Name });
+                    table.ForeignKey(
+                        name: "FK_AspNetUserTokens_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -82,7 +215,6 @@ namespace GestorTeocratico.Data.Migrations
                 columns: table => new
                 {
                     MeetingScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CongregationId = table.Column<Guid>(type: "uuid", nullable: false),
                     MeetingTypeId = table.Column<Guid>(type: "uuid", nullable: false),
                     Date = table.Column<DateOnly>(type: "date", nullable: false),
                     Month = table.Column<int>(type: "integer", nullable: false),
@@ -92,12 +224,6 @@ namespace GestorTeocratico.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MeetingSchedules", x => x.MeetingScheduleId);
-                    table.ForeignKey(
-                        name: "FK_MeetingSchedules_Congregations_CongregationId",
-                        column: x => x.CongregationId,
-                        principalTable: "Congregations",
-                        principalColumn: "CongregationId",
-                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_MeetingSchedules_MeetingTypes_MeetingTypeId",
                         column: x => x.MeetingTypeId,
@@ -113,18 +239,11 @@ namespace GestorTeocratico.Data.Migrations
                     DepartmentId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    CongregationId = table.Column<Guid>(type: "uuid", nullable: false),
                     ResponsiblePublisherId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Departments", x => x.DepartmentId);
-                    table.ForeignKey(
-                        name: "FK_Departments_Congregations_CongregationId",
-                        column: x => x.CongregationId,
-                        principalTable: "Congregations",
-                        principalColumn: "CongregationId",
-                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Departments_Publishers_ResponsiblePublisherId",
                         column: x => x.ResponsiblePublisherId,
@@ -178,31 +297,6 @@ namespace GestorTeocratico.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ResponsibilityAssignmentConfigs",
-                columns: table => new
-                {
-                    ResponsibilityId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MeetingTypeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Quantity = table.Column<int>(type: "integer", nullable: false, defaultValue: 1)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ResponsibilityAssignmentConfigs", x => new { x.ResponsibilityId, x.MeetingTypeId });
-                    table.ForeignKey(
-                        name: "FK_ResponsibilityAssignmentConfigs_MeetingTypes_MeetingTypeId",
-                        column: x => x.MeetingTypeId,
-                        principalTable: "MeetingTypes",
-                        principalColumn: "MeetingTypeId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ResponsibilityAssignmentConfigs_Responsibilities_Responsibi~",
-                        column: x => x.ResponsibilityId,
-                        principalTable: "Responsibilities",
-                        principalColumn: "ResponsibilityId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ResponsibilityAssignments",
                 columns: table => new
                 {
@@ -234,9 +328,41 @@ namespace GestorTeocratico.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Departments_CongregationId",
-                table: "Departments",
-                column: "CongregationId");
+                name: "IX_AspNetRoleClaims_RoleId",
+                table: "AspNetRoleClaims",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "RoleNameIndex",
+                table: "AspNetRoles",
+                column: "NormalizedName",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserClaims_UserId",
+                table: "AspNetUserClaims",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserLogins_UserId",
+                table: "AspNetUserLogins",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetUserRoles_RoleId",
+                table: "AspNetUserRoles",
+                column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "EmailIndex",
+                table: "AspNetUsers",
+                column: "NormalizedEmail");
+
+            migrationBuilder.CreateIndex(
+                name: "UserNameIndex",
+                table: "AspNetUsers",
+                column: "NormalizedUserName",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Departments_ResponsiblePublisherId",
@@ -244,19 +370,9 @@ namespace GestorTeocratico.Data.Migrations
                 column: "ResponsiblePublisherId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MeetingSchedules_CongregationId",
-                table: "MeetingSchedules",
-                column: "CongregationId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_MeetingSchedules_MeetingTypeId",
                 table: "MeetingSchedules",
                 column: "MeetingTypeId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MeetingTypes_TypeMeetingTypeId",
-                table: "MeetingTypes",
-                column: "TypeMeetingTypeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PublisherResponsibilities_ResponsibilityId",
@@ -264,19 +380,9 @@ namespace GestorTeocratico.Data.Migrations
                 column: "ResponsibilityId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Publishers_CongregationId",
-                table: "Publishers",
-                column: "CongregationId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Responsibilities_DepartmentId",
                 table: "Responsibilities",
                 column: "DepartmentId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ResponsibilityAssignmentConfigs_MeetingTypeId",
-                table: "ResponsibilityAssignmentConfigs",
-                column: "MeetingTypeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ResponsibilityAssignments_PublisherId",
@@ -293,13 +399,34 @@ namespace GestorTeocratico.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "AspNetRoleClaims");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserClaims");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserLogins");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserRoles");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
+                name: "Congregations");
+
+            migrationBuilder.DropTable(
                 name: "PublisherResponsibilities");
 
             migrationBuilder.DropTable(
-                name: "ResponsibilityAssignmentConfigs");
+                name: "ResponsibilityAssignments");
 
             migrationBuilder.DropTable(
-                name: "ResponsibilityAssignments");
+                name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "MeetingSchedules");
@@ -315,9 +442,6 @@ namespace GestorTeocratico.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "Publishers");
-
-            migrationBuilder.DropTable(
-                name: "Congregations");
         }
     }
 }
