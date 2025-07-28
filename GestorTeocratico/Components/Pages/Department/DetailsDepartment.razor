@@ -1,0 +1,103 @@
+@page "/departments/details/{id:guid}"
+@using GestorTeocratico.Features.Departments
+@using GestorTeocratico.Entities
+@inject IDepartmentService DepartmentService
+@inject NavigationManager NavigationManager
+@inject DialogService DialogService
+
+<PageTitle>Detalles del Departamento</PageTitle>
+
+<RadzenCard Style="min-width:400px; max-width:600px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); border-radius: 16px;">
+    <div class="mb-4">
+        <h3 class="fw-bold text-primary" style="margin-bottom: 0.5rem;">Department Details</h3>
+        <hr />
+    </div>
+    <RadzenFieldset Style="border:none; padding:0;">
+        <div class="row gy-3">
+            <div class="col-5 text-secondary">Name:</div>
+            <div class="col-7 fw-semibold">@department.Name</div>
+            <div class="col-5 text-secondary">Responsible Publisher:</div>
+            <div class="col-7">
+                @if (department.ResponsiblePublisher != null)
+                {
+                    <span>@GetPublisherFullName(department.ResponsiblePublisher)</span>
+                    @if (!string.IsNullOrEmpty(department.ResponsiblePublisher.Phone))
+                    {
+                        <br/><small class="text-muted">📞 @department.ResponsiblePublisher.Phone</small>
+                    }
+                    @if (!string.IsNullOrEmpty(department.ResponsiblePublisher.Email))
+                    {
+                        <br/><small class="text-muted">✉️ @department.ResponsiblePublisher.Email</small>
+                    }
+                }
+                else
+                {
+                    <span class="text-muted">Sin asignar</span>
+                }
+            </div>
+            <div class="col-5 text-secondary">Responsibilities:</div>
+            <div class="col-7">
+                @if (department.Responsibilities.Any())
+                {
+                    @foreach (var responsibility in department.Responsibilities.OrderBy(r => r.Name))
+                    {
+                        <div class="mb-1">
+                            <strong>@responsibility.Name</strong>
+                            @if (!string.IsNullOrEmpty(responsibility.Description))
+                            {
+                                <br/><small class="text-muted">@responsibility.Description</small>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <span class="text-muted">Sin responsabilidades</span>
+                }
+            </div>
+        </div>
+    </RadzenFieldset>
+    <div class="d-flex justify-content-end mt-4">
+        <RadzenButton Text="Close" Icon="close" ButtonStyle="ButtonStyle.Secondary" Style="min-width: 120px;" Click="@Close" />
+    </div>
+</RadzenCard>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    [Parameter] public Department department { get; set; }
+
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // await LoadDepartment();
+    }
+
+    private async Task LoadDepartment()
+    {
+        isLoading = true;
+        try
+        {
+            department = await DepartmentService.GetByIdAsync(Id);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void Close()
+    {
+        DialogService.Close();
+    }
+
+    private string GetPublisherFullName(Publisher publisher)
+    {
+        var fullName = publisher.FirstName;
+        if (!string.IsNullOrEmpty(publisher.LastName))
+            fullName += $" {publisher.LastName}";
+        if (!string.IsNullOrEmpty(publisher.MotherLastName))
+            fullName += $" {publisher.MotherLastName}";
+        return fullName;
+    }
+}
