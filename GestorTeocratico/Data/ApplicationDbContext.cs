@@ -59,6 +59,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             entity.Property(p => p.Name).HasMaxLength(250).IsRequired();
 
+            entity.HasOne(d => d.ResponsiblePublisher)
+                .WithMany(p => p.ResponsibleDepartments)
+                .HasForeignKey(d => d.ResponsiblePublisherId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
             entity.HasMany(d => d.Responsibilities)
                 .WithOne(r => r.Department)
                 .HasForeignKey(r => r.DepartmentId)
@@ -92,12 +97,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(p => p.MotherLastName).HasMaxLength(250);
             entity.Property(p => p.Phone).HasMaxLength(15);
             entity.Property(p => p.Email).HasMaxLength(250);
-            entity.Property(p => p.Gender).IsRequired();
-            entity.Property(p => p.Privilege).IsRequired();
+            entity.Property(p => p.Gender).IsRequired().HasConversion<string>();
+            entity.Property(p => p.Privilege).HasConversion<string>();
             
             entity.HasMany(p => p.PublisherResponsibilities)
                 .WithOne(pr => pr.Publisher)
                 .HasForeignKey(pr => pr.PublisherId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasMany(p => p.ResponsibleDepartments)
+                .WithOne(d => d.ResponsiblePublisher)
+                .HasForeignKey(d => d.ResponsiblePublisherId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

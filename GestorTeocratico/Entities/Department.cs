@@ -6,7 +6,7 @@ namespace GestorTeocratico.Entities;
 public class Department : SoftDeleteEntity
 {
     public Guid DepartmentId { get; set; } = Guid.CreateVersion7();
-    public required string Name { get; set; }
+    public string Name { get; set; }
     public Guid? ResponsiblePublisherId { get; set; }
     
     public Publisher? ResponsiblePublisher { get; set; }
