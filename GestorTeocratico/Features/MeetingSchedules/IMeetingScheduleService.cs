@@ -1,0 +1,17 @@
+using GestorTeocratico.Entities;
+
+namespace GestorTeocratico.Features.MeetingSchedules;
+
+public interface IMeetingScheduleService
+{
+    Task<IEnumerable<MeetingSchedule>> GetAllAsync();
+    Task<MeetingSchedule?> GetByIdAsync(Guid id);
+    Task<MeetingSchedule> CreateAsync(MeetingSchedule meetingSchedule);
+    Task<MeetingSchedule?> UpdateAsync(MeetingSchedule meetingSchedule);
+    Task<bool> DeleteAsync(Guid id);
+    Task<IEnumerable<MeetingSchedule>> GetByDateRangeAsync(DateOnly startDate, DateOnly endDate);
+    Task<IEnumerable<MeetingSchedule>> GetByMonthAsync(int month, int year);
+    Task<IEnumerable<MeetingSchedule>> GetByWeekAsync(int weekOfYear, int year);
+    Task<IEnumerable<MeetingSchedule>> GetByMeetingTypeAsync(Guid meetingTypeId);
+    Task<MeetingSchedule?> GetByDateAndMeetingTypeAsync(DateOnly date, Guid meetingTypeId);
+}

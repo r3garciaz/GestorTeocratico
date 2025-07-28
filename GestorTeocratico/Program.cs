@@ -5,6 +5,13 @@ using GestorTeocratico.Components;
 using GestorTeocratico.Components.Account;
 using GestorTeocratico.Data;
 using GestorTeocratico.Features.Congregations;
+using GestorTeocratico.Features.Departments;
+using GestorTeocratico.Features.Publishers;
+using GestorTeocratico.Features.Responsibilities;
+using GestorTeocratico.Features.MeetingTypes;
+using GestorTeocratico.Features.PublisherResponsibilities;
+using GestorTeocratico.Features.MeetingSchedules;
+using GestorTeocratico.Features.ResponsibilityAssignments;
 using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -45,6 +52,13 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddScoped<ICongregationService, CongregationService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<IPublisherService, PublisherService>();
+builder.Services.AddScoped<IResponsibilityService, ResponsibilityService>();
+builder.Services.AddScoped<IMeetingTypeService, MeetingTypeService>();
+builder.Services.AddScoped<IPublisherResponsibilityService, PublisherResponsibilityService>();
+builder.Services.AddScoped<IMeetingScheduleService, MeetingScheduleService>();
+builder.Services.AddScoped<IResponsibilityAssignmentService, ResponsibilityAssignmentService>();
 
 var app = builder.Build();
 
