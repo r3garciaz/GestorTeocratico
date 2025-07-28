@@ -1,8 +1,5 @@
 using GestorTeocratico.Data;
 using GestorTeocratico.Entities;
-using GestorTeocratico.Features.MeetingSchedules;
-using GestorTeocratico.Features.Publishers;
-using GestorTeocratico.Features.Responsibilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestorTeocratico.Features.ResponsibilityAssignments;
@@ -10,20 +7,12 @@ namespace GestorTeocratico.Features.ResponsibilityAssignments;
 public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
 {
     private readonly ApplicationDbContext _context;
-    private readonly IMeetingScheduleService _meetingScheduleService;
-    private readonly IPublisherService _publisherService;
-    private readonly IResponsibilityService _responsibilityService;
+    private readonly ILogger<ResponsibilityAssignmentService> _logger;
 
-    public ResponsibilityAssignmentService(
-        ApplicationDbContext context,
-        IMeetingScheduleService meetingScheduleService,
-        IPublisherService publisherService,
-        IResponsibilityService responsibilityService)
+    public ResponsibilityAssignmentService(ApplicationDbContext context, ILogger<ResponsibilityAssignmentService> logger)
     {
         _context = context;
-        _meetingScheduleService = meetingScheduleService;
-        _publisherService = publisherService;
-        _responsibilityService = responsibilityService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<ResponsibilityAssignment>> GetAllAsync()
@@ -56,17 +45,17 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
     public async Task<ResponsibilityAssignment> CreateAsync(ResponsibilityAssignment responsibilityAssignment)
     {
         // Verificar que el MeetingSchedule existe
-        var meetingSchedule = await _meetingScheduleService.GetByIdAsync(responsibilityAssignment.MeetingScheduleId);
+        var meetingSchedule = await _context.MeetingSchedules.FindAsync(responsibilityAssignment.MeetingScheduleId);
         if (meetingSchedule == null)
             throw new ArgumentException("Meeting schedule not found", nameof(responsibilityAssignment.MeetingScheduleId));
 
         // Verificar que el Publisher existe
-        var publisher = await _publisherService.GetByIdAsync(responsibilityAssignment.PublisherId);
+        var publisher = await _context.Publishers.FindAsync(responsibilityAssignment.PublisherId);
         if (publisher == null)
             throw new ArgumentException("Publisher not found", nameof(responsibilityAssignment.PublisherId));
 
         // Verificar que la Responsibility existe
-        var responsibility = await _responsibilityService.GetByIdAsync(responsibilityAssignment.ResponsibilityId);
+        var responsibility = await _context.Responsibilities.FindAsync(responsibilityAssignment.ResponsibilityId);
         if (responsibility == null)
             throw new ArgumentException("Responsibility not found", nameof(responsibilityAssignment.ResponsibilityId));
 
@@ -154,9 +143,9 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
     {
         try
         {
-            var meetingSchedule = await _meetingScheduleService.GetByIdAsync(meetingScheduleId);
-            var publisher = await _publisherService.GetByIdAsync(publisherId);
-            var responsibility = await _responsibilityService.GetByIdAsync(responsibilityId);
+            var meetingSchedule = await _context.MeetingSchedules.FindAsync(meetingScheduleId);
+            var publisher = await _context.Publishers.FindAsync(publisherId);
+            var responsibility = await _context.Responsibilities.FindAsync(responsibilityId);
 
             if (meetingSchedule == null || publisher == null || responsibility == null)
                 return false;

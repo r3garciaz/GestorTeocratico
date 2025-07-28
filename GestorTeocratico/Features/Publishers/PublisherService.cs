@@ -83,6 +83,13 @@ public class PublisherService : IPublisherService
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<Department>> GetAvailableDepartmentsAsync()
+    {
+        return await _context.Departments
+            .OrderBy(d => d.Name)
+            .ToListAsync();
+    }
+
     public async Task UpdatePublisherResponsibilitiesAsync(Guid publisherId, IEnumerable<Guid> responsibilityIds)
     {
         var responsibilityIdsList = responsibilityIds.ToList();
@@ -109,13 +116,6 @@ public class PublisherService : IPublisherService
         }
 
         await _context.SaveChangesAsync();
-    }
-
-    public async Task<IEnumerable<Department>> GetAvailableDepartmentsAsync()
-    {
-        return await _context.Departments
-            .OrderBy(d => d.Name)
-            .ToListAsync();
     }
 
     public async Task UpdatePublisherDepartmentsAsync(Guid publisherId, IEnumerable<Guid> departmentIds)

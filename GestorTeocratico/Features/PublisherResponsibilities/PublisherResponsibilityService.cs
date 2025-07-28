@@ -1,7 +1,5 @@
 using GestorTeocratico.Data;
 using GestorTeocratico.Entities;
-using GestorTeocratico.Features.Publishers;
-using GestorTeocratico.Features.Responsibilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestorTeocratico.Features.PublisherResponsibilities;
@@ -9,17 +7,12 @@ namespace GestorTeocratico.Features.PublisherResponsibilities;
 public class PublisherResponsibilityService : IPublisherResponsibilityService
 {
     private readonly ApplicationDbContext _context;
-    private readonly IPublisherService _publisherService;
-    private readonly IResponsibilityService _responsibilityService;
+    private readonly ILogger<PublisherResponsibilityService> _logger;
 
-    public PublisherResponsibilityService(
-        ApplicationDbContext context,
-        IPublisherService publisherService,
-        IResponsibilityService responsibilityService)
+    public PublisherResponsibilityService(ApplicationDbContext context, ILogger<PublisherResponsibilityService> logger)
     {
         _context = context;
-        _publisherService = publisherService;
-        _responsibilityService = responsibilityService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<PublisherResponsibility>> GetAllAsync()
@@ -46,12 +39,12 @@ public class PublisherResponsibilityService : IPublisherResponsibilityService
     public async Task<PublisherResponsibility> CreateAsync(PublisherResponsibility publisherResponsibility)
     {
         // Verificar que el Publisher existe
-        var publisher = await _publisherService.GetByIdAsync(publisherResponsibility.PublisherId);
+        var publisher = await _context.Publishers.FindAsync(publisherResponsibility.PublisherId);
         if (publisher == null)
             throw new ArgumentException("Publisher not found", nameof(publisherResponsibility.PublisherId));
 
         // Verificar que la Responsibility existe
-        var responsibility = await _responsibilityService.GetByIdAsync(publisherResponsibility.ResponsibilityId);
+        var responsibility = await _context.Responsibilities.FindAsync(publisherResponsibility.ResponsibilityId);
         if (responsibility == null)
             throw new ArgumentException("Responsibility not found", nameof(publisherResponsibility.ResponsibilityId));
 
@@ -102,8 +95,8 @@ public class PublisherResponsibilityService : IPublisherResponsibilityService
     {
         try
         {
-            var publisher = await _publisherService.GetByIdAsync(publisherId);
-            var responsibility = await _responsibilityService.GetByIdAsync(responsibilityId);
+            var publisher = await _context.Publishers.FindAsync(publisherId);
+            var responsibility = await _context.Responsibilities.FindAsync(responsibilityId);
 
             if (publisher == null || responsibility == null)
                 return false;

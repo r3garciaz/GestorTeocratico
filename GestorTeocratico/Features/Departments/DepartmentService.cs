@@ -1,7 +1,5 @@
 using GestorTeocratico.Data;
 using GestorTeocratico.Entities;
-using GestorTeocratico.Features.Publishers;
-using GestorTeocratico.Features.Responsibilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestorTeocratico.Features.Departments;
@@ -10,18 +8,11 @@ public class DepartmentService : IDepartmentService
 {
     private readonly ApplicationDbContext _context;
     private readonly ILogger<DepartmentService> _logger;
-    private readonly IPublisherService _publisherService;
-    private readonly IResponsibilityService _responsibilityService;
 
-    public DepartmentService(ApplicationDbContext context,
-        ILogger<DepartmentService> logger,
-        IPublisherService publisherService,
-        IResponsibilityService responsibilityService)
+    public DepartmentService(ApplicationDbContext context, ILogger<DepartmentService> logger)
     {
         _context = context;
         _logger = logger;
-        _publisherService = publisherService;
-        _responsibilityService = responsibilityService;
     }
 
     public async Task<IQueryable<Department>> GetAllAsync()
@@ -78,33 +69,46 @@ public class DepartmentService : IDepartmentService
         return department;
     }
 
+    public async Task<IEnumerable<Publisher>> GetAvailablePublishersAsync()
+    {
+        return await _context.Publishers
+            .Where(p => p.Privilege.HasValue)
+            .OrderBy(p => p.FirstName)
+            .ThenBy(p => p.LastName)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Responsibility>> GetAvailableResponsibilitiesAsync()
+    {
+        return await _context.Responsibilities
+            .OrderBy(r => r.Name)
+            .ToListAsync();
+    }
+
     public async Task UpdateDepartmentResponsibilitiesAsync(Guid departmentId, IEnumerable<Guid> responsibilityIds)
     {
-        var responsibilityIdsList = responsibilityIds.ToList(); // Evitar múltiple enumeración
+        var responsibilityIdsList = responsibilityIds.ToList();
 
         // Obtener todas las responsabilidades que actualmente pertenecen a este departamento
         var currentResponsibilities = await _context.Responsibilities
             .Where(r => r.DepartmentId == departmentId)
             .ToListAsync();
 
+        // Remover el departamento de las responsabilidades que ya no están seleccionadas
+        foreach (var responsibility in currentResponsibilities)
+        {
+            if (!responsibilityIdsList.Contains(responsibility.ResponsibilityId))
+            {
+                responsibility.DepartmentId = null;
+            }
+        }
+
         // Obtener las responsabilidades que se quieren asignar a este departamento
         var newResponsibilities = await _context.Responsibilities
             .Where(r => responsibilityIdsList.Contains(r.ResponsibilityId))
             .ToListAsync();
-        
-        // Responsibilities to remove from this department
-        var responsibilitiesToRemove = currentResponsibilities
-            .Where(r => !responsibilityIdsList.Contains(r.ResponsibilityId));
-        
-        // Unassign removed responsibilities
-        foreach (var responsibility in responsibilitiesToRemove)
-        {
-            responsibility.DepartmentId = null;
-        }
 
-        // Las responsabilidades que ya no estarán en este departamento necesitan ser
-        // reasignadas a un departamento por defecto o crear un mecanismo diferente
-        // Por ahora, solo actualizamos las que sí van a pertenecer a este departamento
+        // Asignar el departamento a las nuevas responsabilidades seleccionadas
         foreach (var responsibility in newResponsibilities)
         {
             responsibility.DepartmentId = departmentId;
@@ -112,15 +116,4 @@ public class DepartmentService : IDepartmentService
 
         await _context.SaveChangesAsync();
     }
-
-    public async Task<IEnumerable<Publisher>> GetAvailablePublishersAsync()
-    {
-        return await _publisherService.GetAllAsync();
-    }
-
-    public async Task<IEnumerable<Responsibility>> GetAvailableResponsibilitiesAsync()
-    {
-        return await _responsibilityService.GetAllAsync();
-    }
 }
-
