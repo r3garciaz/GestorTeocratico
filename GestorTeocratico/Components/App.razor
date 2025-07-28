@@ -8,8 +8,6 @@
     <base href="@NavigationManager.BaseUri" />
     <RadzenTheme @rendermode="@InteractiveServer" Theme="material" />
     <base href="/"/>
-    @* <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]"/> *@
-    @* <link rel="stylesheet" href="@Assets["app.css"]"/> *@
     <link rel="stylesheet" href="css/site.css" />
     <link rel="stylesheet" href="@Assets["GestorTeocratico.styles.css"]"/>
     <ImportMap/>
@@ -21,7 +19,7 @@
     @* <Routes/> *@
     <Routes @rendermode="@InteractiveServer" />
     <script src="_framework/blazor.web.js"></script>
-    <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Radzen.Colors).Assembly.GetName().Version)"></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Colors).Assembly.GetName().Version)"></script>
 </body>
 
 </html>
