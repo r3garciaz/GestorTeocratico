@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using GestorTeocratico.Components;
 using GestorTeocratico.Components.Account;
 using GestorTeocratico.Data;
+using GestorTeocratico.Features.Congregations;
 using Radzen;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,6 +44,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.AddScoped<ICongregationService, CongregationService>();
 
 var app = builder.Build();
 
