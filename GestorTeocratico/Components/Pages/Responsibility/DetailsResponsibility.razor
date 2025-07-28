@@ -1,0 +1,90 @@
+@using GestorTeocratico.Entities
+@using Radzen;
+@using Radzen.Blazor;
+@inject Radzen.DialogService DialogService
+
+<RadzenCard Style="min-width:400px; max-width:600px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); border-radius: 16px;">
+    <div class="mb-4">
+        <h3 class="fw-bold text-primary" style="margin-bottom: 0.5rem;">Responsibility Details</h3>
+        <hr />
+    </div>
+    <RadzenFieldset Style="border:none; padding:0;">
+        <div class="row gy-3">
+            <div class="col-5 text-secondary">Name:</div>
+            <div class="col-7 fw-semibold">@responsibility.Name</div>
+            
+            <div class="col-5 text-secondary">Description:</div>
+            <div class="col-7">
+                @if (!string.IsNullOrEmpty(responsibility.Description))
+                {
+                    <span>@responsibility.Description</span>
+                }
+                else
+                {
+                    <span class="text-muted">Sin descripción</span>
+                }
+            </div>
+            
+            <div class="col-5 text-secondary">Department:</div>
+            <div class="col-7">
+                @if (responsibility.Department != null)
+                {
+                    <span>@responsibility.Department.Name</span>
+                }
+                else
+                {
+                    <span class="text-muted">Sin departamento asignado</span>
+                }
+            </div>
+            
+            <div class="col-5 text-secondary">Assigned Publishers:</div>
+            <div class="col-7">
+                @if (responsibility.PublisherResponsibilities?.Any() == true)
+                {
+                    @foreach (var publisherResponsibility in responsibility.PublisherResponsibilities.OrderBy(pr => pr.Publisher.FirstName))
+                    {
+                        <div class="mb-1">
+                            <strong>@GetPublisherFullName(publisherResponsibility.Publisher)</strong>
+                            <div class="d-flex gap-2 mt-1">
+                                @if (!string.IsNullOrEmpty(publisherResponsibility.Publisher.Phone))
+                                {
+                                    <small class="text-muted">📞 @publisherResponsibility.Publisher.Phone</small>
+                                }
+                                @if (!string.IsNullOrEmpty(publisherResponsibility.Publisher.Email))
+                                {
+                                    <small class="text-muted">✉️ @publisherResponsibility.Publisher.Email</small>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <span class="text-muted">Sin publishers asignados</span>
+                }
+            </div>
+        </div>
+    </RadzenFieldset>
+    <div class="d-flex justify-content-end mt-4">
+        <RadzenButton Text="Close" Icon="close" ButtonStyle="ButtonStyle.Secondary" Style="min-width: 120px;" Click="@Close" />
+    </div>
+</RadzenCard>
+
+@code {
+    [Parameter] public Responsibility responsibility { get; set; } = new() { Name = string.Empty };
+
+    private void Close()
+    {
+        DialogService.Close();
+    }
+
+    private string GetPublisherFullName(Publisher publisher)
+    {
+        var fullName = publisher.FirstName;
+        if (!string.IsNullOrEmpty(publisher.LastName))
+            fullName += $" {publisher.LastName}";
+        if (!string.IsNullOrEmpty(publisher.MotherLastName))
+            fullName += $" {publisher.MotherLastName}";
+        return fullName;
+    }
+}
