@@ -1,0 +1,134 @@
+@page "/departments"
+@using GestorTeocratico.Entities
+@using GestorTeocratico.Features.Departments
+@inject IDepartmentService DepartmentService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Departments</PageTitle>
+<RadzenStack>
+    <RadzenRow AlignItems="AlignItems.Center">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText Text="Departments" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                         JustifyContent="JustifyContent.End" Gap="0.5rem">
+                <RadzenButton Icon="add_circle_outline" Text="Agregar Departamento" Click="@CreateAsync" Variant="Variant.Flat"/>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+    <RadzenRow>
+        <RadzenColumn SizeMD="12">
+            <RadzenDataGrid @ref="grid0" ColumnWidth="200px" AllowFiltering="true" FilterMode="FilterMode.Advanced"
+                            AllowPaging="true" AllowSorting="true" ShowPagingSummary="true"
+                            PageSizeOptions=@(new int[] { 5, 10, 20, 30 })
+                            Data="@(_departments)" >
+                <Columns>
+                    <RadzenDataGridColumn Property="@nameof(Department.Name)" Title="Name"/>
+                    <RadzenDataGridColumn Property="@nameof(Department.ResponsiblePublisher)" Title="Responsible Publisher">
+                        <Template Context="department">
+                            @if (department.ResponsiblePublisher != null)
+                            {
+                                <span>@GetPublisherFullName(department.ResponsiblePublisher)</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sin asignar</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn Property="@nameof(Department.Responsibilities)" Title="Responsibilities">
+                        <Template Context="department">
+                            @if (department.Responsibilities?.Any() == true)
+                            {
+                                <span>@string.Join(", ", department.Responsibilities.Take(2).Select(r => r.Name))</span>
+                                @if (department.Responsibilities.Count > 2)
+                                {
+                                    <span class="text-muted"> y @(department.Responsibilities.Count - 2) más...</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted">Sin responsabilidades</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn Filterable="false" Sortable="false" Width="150px" Title="Actions"
+                                          TextAlign="TextAlign.Center">
+                        <Template Context="department">
+                            <RadzenButton Icon="article" ButtonStyle="ButtonStyle.Success" Variant="Variant.Outlined" Size="ButtonSize.Medium"
+                                          Click="@(() => ShowDetailsModal(department))" @onabort:stopPropagation="true" />
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Variant="Variant.Outlined"
+                                          Size="ButtonSize.Medium"
+                                          Click="@(() => ShowEditModal(department))" @onclick:stopPropagation="true"/>
+                            <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"
+                                          Shade="Shade.Lighter" Variant="Variant.Outlined"
+                                          Click="@(args => DeleteAsync(args, department))"
+                                          @onclick:stopPropagation="true"/>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    private IEnumerable<Department> _departments = [];
+    private RadzenDataGrid<Department> grid0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _departments = await DepartmentService.GetAllAsync();
+    }
+
+    private async Task CreateAsync(MouseEventArgs args)
+    {
+        await DialogService.OpenAsync<CreateDepartment>("Create Department", null);
+        await grid0.Reload();
+    }
+
+    private async Task ShowEditModal(Department args)
+    {
+        await DialogService.OpenAsync<EditDepartment>("Edit Department", new Dictionary<string, object> { { "DepartmentId", args.DepartmentId } });
+        await grid0.Reload();
+    }
+
+    private async Task DeleteAsync(MouseEventArgs args, Department department)
+    {
+        try
+        {
+            if (await DialogService.Confirm("Are you sure you want to delete this record?") == true)
+            {
+                var deleteResult = await DepartmentService.DeleteAsync(department.DepartmentId);
+                await grid0.Reload();
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = $"Error, {ex.Message}",
+                Detail = $"Unable to delete Department"
+            });
+        }
+    }
+
+    private async Task ShowDetailsModal(Department department)
+    {
+        var parameters = new Dictionary<string, object> { ["department"] = department };
+        await DialogService.OpenAsync<DetailsDepartment>("Department Details", new Dictionary<string, object> {{ "department", department}}, new DialogOptions { Width = "600px", Height = "auto", Resizable = true });
+    }
+
+    private string GetPublisherFullName(Publisher publisher)
+    {
+        var fullName = publisher.FirstName;
+        if (!string.IsNullOrEmpty(publisher.LastName))
+            fullName += $" {publisher.LastName}";
+        if (!string.IsNullOrEmpty(publisher.MotherLastName))
+            fullName += $" {publisher.MotherLastName}";
+        return fullName;
+    }
+}
