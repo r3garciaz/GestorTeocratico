@@ -21,8 +21,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
-        // Apply global query filter for soft delete
+
+        // Apply a global query filter for all entities inheriting from SoftDeleteEntity.
+        // This ensures that entities with IsDeleted == true are excluded from queries by default.
+        // Also, explicitly sets the IsDeleted property as required for these entities.
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
             if (typeof(SoftDeleteEntity).IsAssignableFrom(entityType.ClrType))
@@ -33,9 +35,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                     Expression.Equal(isDeletedProperty, Expression.Constant(false)),
                     parameter
                 );
+                // Apply global query filter for soft delete
                 modelBuilder.Entity(entityType.ClrType).HasQueryFilter(filter);
+                // Explicitly set IsDeleted as required for all SoftDeleteEntity types
+                modelBuilder.Entity(entityType.ClrType)
+                    .Property(nameof(SoftDeleteEntity.IsDeleted))
+                    .IsRequired();
             }
         }
+        
         modelBuilder.Entity<Congregation>(entity =>
         {
             entity.Property(p => p.Name).HasMaxLength(250).IsRequired();

@@ -6,7 +6,7 @@ namespace GestorTeocratico.Entities;
 public class Congregation : SoftDeleteEntity
 {
     public Guid CongregationId { get; set; } = Guid.CreateVersion7();
-    public required string Name { get; set; }
+    public string Name { get; set; }
     public DayOfWeek MidweekMeetingDayEvenYear { get; set; }
     public DayOfWeek MidweekMeetingDayOddYear { get; set; }
     public DayOfWeek WeekendMeetingDayEvenYear { get; set; }
