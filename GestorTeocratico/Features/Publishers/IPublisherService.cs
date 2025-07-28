@@ -4,12 +4,13 @@ namespace GestorTeocratico.Features.Publishers;
 
 public interface IPublisherService
 {
-    Task<IEnumerable<Publisher>> GetAllAsync();
+    Task<IQueryable<Publisher>> GetAllAsync();
     Task<Publisher?> GetByIdAsync(Guid id);
-    Task<Publisher> CreateAsync(Publisher publisher);
-    Task<Publisher?> UpdateAsync(Publisher publisher);
-    Task<bool> DeleteAsync(Guid id);
-    Task<IEnumerable<Publisher>> GetPublishersByGenderAsync(Shared.Enums.Gender gender);
-    Task<IEnumerable<Publisher>> GetPublishersByPrivilegeAsync(Shared.Enums.Privilege privilege);
-    Task<IEnumerable<Publisher>> GetAvailableResponsiblePublishersAsync();
+    Task AddAsync(Publisher publisher);
+    Task UpdateAsync(Publisher publisher);
+    Task<Publisher> DeleteAsync(Guid id);
+    Task<IEnumerable<Responsibility>> GetAvailableResponsibilitiesAsync();
+    Task UpdatePublisherResponsibilitiesAsync(Guid publisherId, IEnumerable<Guid> responsibilityIds);
+    Task<IEnumerable<Department>> GetAvailableDepartmentsAsync();
+    Task UpdatePublisherDepartmentsAsync(Guid publisherId, IEnumerable<Guid> departmentIds);
 }
