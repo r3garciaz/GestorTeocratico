@@ -1,0 +1,236 @@
+@* @page "/create-publisher" *@
+@using GestorTeocratico.Entities
+@using GestorTeocratico.Shared.Enums
+@inject DialogService DialogService
+@inject GestorTeocratico.Features.Publishers.IPublisherService PublisherService
+
+<PageTitle>Add Publisher</PageTitle>
+<RadzenColumn SizeMD=12>
+    <RadzenAlert Shade="Shade.Lighter" Variant="Variant.Flat" Size="AlertSize.Small" AlertStyle="AlertStyle.Danger"
+                 Visible="@_errorVisible">Cannot save Publisher
+    </RadzenAlert>
+    <RadzenTemplateForm TItem="Publisher" Data="@(_publisher)" Visible="@(_publisher != null)"
+                        Submit="@HandleValidSubmit">
+        <RadzenRow style="margin-bottom: 1rem">
+            <RadzenColumn SizeMD="3">
+                <RadzenLabel Text="First Name" Component="FirstName" style="width: 100%"/>
+            </RadzenColumn>
+            <RadzenColumn SizeMD="9">
+                <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_publisher.FirstName)" Name="FirstName"/>
+                <RadzenRequiredValidator Component="FirstName" Text="First Name is required"/>
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow style="margin-bottom: 1rem">
+            <RadzenColumn SizeMD="3">
+                <RadzenLabel Text="Last Name" Component="LastName" style="width: 100%"/>
+            </RadzenColumn>
+            <RadzenColumn SizeMD="9">
+                <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_publisher.LastName)" Name="LastName"/>
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow style="margin-bottom: 1rem">
+            <RadzenColumn SizeMD="3">
+                <RadzenLabel Text="Mother Last Name" Component="MotherLastName" style="width: 100%"/>
+            </RadzenColumn>
+            <RadzenColumn SizeMD="9">
+                <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_publisher.MotherLastName)" Name="MotherLastName"/>
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow style="margin-bottom: 1rem">
+            <RadzenColumn SizeMD="3">
+                <RadzenLabel Text="Phone" Component="Phone" style="width: 100%"/>
+            </RadzenColumn>
+            <RadzenColumn SizeMD="9">
+                <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_publisher.Phone)" Name="Phone"/>
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow style="margin-bottom: 1rem">
+            <RadzenColumn SizeMD="3">
+                <RadzenLabel Text="Email" Component="Email" style="width: 100%"/>
+            </RadzenColumn>
+            <RadzenColumn SizeMD="9">
+                <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_publisher.Email)" Name="Email"/>
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow style="margin-bottom: 1rem">
+            <RadzenColumn SizeMD="3">
+                <RadzenLabel Text="Gender" Component="Gender" style="width: 100%"/>
+            </RadzenColumn>
+            <RadzenColumn SizeMD="9">
+                <RadzenDropDown @bind-Value="@_publisher.Gender" 
+                                Data="@_genderOptions" 
+                                TextProperty="@nameof(GenderOption.DisplayName)" 
+                                ValueProperty="@nameof(GenderOption.Value)"
+                                Placeholder="Select gender"
+                                Style="width: 100%; max-width: 400px;" 
+                                Name="Gender" />
+                <RadzenRequiredValidator Component="Gender" Text="Gender is required"/>
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow style="margin-bottom: 1rem">
+            <RadzenColumn SizeMD="3">
+                <RadzenLabel Text="Privilege" Component="Privilege" style="width: 100%"/>
+            </RadzenColumn>
+            <RadzenColumn SizeMD="9">
+                <RadzenDropDown @bind-Value="@_publisher.Privilege" 
+                                Data="@_privilegeOptions" 
+                                TextProperty="@nameof(PrivilegeOption.DisplayName)" 
+                                ValueProperty="@nameof(PrivilegeOption.Value)"
+                                AllowClear="true"
+                                Placeholder="Select privilege (optional)"
+                                Style="width: 100%; max-width: 400px;" 
+                                Name="Privilege" />
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow style="margin-bottom: 1rem">
+            <RadzenColumn SizeMD="3">
+                <RadzenLabel Text="Responsibilities" Component="ResponsibilityIds" style="width: 100%"/>
+            </RadzenColumn>
+            <RadzenColumn SizeMD="9">
+                <RadzenDropDown @bind-Value="@_selectedResponsibilityIds" 
+                                Data="@_availableResponsibilities" 
+                                TextProperty="@nameof(Responsibility.Name)" 
+                                ValueProperty="@nameof(Responsibility.ResponsibilityId)"
+                                Multiple="true"
+                                AllowClear="true"
+                                Placeholder="Select responsibilities (optional)"
+                                Style="width: 100%; max-width: 400px;" 
+                                Name="ResponsibilityIds" />
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenRow style="margin-bottom: 1rem">
+            <RadzenColumn SizeMD="3">
+                <RadzenLabel Text="Departments" Component="DepartmentIds" style="width: 100%"/>
+            </RadzenColumn>
+            <RadzenColumn SizeMD="9">
+                <RadzenDropDown @bind-Value="@_selectedDepartmentIds" 
+                                Data="@_availableDepartments" 
+                                TextProperty="@nameof(Department.Name)" 
+                                ValueProperty="@nameof(Department.DepartmentId)"
+                                Multiple="true"
+                                AllowClear="true"
+                                Placeholder="Select departments (optional)"
+                                Style="width: 100%; max-width: 400px;" 
+                                Name="DepartmentIds" />
+            </RadzenColumn>
+        </RadzenRow>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                     JustifyContent="JustifyContent.End" Gap="0.5rem">
+            <RadzenButton ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" Icon="save" Text="Save"
+                          Variant="Variant.Flat"/>
+            <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancel" Variant="Variant.Flat"
+                          Click="@CancelButtonClick"/>
+        </RadzenStack>
+    </RadzenTemplateForm>
+</RadzenColumn>
+
+@code {
+    private readonly Publisher _publisher = new() { FirstName = string.Empty, Gender = Gender.Male };
+    private bool _errorVisible;
+    private IEnumerable<Responsibility> _availableResponsibilities = [];
+    private IEnumerable<Guid> _selectedResponsibilityIds = [];
+    private IEnumerable<Department> _availableDepartments = [];
+    private IEnumerable<Guid> _selectedDepartmentIds = [];
+    private IEnumerable<GenderOption> _genderOptions = [];
+    private IEnumerable<PrivilegeOption> _privilegeOptions = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAvailableResponsibilities();
+        await LoadAvailableDepartments();
+        LoadGenderOptions();
+        LoadPrivilegeOptions();
+    }
+
+    private async Task LoadAvailableResponsibilities()
+    {
+        _availableResponsibilities = await PublisherService.GetAvailableResponsibilitiesAsync();
+    }
+
+    private async Task LoadAvailableDepartments()
+    {
+        _availableDepartments = await PublisherService.GetAvailableDepartmentsAsync();
+    }
+
+    private void LoadGenderOptions()
+    {
+        _genderOptions = Enum.GetValues<Gender>().Select(g => new GenderOption
+        {
+            Value = g,
+            DisplayName = GetGenderDisplayName(g)
+        });
+    }
+
+    private void LoadPrivilegeOptions()
+    {
+        _privilegeOptions = Enum.GetValues<Privilege>().Select(p => new PrivilegeOption
+        {
+            Value = p,
+            DisplayName = GetPrivilegeDisplayName(p)
+        });
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            await PublisherService.AddAsync(_publisher);
+            
+            // Actualizar responsabilidades si se seleccionaron algunas
+            if (_selectedResponsibilityIds.Any())
+            {
+                await PublisherService.UpdatePublisherResponsibilitiesAsync(_publisher.PublisherId, _selectedResponsibilityIds);
+            }
+
+            // Actualizar departamentos si se seleccionaron algunos
+            if (_selectedDepartmentIds.Any())
+            {
+                await PublisherService.UpdatePublisherDepartmentsAsync(_publisher.PublisherId, _selectedDepartmentIds);
+            }
+            
+            DialogService.Close(true);
+        }
+        catch
+        {
+            _errorVisible = true;
+        }
+    }
+
+    private async Task CancelButtonClick(MouseEventArgs args)
+    {
+        DialogService.Close(null);
+    }
+
+    private string GetGenderDisplayName(Gender gender)
+    {
+        return gender switch
+        {
+            Gender.Male => "Masculino",
+            Gender.Female => "Femenino",
+            _ => gender.ToString()
+        };
+    }
+
+    private string GetPrivilegeDisplayName(Privilege privilege)
+    {
+        return privilege switch
+        {
+            Privilege.Elder => "Anciano",
+            Privilege.MinisterialServant => "Siervo Ministerial",
+            Privilege.Pioneer => "Precursor",
+            _ => privilege.ToString()
+        };
+    }
+
+    public class GenderOption
+    {
+        public Gender Value { get; set; }
+        public string DisplayName { get; set; } = string.Empty;
+    }
+
+    public class PrivilegeOption
+    {
+        public Privilege Value { get; set; }
+        public string DisplayName { get; set; } = string.Empty;
+    }
+}
