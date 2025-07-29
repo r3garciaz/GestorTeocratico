@@ -112,7 +112,7 @@ Gestor Teocratico is a web application for managing religious congregations, the
   - Use of migrations for database changes.
 
 - **Internationalization:**  
-  - Support for multiple languages (potential, not explicit in code).
+  - Not yet implemented. Some culture-specific formatting is present (e.g., `CultureInfo`), but no resource-based localization or language switching.
 
 ---
 
