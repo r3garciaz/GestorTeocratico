@@ -1,55 +1,47 @@
 ﻿@implements IDisposable
-
 @inject NavigationManager NavigationManager
+
 
 <AuthorizeView>
     <Authorized>
         <RadzenPanelMenu>
-            <RadzenPanelMenuItem Text="Home" Path="" />
-            <RadzenPanelMenuItem Text="Departments" Path="/departments" />
-            <RadzenPanelMenuItem Text="Publishers" Path="/publishers" />
-            <RadzenPanelMenuItem Text="Responsibilities" Path="/responsibilities" />
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="Account/Manage">
-                    <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <form action="Account/Logout" method="post">
+            <RadzenPanelMenuItem Text="Home" Path="" Icon="home" />
+            <RadzenPanelMenuItem Text="Congregations" Path="/congregations" Icon="fort" />
+            <RadzenPanelMenuItem Text="Departments" Path="/departments" Icon="business" />
+            <RadzenPanelMenuItem Text="Publishers" Path="/publishers" Icon="people" />
+            <RadzenPanelMenuItem Text="Responsibilities" Path="/responsibilities" Icon="assignment" />
+        </RadzenPanelMenu>
+        
+        <RadzenPanelMenu>
+            <RadzenStack class="rz-mt-4" Gap="0.5rem">
+                <RadzenPanelMenuItem Text="@context.User.Identity?.Name" Path="Account/Manage" Icon="person" />
+                
+                <form action="Account/Logout" method="post" class="rz-w-100">
                     <AntiforgeryToken/>
-                    <input type="hidden" name="ReturnUrl" value="@currentUrl"/>
-                    <button type="submit" class="nav-link">
-                        <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
-                    </button>
+                    <input type="hidden" name="returnUrl" value="@currentUrl"/>
+                    <RadzenButton ButtonType="ButtonType.Submit"
+                                  Text="Logout"
+                                  Icon="logout"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Size="ButtonSize.Medium"
+                                  class="rz-w-100" />
                 </form>
-            </div>
+            </RadzenStack>
         </RadzenPanelMenu>
     </Authorized>
     <NotAuthorized>
         <RadzenPanelMenu>
-            <RadzenPanelMenuItem Text="Home" Path="" />
-            <RadzenPanelMenuItem Text="Congregations" Path="/congregations" />
-            <RadzenPanelMenuItem Text="Departments" Path="/departments" />
-            <RadzenPanelMenuItem Text="Publishers" Path="/publishers" />
-            <RadzenPanelMenuItem Text="Responsibilities" Path="/responsibilities" />
+            <RadzenStack class="rz-mt-4" Gap="0.5rem">
+                <RadzenPanelMenuItem Text="Login" Path="Account/Login" Icon="login" />
+                <RadzenPanelMenuItem Text="Register" Path="Account/Register" Icon="person_add" />
+            </RadzenStack>
         </RadzenPanelMenu>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="Account/Register">
-                <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="Account/Login">
-                <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
-            </NavLink>
-        </div>
     </NotAuthorized>
 </AuthorizeView>
 
-
 @code {
     private string? currentUrl;
-
+    
     protected override void OnInitialized()
     {
         currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
@@ -66,5 +58,4 @@
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
-
 }

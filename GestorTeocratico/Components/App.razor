@@ -5,19 +5,18 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Gestor Teocrático</title>
     <base href="@NavigationManager.BaseUri" />
-    <RadzenTheme @rendermode="@InteractiveServer" Theme="material" />
-    <base href="/"/>
+    <RadzenTheme @rendermode="@PageRenderMode" Theme="material" />
     <link rel="stylesheet" href="css/site.css" />
     <link rel="stylesheet" href="@Assets["GestorTeocratico.styles.css"]"/>
     <ImportMap/>
     <link rel="icon" type="image/png" href="favicon.png"/>
-    <HeadOutlet @rendermode="@InteractiveServer" />
+    <HeadOutlet @rendermode="PageRenderMode" />
 </head>
 
 <body>
-    @* <Routes/> *@
-    <Routes @rendermode="@InteractiveServer" />
+    <Routes @rendermode="PageRenderMode" />
     <script src="_framework/blazor.web.js"></script>
     <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Colors).Assembly.GetName().Version)"></script>
 </body>
@@ -30,6 +29,9 @@
 
     [Inject]
     private ThemeService ThemeService { get; set; }
+    
+    private IComponentRenderMode? PageRenderMode =>
+        HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
 
     protected override void OnInitialized()
     {
