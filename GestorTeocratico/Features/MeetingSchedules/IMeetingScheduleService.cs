@@ -1,4 +1,5 @@
 using GestorTeocratico.Entities;
+using GestorTeocratico.Shared.Enums;
 
 namespace GestorTeocratico.Features.MeetingSchedules;
 
@@ -12,6 +13,6 @@ public interface IMeetingScheduleService
     Task<IEnumerable<MeetingSchedule>> GetByDateRangeAsync(DateOnly startDate, DateOnly endDate);
     Task<IEnumerable<MeetingSchedule>> GetByMonthAsync(int month, int year);
     Task<IEnumerable<MeetingSchedule>> GetByWeekAsync(int weekOfYear, int year);
-    Task<IEnumerable<MeetingSchedule>> GetByMeetingTypeAsync(Guid meetingTypeId);
-    Task<MeetingSchedule?> GetByDateAndMeetingTypeAsync(DateOnly date, Guid meetingTypeId);
+    Task<IEnumerable<MeetingSchedule>> GetByMeetingTypeAsync(MeetingType meetingType);
+    Task<MeetingSchedule?> GetByDateAndMeetingTypeAsync(DateOnly date, MeetingType meetingType);
 }
