@@ -1,0 +1,221 @@
+@using GestorTeocratico.Entities
+@using GestorTeocratico.Features.Responsibilities
+@using GestorTeocratico.Features.ResponsibilityAssignments
+@using GestorTeocratico.Shared.Enums
+@using Radzen
+@using Radzen.Blazor
+@inject IResponsibilityService ResponsibilityService
+@inject IResponsibilityAssignmentService ResponsibilityAssignmentService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenCard Style="min-width:500px; max-width:700px;">
+    <div class="mb-4">
+        <h4 class="fw-bold text-primary">@ResponsibilityName</h4>
+        <div class="text-muted">
+            Semana @WeekOfYear, @Year - @(MeetingType == MeetingType.Midweek ? "Reunión entre semana" : "Reunión de fin de semana")
+        </div>
+    </div>
+
+    @if (_loading)
+    {
+        <div style="text-align: center; padding: 40px;">
+            <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Medium" />
+            <div style="margin-top: 16px;">Cargando...</div>
+        </div>
+    }
+    else
+    {
+        <RadzenTemplateForm TItem="AssignmentFormModel" Data="@_formModel" Submit="@HandleValidSubmit">
+            <div style="margin-bottom: 1.5rem;">
+                <RadzenLabel Text="Publicador Asignado Actualmente:" style="font-weight: bold; margin-bottom: 8px; display: block;"/>
+                @if (_currentAssignments.Any())
+                {
+                    <div style="margin-bottom: 16px;">
+                        @{
+                            var assignment = _currentAssignments.First();
+                        }
+                        <RadzenBadge Text="@GetPublisherFullName(assignment.Publisher)" 
+                                   BadgeStyle="BadgeStyle.Info" 
+                                   Style="margin: 4px 8px 4px 0;"/>
+                        <RadzenButton Icon="close" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Danger" 
+                                    Variant="Variant.Text" Click="@(() => RemoveAssignment(assignment))" 
+                                    Style="margin-left: 4px;"/>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-muted" style="margin-bottom: 16px;">No hay publicador asignado</div>
+                }
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <RadzenLabel Text="@(_currentAssignments.Any() ? "Cambiar Publicador:" : "Asignar Publicador:")" style="font-weight: bold; margin-bottom: 8px; display: block;"/>
+                <RadzenDropDown @bind-Value="@_selectedPublisherId" 
+                               Data="@_availablePublishers" 
+                               TextProperty="FullName" 
+                               ValueProperty="PublisherId"
+                               AllowClear="true"
+                               Placeholder="Selecciona un publicador..."
+                               Style="width: 100%;" />
+                
+                @if (_availablePublishers?.Any() != true)
+                {
+                    <div class="text-warning" style="margin-top: 8px; font-size: 0.9em;">
+                        <RadzenIcon Icon="warning" Style="margin-right: 4px;"/>
+                        No hay publicadores disponibles para esta responsabilidad
+                    </div>
+                }
+            </div>
+
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Click="@Cancel" />
+                <RadzenButton Text="Guardar" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" 
+                             Variant="Variant.Flat" Disabled="@_saving" Icon="@(_saving ? "" : "save")" />
+            </RadzenStack>
+        </RadzenTemplateForm>
+    }
+</RadzenCard>
+
+@code {
+    [Parameter] public Guid MeetingScheduleId { get; set; }
+    [Parameter] public Guid ResponsibilityId { get; set; }
+    [Parameter] public int WeekOfYear { get; set; }
+    [Parameter] public int Year { get; set; }
+    [Parameter] public MeetingType MeetingType { get; set; }
+    [Parameter] public string ResponsibilityName { get; set; } = string.Empty;
+
+    private bool _loading = true;
+    private bool _saving = false;
+    private AssignmentFormModel _formModel = new();
+    private IEnumerable<ResponsibilityAssignment> _currentAssignments = [];
+    private IEnumerable<PublisherOption> _availablePublishers = [];
+    private Guid? _selectedPublisherId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            _loading = true;
+            StateHasChanged();
+
+            // Load current assignments
+            _currentAssignments = await ResponsibilityAssignmentService.GetByMeetingScheduleIdAsync(MeetingScheduleId);
+            _currentAssignments = _currentAssignments.Where(ra => ra.ResponsibilityId == ResponsibilityId);
+
+            // Load available publishers for this responsibility
+            var availablePublishers = await ResponsibilityService.GetAvailablePublishersAsync();
+            
+            // Get publishers who can fulfill this responsibility
+            var responsibility = await ResponsibilityService.GetByIdAsync(ResponsibilityId);
+            var eligiblePublisherIds = responsibility?.PublisherResponsibilities?.Select(pr => pr.PublisherId) ?? [];
+            
+            _availablePublishers = availablePublishers
+                .Where(p => eligiblePublisherIds.Contains(p.PublisherId))
+                .Select(p => new PublisherOption
+                {
+                    PublisherId = p.PublisherId,
+                    FullName = GetPublisherFullName(p)
+                })
+                .OrderBy(p => p.FullName);
+        }
+        catch
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Error", "Error al cargar los datos");
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            _saving = true;
+            StateHasChanged();
+
+            // Remove current assignment if exists
+            if (_currentAssignments.Any())
+            {
+                var currentAssignment = _currentAssignments.First();
+                await ResponsibilityAssignmentService.RemoveAssignmentAsync(
+                    currentAssignment.MeetingScheduleId, 
+                    currentAssignment.ResponsibilityId, 
+                    currentAssignment.PublisherId);
+            }
+
+            // Add new assignment if selected
+            if (_selectedPublisherId.HasValue)
+            {
+                await ResponsibilityAssignmentService.AssignResponsibilityAsync(MeetingScheduleId, ResponsibilityId, _selectedPublisherId.Value);
+            }
+
+            NotificationService.Notify(NotificationSeverity.Success, "Éxito", "Asignación guardada correctamente");
+            DialogService.Close(true);
+        }
+        catch
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Error", "Error al guardar la asignación");
+        }
+        finally
+        {
+            _saving = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RemoveAssignment(ResponsibilityAssignment assignment)
+    {
+        try
+        {
+            var result = await ResponsibilityAssignmentService.RemoveAssignmentAsync(
+                assignment.MeetingScheduleId, 
+                assignment.ResponsibilityId, 
+                assignment.PublisherId);
+            
+            if (result)
+            {
+                await LoadDataAsync();
+                NotificationService.Notify(NotificationSeverity.Success, "Éxito", "Asignación eliminada");
+            }
+        }
+        catch
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Error", "Error al eliminar la asignación");
+        }
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+
+    private string GetPublisherFullName(Publisher publisher)
+    {
+        var fullName = publisher.FirstName;
+        if (!string.IsNullOrEmpty(publisher.LastName))
+            fullName += $" {publisher.LastName}";
+        if (!string.IsNullOrEmpty(publisher.MotherLastName))
+            fullName += $" {publisher.MotherLastName}";
+        return fullName;
+    }
+
+    private class AssignmentFormModel
+    {
+        public Guid? SelectedPublisherId { get; set; }
+    }
+
+    private class PublisherOption
+    {
+        public Guid PublisherId { get; set; }
+        public string FullName { get; set; } = string.Empty;
+    }
+}

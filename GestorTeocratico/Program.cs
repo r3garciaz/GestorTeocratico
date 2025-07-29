@@ -67,6 +67,9 @@ if (app.Environment.IsDevelopment())
     var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await dbContext.Database.MigrateAsync();
+    
+    // Seed sample data
+    await DataSeeder.SeedDataAsync(dbContext);
 }
 else
 {

@@ -150,6 +150,16 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
             if (meetingSchedule == null || publisher == null || responsibility == null)
                 return false;
 
+            // Remove any existing assignment for this meeting/responsibility (ensure only one publisher per responsibility per meeting)
+            var existingAssignments = await _context.ResponsibilityAssignments
+                .Where(ra => ra.MeetingScheduleId == meetingScheduleId && ra.ResponsibilityId == responsibilityId)
+                .ToListAsync();
+
+            if (existingAssignments.Any())
+            {
+                _context.ResponsibilityAssignments.RemoveRange(existingAssignments);
+            }
+
             var assignment = new ResponsibilityAssignment
             {
                 MeetingScheduleId = meetingScheduleId,
@@ -160,7 +170,8 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
                 Responsibility = responsibility
             };
 
-            await CreateAsync(assignment);
+            _context.ResponsibilityAssignments.Add(assignment);
+            await _context.SaveChangesAsync();
             return true;
         }
         catch

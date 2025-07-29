@@ -8,6 +8,6 @@ public class PublisherResponsibility
     public required Guid PublisherId { get; set; }
     public required Guid ResponsibilityId { get; set; }
     
-    public required Publisher Publisher { get; set; }
-    public required Responsibility Responsibility { get; set; }
+    public Publisher? Publisher { get; set; }
+    public Responsibility? Responsibility { get; set; }
 }

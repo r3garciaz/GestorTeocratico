@@ -15,14 +15,13 @@ public class ResponsibilityService : IResponsibilityService
         _logger = logger;
     }
 
-    public async Task<IQueryable<Responsibility>> GetAllAsync()
+    public async Task<IEnumerable<Responsibility>> GetAllAsync()
     {
-        var items = _context.Responsibilities
+        return await _context.Responsibilities
             .Include(r => r.Department)
             .Include(r => r.PublisherResponsibilities)
                 .ThenInclude(pr => pr.Publisher)
-            .AsQueryable();
-        return await Task.FromResult(items);
+            .ToListAsync();
     }
 
     public async Task<Responsibility?> GetByIdAsync(Guid id)
