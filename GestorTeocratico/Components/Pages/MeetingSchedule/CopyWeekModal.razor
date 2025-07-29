@@ -1,0 +1,212 @@
+@using GestorTeocratico.Features.MeetingSchedules
+@using System.Globalization
+@using Radzen
+@using Radzen.Blazor
+@inject IMeetingScheduleService MeetingScheduleService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenCard Style="min-width:400px; max-width:500px;">
+    <div class="mb-4">
+        <h4 class="fw-bold text-primary">Copiar Asignaciones de Semana</h4>
+        <div class="text-muted">Copia todas las asignaciones de una semana a otra</div>
+    </div>
+
+    @if (_copying)
+    {
+        <div style="text-align: center; padding: 40px;">
+            <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Medium" />
+            <div style="margin-top: 16px;">Copiando asignaciones...</div>
+        </div>
+    }
+    else
+    {
+        <RadzenTemplateForm TItem="CopyWeekFormModel" Data="@_formModel" Submit="@HandleValidSubmit">
+            <div style="margin-bottom: 1rem;">
+                <RadzenLabel Text="Semana Origen:" style="font-weight: bold; margin-bottom: 8px; display: block;"/>
+                <RadzenRow>
+                    <RadzenColumn Size="6">
+                        <RadzenLabel Text="Año:" />
+                        <RadzenNumeric @bind-Value="@_formModel.SourceYear" Min="2020" Max="2030" Style="width: 100%;"/>
+                    </RadzenColumn>
+                    <RadzenColumn Size="6">
+                        <RadzenLabel Text="Semana:" />
+                        <RadzenNumeric @bind-Value="@_formModel.SourceWeek" Min="1" Max="53" Style="width: 100%;"/>
+                    </RadzenColumn>
+                </RadzenRow>
+                @if (_formModel.SourceYear > 0 && _formModel.SourceWeek > 0)
+                {
+                    <div class="text-muted" style="margin-top: 4px; font-size: 0.9em;">
+                        @GetWeekDateRange(_formModel.SourceWeek, _formModel.SourceYear)
+                    </div>
+                }
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <RadzenLabel Text="Semana Destino:" style="font-weight: bold; margin-bottom: 8px; display: block;"/>
+                <RadzenRow>
+                    <RadzenColumn Size="6">
+                        <RadzenLabel Text="Año:" />
+                        <RadzenNumeric @bind-Value="@_formModel.TargetYear" Min="2020" Max="2030" Style="width: 100%;"/>
+                    </RadzenColumn>
+                    <RadzenColumn Size="6">
+                        <RadzenLabel Text="Semana:" />
+                        <RadzenNumeric @bind-Value="@_formModel.TargetWeek" Min="1" Max="53" Style="width: 100%;"/>
+                    </RadzenColumn>
+                </RadzenRow>
+                @if (_formModel.TargetYear > 0 && _formModel.TargetWeek > 0)
+                {
+                    <div class="text-muted" style="margin-top: 4px; font-size: 0.9em;">
+                        @GetWeekDateRange(_formModel.TargetWeek, _formModel.TargetYear)
+                    </div>
+                }
+            </div>
+
+            @if (_validationMessage != null)
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" Size="AlertSize.Small" 
+                           Shade="Shade.Lighter" Visible="true" Style="margin-bottom: 1rem;">
+                    @_validationMessage
+                </RadzenAlert>
+            }
+
+            <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" Size="AlertSize.Small" 
+                       Shade="Shade.Lighter" Visible="true" Style="margin-bottom: 1rem;">
+                <RadzenIcon Icon="info" Style="margin-right: 8px;"/>
+                Esta acción reemplazará todas las asignaciones existentes en la semana destino.
+            </RadzenAlert>
+
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Click="@Cancel" />
+                <RadzenButton Text="Copiar" ButtonType="ButtonType.Submit" ButtonStyle="ButtonStyle.Primary" 
+                             Variant="Variant.Flat" Disabled="@(!IsFormValid())" Icon="content_copy" />
+            </RadzenStack>
+        </RadzenTemplateForm>
+    }
+</RadzenCard>
+
+@code {
+    private bool _copying = false;
+    private CopyWeekFormModel _formModel = new();
+    private string? _validationMessage = null;
+
+    protected override void OnInitialized()
+    {
+        // Initialize with current week as source
+        var now = DateTime.Now;
+        _formModel.SourceYear = now.Year;
+        _formModel.SourceWeek = ISOWeek.GetWeekOfYear(now);
+        _formModel.TargetYear = now.Year;
+        _formModel.TargetWeek = ISOWeek.GetWeekOfYear(now) + 1;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (!ValidateForm())
+            return;
+
+        try
+        {
+            _copying = true;
+            StateHasChanged();
+
+            var success = await MeetingScheduleService.CopyAssignmentsToWeekAsync(
+                _formModel.SourceWeek, 
+                _formModel.SourceYear, 
+                _formModel.TargetWeek, 
+                _formModel.TargetYear);
+
+            if (success)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Éxito", "Asignaciones copiadas correctamente");
+                DialogService.Close(true);
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Error", "No se pudieron copiar las asignaciones");
+            }
+        }
+        catch
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Error", "Error al copiar las asignaciones");
+        }
+        finally
+        {
+            _copying = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool ValidateForm()
+    {
+        _validationMessage = null;
+
+        if (_formModel.SourceYear == _formModel.TargetYear && _formModel.SourceWeek == _formModel.TargetWeek)
+        {
+            _validationMessage = "La semana origen y destino no pueden ser la misma";
+            return false;
+        }
+
+        if (_formModel.SourceYear < 2020 || _formModel.SourceYear > 2030)
+        {
+            _validationMessage = "El año origen debe estar entre 2020 y 2030";
+            return false;
+        }
+
+        if (_formModel.TargetYear < 2020 || _formModel.TargetYear > 2030)
+        {
+            _validationMessage = "El año destino debe estar entre 2020 y 2030";
+            return false;
+        }
+
+        if (_formModel.SourceWeek < 1 || _formModel.SourceWeek > 53)
+        {
+            _validationMessage = "La semana origen debe estar entre 1 y 53";
+            return false;
+        }
+
+        if (_formModel.TargetWeek < 1 || _formModel.TargetWeek > 53)
+        {
+            _validationMessage = "La semana destino debe estar entre 1 y 53";
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool IsFormValid()
+    {
+        return _formModel.SourceYear > 0 && 
+               _formModel.SourceWeek > 0 && 
+               _formModel.TargetYear > 0 && 
+               _formModel.TargetWeek > 0 &&
+               !(_formModel.SourceYear == _formModel.TargetYear && _formModel.SourceWeek == _formModel.TargetWeek);
+    }
+
+    private void Cancel()
+    {
+        DialogService.Close(false);
+    }
+
+    private string GetWeekDateRange(int week, int year)
+    {
+        try
+        {
+            var monday = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
+            var sunday = monday.AddDays(6);
+            return $"{monday:dd/MM} - {sunday:dd/MM/yyyy}";
+        }
+        catch
+        {
+            return "Fecha inválida";
+        }
+    }
+
+    private class CopyWeekFormModel
+    {
+        public int SourceYear { get; set; }
+        public int SourceWeek { get; set; }
+        public int TargetYear { get; set; }
+        public int TargetWeek { get; set; }
+    }
+}

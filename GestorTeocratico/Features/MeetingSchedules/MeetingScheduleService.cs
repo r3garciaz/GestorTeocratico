@@ -2,6 +2,7 @@ using GestorTeocratico.Data;
 using GestorTeocratico.Entities;
 using GestorTeocratico.Shared.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace GestorTeocratico.Features.MeetingSchedules;
 
@@ -126,5 +127,96 @@ public class MeetingScheduleService : IMeetingScheduleService
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Responsibility)
             .FirstOrDefaultAsync();
+    }
+
+    public async Task<IEnumerable<MeetingSchedule>> GetOrCreateWeekSchedulesAsync(int weekOfYear, int year, Guid? congregationId = null)
+    {
+        var existingSchedules = await GetByWeekAsync(weekOfYear, year);
+        
+        if (existingSchedules.Any())
+            return existingSchedules;
+
+        // Create both midweek and weekend meetings for the week
+        var midweekSchedule = await GetOrCreateMeetingScheduleAsync(weekOfYear, year, MeetingType.Midweek, congregationId);
+        var weekendSchedule = await GetOrCreateMeetingScheduleAsync(weekOfYear, year, MeetingType.Weekend, congregationId);
+
+        return new[] { midweekSchedule, weekendSchedule };
+    }
+
+    public async Task<MeetingSchedule> GetOrCreateMeetingScheduleAsync(int weekOfYear, int year, MeetingType meetingType, Guid? congregationId = null)
+    {
+        // Calculate the Monday of the given week
+        var mondayOfWeek = ISOWeek.ToDateTime(year, weekOfYear, DayOfWeek.Monday);
+        var dateOnly = DateOnly.FromDateTime(mondayOfWeek);
+
+        // Try to find existing schedule
+        var existingSchedule = await _context.MeetingSchedules
+            .Include(ms => ms.ResponsibilityAssignments)
+                .ThenInclude(ra => ra.Publisher)
+            .Include(ms => ms.ResponsibilityAssignments)
+                .ThenInclude(ra => ra.Responsibility)
+            .FirstOrDefaultAsync(ms => ms.WeekOfYear == weekOfYear && 
+                               ms.Year == year && 
+                               ms.MeetingType == meetingType);
+
+        if (existingSchedule != null)
+            return existingSchedule;
+
+        // Create new schedule
+        var newSchedule = new MeetingSchedule
+        {
+            Date = dateOnly,
+            MeetingType = meetingType,
+            Month = dateOnly.Month,
+            Year = year,
+            WeekOfYear = weekOfYear
+        };
+
+        return await CreateAsync(newSchedule);
+    }
+
+    public async Task<bool> CopyAssignmentsToWeekAsync(int sourceWeek, int sourceYear, int targetWeek, int targetYear)
+    {
+        try
+        {
+            var sourceSchedules = await GetByWeekAsync(sourceWeek, sourceYear);
+            var targetSchedules = await GetOrCreateWeekSchedulesAsync(targetWeek, targetYear);
+
+            foreach (var sourceSchedule in sourceSchedules)
+            {
+                var targetSchedule = targetSchedules.FirstOrDefault(ts => ts.MeetingType == sourceSchedule.MeetingType);
+                if (targetSchedule == null) continue;
+
+                // Clear existing assignments in target week
+                var existingAssignments = await _context.ResponsibilityAssignments
+                    .Where(ra => ra.MeetingScheduleId == targetSchedule.MeetingScheduleId)
+                    .ToListAsync();
+                
+                _context.ResponsibilityAssignments.RemoveRange(existingAssignments);
+
+                // Copy assignments from source
+                foreach (var sourceAssignment in sourceSchedule.ResponsibilityAssignments)
+                {
+                    var newAssignment = new ResponsibilityAssignment
+                    {
+                        MeetingScheduleId = targetSchedule.MeetingScheduleId,
+                        ResponsibilityId = sourceAssignment.ResponsibilityId,
+                        PublisherId = sourceAssignment.PublisherId,
+                        MeetingSchedule = targetSchedule,
+                        Responsibility = sourceAssignment.Responsibility,
+                        Publisher = sourceAssignment.Publisher
+                    };
+
+                    _context.ResponsibilityAssignments.Add(newAssignment);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
