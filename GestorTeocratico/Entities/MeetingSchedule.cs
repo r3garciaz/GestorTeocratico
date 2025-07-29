@@ -11,20 +11,15 @@ public class MeetingSchedule
     {
         Month = Date.Month;
         Year = Date.Year;
-        WeekOfYear = new GregorianCalendar()
-            .GetWeekOfYear(Date.ToDateTime(TimeOnly.MinValue),
-                CalendarWeekRule.FirstFullWeek,
-                DayOfWeek.Monday);
-
+        WeekOfYear = ISOWeek.GetWeekOfYear(Date.ToDateTime(new TimeOnly()));
     }
 
     public Guid MeetingScheduleId { get; set; } = Guid.CreateVersion7();
-    public required Guid MeetingTypeId { get; set; }
-    public required DateOnly Date { get; set; }
-    public required int Month { get; set; }
-    public required int Year { get; set; }
-    public required int WeekOfYear { get; set; }
-
-    public required MeetingType MeetingType { get; set; }
+    public DateOnly Date { get; set; }
+    public int Month { get; set; }
+    public int Year { get; set; }
+    public int WeekOfYear { get; set; }
+    public Shared.Enums.MeetingType MeetingType { get; set; }
+    
     public ICollection<ResponsibilityAssignment> ResponsibilityAssignments { get; set; } = [];
 }

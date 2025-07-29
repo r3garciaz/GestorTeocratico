@@ -1,6 +1,6 @@
 using GestorTeocratico.Data;
 using GestorTeocratico.Entities;
-using GestorTeocratico.Features.MeetingTypes;
+using GestorTeocratico.Shared.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestorTeocratico.Features.MeetingSchedules;
@@ -8,18 +8,15 @@ namespace GestorTeocratico.Features.MeetingSchedules;
 public class MeetingScheduleService : IMeetingScheduleService
 {
     private readonly ApplicationDbContext _context;
-    private readonly IMeetingTypeService _meetingTypeService;
 
-    public MeetingScheduleService(ApplicationDbContext context, IMeetingTypeService meetingTypeService)
+    public MeetingScheduleService(ApplicationDbContext context)
     {
         _context = context;
-        _meetingTypeService = meetingTypeService;
     }
 
     public async Task<IEnumerable<MeetingSchedule>> GetAllAsync()
     {
         return await _context.MeetingSchedules
-            .Include(ms => ms.MeetingType)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
             .Include(ms => ms.ResponsibilityAssignments)
@@ -31,7 +28,6 @@ public class MeetingScheduleService : IMeetingScheduleService
     public async Task<MeetingSchedule?> GetByIdAsync(Guid id)
     {
         return await _context.MeetingSchedules
-            .Include(ms => ms.MeetingType)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
             .Include(ms => ms.ResponsibilityAssignments)
@@ -41,11 +37,6 @@ public class MeetingScheduleService : IMeetingScheduleService
 
     public async Task<MeetingSchedule> CreateAsync(MeetingSchedule meetingSchedule)
     {
-        // Verificar que el MeetingType existe
-        var meetingType = await _meetingTypeService.GetByIdAsync(meetingSchedule.MeetingTypeId);
-        if (meetingType == null)
-            throw new ArgumentException("Meeting type not found", nameof(meetingSchedule.MeetingTypeId));
-
         _context.MeetingSchedules.Add(meetingSchedule);
         await _context.SaveChangesAsync();
         return meetingSchedule;
@@ -57,12 +48,7 @@ public class MeetingScheduleService : IMeetingScheduleService
         if (existingSchedule == null)
             return null;
 
-        // Verificar que el MeetingType existe
-        var meetingType = await _meetingTypeService.GetByIdAsync(meetingSchedule.MeetingTypeId);
-        if (meetingType == null)
-            throw new ArgumentException("Meeting type not found", nameof(meetingSchedule.MeetingTypeId));
-
-        existingSchedule.MeetingTypeId = meetingSchedule.MeetingTypeId;
+        existingSchedule.MeetingType = meetingSchedule.MeetingType;
         existingSchedule.Date = meetingSchedule.Date;
         existingSchedule.Month = meetingSchedule.Month;
         existingSchedule.Year = meetingSchedule.Year;
@@ -87,7 +73,6 @@ public class MeetingScheduleService : IMeetingScheduleService
     {
         return await _context.MeetingSchedules
             .Where(ms => ms.Date >= startDate && ms.Date <= endDate)
-            .Include(ms => ms.MeetingType)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
             .Include(ms => ms.ResponsibilityAssignments)
@@ -100,7 +85,6 @@ public class MeetingScheduleService : IMeetingScheduleService
     {
         return await _context.MeetingSchedules
             .Where(ms => ms.Month == month && ms.Year == year)
-            .Include(ms => ms.MeetingType)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
             .Include(ms => ms.ResponsibilityAssignments)
@@ -113,7 +97,6 @@ public class MeetingScheduleService : IMeetingScheduleService
     {
         return await _context.MeetingSchedules
             .Where(ms => ms.WeekOfYear == weekOfYear && ms.Year == year)
-            .Include(ms => ms.MeetingType)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
             .Include(ms => ms.ResponsibilityAssignments)
@@ -122,11 +105,10 @@ public class MeetingScheduleService : IMeetingScheduleService
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<MeetingSchedule>> GetByMeetingTypeAsync(Guid meetingTypeId)
+    public async Task<IEnumerable<MeetingSchedule>> GetByMeetingTypeAsync(MeetingType meetingType)
     {
         return await _context.MeetingSchedules
-            .Where(ms => ms.MeetingTypeId == meetingTypeId)
-            .Include(ms => ms.MeetingType)
+            .Where(ms => ms.MeetingType == meetingType)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
             .Include(ms => ms.ResponsibilityAssignments)
@@ -135,11 +117,10 @@ public class MeetingScheduleService : IMeetingScheduleService
             .ToListAsync();
     }
 
-    public async Task<MeetingSchedule?> GetByDateAndMeetingTypeAsync(DateOnly date, Guid meetingTypeId)
+    public async Task<MeetingSchedule?> GetByDateAndMeetingTypeAsync(DateOnly date, MeetingType meetingType)
     {
         return await _context.MeetingSchedules
-            .Where(ms => ms.Date == date && ms.MeetingTypeId == meetingTypeId)
-            .Include(ms => ms.MeetingType)
+            .Where(ms => ms.Date == date && ms.MeetingType == meetingType)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
             .Include(ms => ms.ResponsibilityAssignments)

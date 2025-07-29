@@ -12,7 +12,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Congregation> Congregations { get; set; }
     public DbSet<Department> Departments { get; set; }
     public DbSet<MeetingSchedule> MeetingSchedules { get; set; }
-    public DbSet<MeetingType> MeetingTypes { get; set; }
     public DbSet<Publisher> Publishers { get; set; }
     public DbSet<PublisherResponsibility> PublisherResponsibilities { get; set; }
     public DbSet<Responsibility> Responsibilities { get; set; }
@@ -76,18 +75,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(ms => ms.Month).IsRequired();
             entity.Property(ms => ms.Year).IsRequired();
             entity.Property(ms => ms.WeekOfYear).IsRequired();
-            entity.Property(ms => ms.MeetingTypeId).IsRequired();
+            entity.Property(ms => ms.MeetingType).IsRequired().HasConversion<string>();
             
             entity.HasMany(m => m.ResponsibilityAssignments)
                 .WithOne(ra => ra.MeetingSchedule)
                 .HasForeignKey(ra => ra.MeetingScheduleId)
                 .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        modelBuilder.Entity<MeetingType>(entity =>
-        {
-            entity.Property(mt => mt.Name).HasMaxLength(250).IsRequired();
-            entity.Property(mt => mt.Description).HasMaxLength(500);
         });
 
         modelBuilder.Entity<Publisher>(entity =>
