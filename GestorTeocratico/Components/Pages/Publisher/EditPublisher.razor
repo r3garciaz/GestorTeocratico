@@ -1,27 +1,25 @@
-@page "/edit-publisher"
-
 @using GestorTeocratico.Entities
 @using GestorTeocratico.Shared.Enums
 @inject DialogService DialogService
 @inject GestorTeocratico.Features.Publishers.IPublisherService PublisherService
 
-<PageTitle>Edit Publisher</PageTitle>
+<PageTitle>Editar Publicador</PageTitle>
 
 <RadzenColumn SizeMD=12>
-    <RadzenAlert Shade="Shade.Lighter" Variant="Variant.Flat" Size="AlertSize.Small" AlertStyle="AlertStyle.Danger" Visible="@_errorVisible">Cannot save Publisher</RadzenAlert>
+    <RadzenAlert Shade="Shade.Lighter" Variant="Variant.Flat" Size="AlertSize.Small" AlertStyle="AlertStyle.Danger" Visible="@_errorVisible">No se puede guardar el publicador</RadzenAlert>
     <RadzenTemplateForm TItem="Publisher" Data="@(_publisher)" Visible="@(_publisher != null)" Submit="@HandleValidSubmit">
         <RadzenRow style="margin-bottom: 1rem">
             <RadzenColumn SizeMD="3">
-                <RadzenLabel Text="First Name" Component="FirstName" style="width: 100%" />
+                <RadzenLabel Text="Nombre" Component="FirstName" style="width: 100%" />
             </RadzenColumn>
             <RadzenColumn SizeMD="9">
                 <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_publisher.FirstName)" Name="FirstName" />
-                <RadzenRequiredValidator Component="FirstName" Text="First Name is required" />
+                <RadzenRequiredValidator Component="FirstName" Text="El nombre es obligatorio" />
             </RadzenColumn>
         </RadzenRow>
         <RadzenRow style="margin-bottom: 1rem">
             <RadzenColumn SizeMD="3">
-                <RadzenLabel Text="Last Name" Component="LastName" style="width: 100%" />
+                <RadzenLabel Text="Apellido" Component="LastName" style="width: 100%" />
             </RadzenColumn>
             <RadzenColumn SizeMD="9">
                 <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_publisher.LastName)" Name="LastName" />
@@ -29,7 +27,7 @@
         </RadzenRow>
         <RadzenRow style="margin-bottom: 1rem">
             <RadzenColumn SizeMD="3">
-                <RadzenLabel Text="Mother Last Name" Component="MotherLastName" style="width: 100%" />
+                <RadzenLabel Text="Apellido Materno" Component="MotherLastName" style="width: 100%" />
             </RadzenColumn>
             <RadzenColumn SizeMD="9">
                 <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_publisher.MotherLastName)" Name="MotherLastName" />
@@ -37,7 +35,7 @@
         </RadzenRow>
         <RadzenRow style="margin-bottom: 1rem">
             <RadzenColumn SizeMD="3">
-                <RadzenLabel Text="Phone" Component="Phone" style="width: 100%" />
+                <RadzenLabel Text="Teléfono" Component="Phone" style="width: 100%" />
             </RadzenColumn>
             <RadzenColumn SizeMD="9">
                 <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_publisher.Phone)" Name="Phone" />
@@ -45,7 +43,7 @@
         </RadzenRow>
         <RadzenRow style="margin-bottom: 1rem">
             <RadzenColumn SizeMD="3">
-                <RadzenLabel Text="Email" Component="Email" style="width: 100%" />
+                <RadzenLabel Text="Correo Electrónico" Component="Email" style="width: 100%" />
             </RadzenColumn>
             <RadzenColumn SizeMD="9">
                 <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_publisher.Email)" Name="Email" />
@@ -53,22 +51,22 @@
         </RadzenRow>
         <RadzenRow style="margin-bottom: 1rem">
             <RadzenColumn SizeMD="3">
-                <RadzenLabel Text="Gender" Component="Gender" style="width: 100%" />
+                <RadzenLabel Text="Género" Component="Gender" style="width: 100%" />
             </RadzenColumn>
             <RadzenColumn SizeMD="9">
                 <RadzenDropDown @bind-Value="@_publisher.Gender" 
                                 Data="@_genderOptions" 
                                 TextProperty="@nameof(GenderOption.DisplayName)" 
                                 ValueProperty="@nameof(GenderOption.Value)"
-                                Placeholder="Select gender"
+                                Placeholder="Selecciona género"
                                 Style="width: 100%; max-width: 400px;" 
                                 Name="Gender" />
-                <RadzenRequiredValidator Component="Gender" Text="Gender is required" />
+                <RadzenRequiredValidator Component="Gender" Text="El género es obligatorio" />
             </RadzenColumn>
         </RadzenRow>
         <RadzenRow style="margin-bottom: 1rem">
             <RadzenColumn SizeMD="3">
-                <RadzenLabel Text="Privilege" Component="Privilege" style="width: 100%" />
+                <RadzenLabel Text="Privilegio" Component="Privilege" style="width: 100%" />
             </RadzenColumn>
             <RadzenColumn SizeMD="9">
                 <RadzenDropDown @bind-Value="@_publisher.Privilege" 
@@ -76,14 +74,14 @@
                                 TextProperty="@nameof(PrivilegeOption.DisplayName)" 
                                 ValueProperty="@nameof(PrivilegeOption.Value)"
                                 AllowClear="true"
-                                Placeholder="Select privilege (optional)"
+                                Placeholder="Selecciona privilegio (opcional)"
                                 Style="width: 100%; max-width: 400px;" 
                                 Name="Privilege" />
             </RadzenColumn>
         </RadzenRow>
         <RadzenRow style="margin-bottom: 1rem">
             <RadzenColumn SizeMD="3">
-                <RadzenLabel Text="Responsibilities" Component="ResponsibilityIds" style="width: 100%"/>
+                <RadzenLabel Text="Responsabilidades" Component="ResponsibilityIds" style="width: 100%"/>
             </RadzenColumn>
             <RadzenColumn SizeMD="9">
                 <RadzenDropDown @bind-Value="@_selectedResponsibilityIds" 
@@ -92,14 +90,14 @@
                                 ValueProperty="@nameof(Responsibility.ResponsibilityId)"
                                 Multiple="true"
                                 AllowClear="true"
-                                Placeholder="Select responsibilities (optional)"
+                                Placeholder="Selecciona responsabilidades (opcional)"
                                 Style="width: 100%; max-width: 400px;" 
                                 Name="ResponsibilityIds" />
             </RadzenColumn>
         </RadzenRow>
         <RadzenRow style="margin-bottom: 1rem">
             <RadzenColumn SizeMD="3">
-                <RadzenLabel Text="Departments" Component="DepartmentIds" style="width: 100%"/>
+                <RadzenLabel Text="Departamentos" Component="DepartmentIds" style="width: 100%"/>
             </RadzenColumn>
             <RadzenColumn SizeMD="9">
                 <RadzenDropDown @bind-Value="@_selectedDepartmentIds" 
@@ -108,14 +106,14 @@
                                 ValueProperty="@nameof(Department.DepartmentId)"
                                 Multiple="true"
                                 AllowClear="true"
-                                Placeholder="Select departments (optional)"
+                                Placeholder="Selecciona departamentos (opcional)"
                                 Style="width: 100%; max-width: 400px;" 
                                 Name="DepartmentIds" />
             </RadzenColumn>
         </RadzenRow>
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
-            <RadzenButton ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" Icon="save" Text="Save" Variant="Variant.Flat" />
-            <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancel" Variant="Variant.Flat" Click="@CancelButtonClick" />
+            <RadzenButton ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" Icon="save" Text="Guardar" Variant="Variant.Flat" />
+            <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancelar" Variant="Variant.Flat" Click="@CancelButtonClick" />
         </RadzenStack>
     </RadzenTemplateForm>
 </RadzenColumn>
