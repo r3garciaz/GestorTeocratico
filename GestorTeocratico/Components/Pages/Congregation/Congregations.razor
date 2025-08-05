@@ -5,11 +5,11 @@
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
-<PageTitle>Congregations</PageTitle>
+<PageTitle>Congregaciones</PageTitle>
 <RadzenStack>
     <RadzenRow AlignItems="AlignItems.Center">
         <RadzenColumn Size="12" SizeMD="6">
-            <RadzenText Text="Congregations" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
+            <RadzenText Text="Congregaciones" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
         </RadzenColumn>
         <RadzenColumn Size="12" SizeMD="6">
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
@@ -25,14 +25,14 @@
                             PageSizeOptions=@(new int[] { 5, 10, 20, 30 })
                             Data="@(_congregations)" >
                 <Columns>
-                    <RadzenDataGridColumn Property="@nameof(Congregation.Name)" Title="Name"/>
+                    <RadzenDataGridColumn Property="@nameof(Congregation.Name)" Title="Nombre"/>
                     <RadzenDataGridColumn Property="@nameof(Congregation.MidweekMeetingDayEvenYear)" Title="Día Semana Año Par"/>
-                    <RadzenDataGridColumn Property="@nameof(Congregation.MidweekMeetingDayOddYear)" Title="Día Semana Año ImPar" />
-                    <RadzenDataGridColumn Property="@nameof(Congregation.WeekendMeetingDayEvenYear)" Title="Weekend Meeting Day Even Year" />
-                    <RadzenDataGridColumn Property="@nameof(Congregation.WeekendMeetingDayOddYear)" Title="Weekend Meeting Day Odd Year" />
+                    <RadzenDataGridColumn Property="@nameof(Congregation.MidweekMeetingDayOddYear)" Title="Día Semana Año Impar" />
+                    <RadzenDataGridColumn Property="@nameof(Congregation.WeekendMeetingDayEvenYear)" Title="Día Fin de Semana Año Par" />
+                    <RadzenDataGridColumn Property="@nameof(Congregation.WeekendMeetingDayOddYear)" Title="Día Fin de Semana Año Impar" />
                     <RadzenDataGridColumn Property="@nameof(Congregation.Address)" Title="Dirección" />
                     <RadzenDataGridColumn Property="@nameof(Congregation.City)" Title="Ciudad" />
-                    <RadzenDataGridColumn Filterable="false" Sortable="false" Width="150px" Title="Actions"
+                    <RadzenDataGridColumn Filterable="false" Sortable="false" Width="150px" Title="Acciones"
                                           TextAlign="TextAlign.Center">
                         <Template Context="congregation">
                             <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
@@ -61,13 +61,13 @@
 
     private async Task AddButtonClick(MouseEventArgs args)
     {
-        await DialogService.OpenAsync<CreateCongregation>("Create Congregation", null);
+        await DialogService.OpenAsync<CreateCongregation>("Agregar Congregación", null);
         await grid0.Reload();
     }
 
     private async Task EditRow(Congregation args)
     {
-        await DialogService.OpenAsync<EditCongregation>("Edit Congregation", new Dictionary<string, object> { { "CongregationId", args.CongregationId } });
+        await DialogService.OpenAsync<EditCongregation>("Editar Congregación", new Dictionary<string, object> { { "CongregationId", args.CongregationId } });
         await grid0.Reload();
     }
 
@@ -75,7 +75,7 @@
     {
         try
         {
-            if (await DialogService.Confirm("Are you sure you want to delete this record?") == true)
+            if (await DialogService.Confirm("¿Está seguro que desea eliminar este registro?", "Confirmar", new ConfirmOptions { OkButtonText = "Eliminar", CancelButtonText = "Cancelar" }) == true)
             {
                 var deleteResult = await CongregationService.DeleteAsync(congregation.CongregationId);
                 await grid0.Reload();
@@ -86,8 +86,8 @@
             NotificationService.Notify(new NotificationMessage
             {
                 Severity = NotificationSeverity.Error,
-                Summary = $"Error",
-                Detail = $"Unable to delete Congregation"
+                Summary = "Error",
+                Detail = "No se pudo eliminar la congregación"
             });
         }
     }

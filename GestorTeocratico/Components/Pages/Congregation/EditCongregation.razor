@@ -4,23 +4,23 @@
 @inject DialogService DialogService
 @inject GestorTeocratico.Features.Congregations.ICongregationService CongregationService
 
-<PageTitle>Edit Congregation</PageTitle>
+<PageTitle>Editar Congregación</PageTitle>
 
     <RadzenColumn SizeMD=12>
-        <RadzenAlert Shade="Shade.Lighter" Variant="Variant.Flat" Size="AlertSize.Small" AlertStyle="AlertStyle.Danger" Visible="@errorVisible">Cannot save Congregation</RadzenAlert>
+        <RadzenAlert Shade="Shade.Lighter" Variant="Variant.Flat" Size="AlertSize.Small" AlertStyle="AlertStyle.Danger" Visible="@errorVisible">No se puede guardar la congregación</RadzenAlert>
         <RadzenTemplateForm TItem="Congregation" Data="@(congregation)" Visible="@(congregation != null)" Submit="@HandleValidSubmit">
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
-                    <RadzenLabel Text="Name" Component="Name" style="width: 100%" />
+                    <RadzenLabel Text="Nombre" Component="Name" style="width: 100%" />
                 </RadzenColumn>
                 <RadzenColumn SizeMD="9">
                     <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(congregation.Name)" Name="Name" />
-                    <RadzenRequiredValidator Component="Name" Text="Name is required" />
+                    <RadzenRequiredValidator Component="Name" Text="El nombre es obligatorio" />
                 </RadzenColumn>
             </RadzenRow>
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
-                    <RadzenLabel Text="Midweek Meeting Day Even Year" Component="MidweekMeetingDayEvenYear" style="width: 100%" />
+                    <RadzenLabel Text="Día Semana Año Par" Component="MidweekMeetingDayEvenYear" style="width: 100%" />
                 </RadzenColumn>
                 <RadzenColumn SizeMD="9">
                     <RadzenDropDown @bind-Value="@congregation.MidweekMeetingDayEvenYear" Data="@daysOfWeek" Style="width: 100%; max-width: 400px;" Name="MidweekMeetingDayEvenYear" />
@@ -28,7 +28,7 @@
             </RadzenRow>
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
-                    <RadzenLabel Text="Midweek Meeting Day Odd Year" Component="MidweekMeetingDayOddYear" style="width: 100%" />
+                    <RadzenLabel Text="Día Semana Año Impar" Component="MidweekMeetingDayOddYear" style="width: 100%" />
                 </RadzenColumn>
                 <RadzenColumn SizeMD="9">
                     <RadzenColumn SizeMD="9">
@@ -38,7 +38,7 @@
             </RadzenRow>
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
-                    <RadzenLabel Text="Weekend Meeting Day Even Year" Component="WeekendMeetingDayEvenYear" style="width: 100%" />
+                    <RadzenLabel Text="Día Fin de Semana Año Par" Component="WeekendMeetingDayEvenYear" style="width: 100%" />
                 </RadzenColumn>
                 <RadzenColumn SizeMD="9">
                     <RadzenDropDown @bind-Value="@congregation.WeekendMeetingDayEvenYear" Data="@daysOfWeek" Style="width: 100%; max-width: 400px;" Name="WeekendMeetingDayEvenYear" />
@@ -46,7 +46,7 @@
             </RadzenRow>
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
-                    <RadzenLabel Text="Weekend Meeting Day Odd Year" Component="WeekendMeetingDayOddYear" style="width: 100%" />
+                    <RadzenLabel Text="Día Fin de Semana Año Impar" Component="WeekendMeetingDayOddYear" style="width: 100%" />
                 </RadzenColumn>
                 <RadzenColumn SizeMD="9">
                     <RadzenDropDown @bind-Value="@congregation.WeekendMeetingDayOddYear" Data="@daysOfWeek" Style="width: 100%; max-width: 400px;" Name="WeekendMeetingDayOddYear" />
@@ -54,7 +54,7 @@
             </RadzenRow>
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
-                    <RadzenLabel Text="Address" Component="Address" style="width: 100%" />
+                    <RadzenLabel Text="Dirección" Component="Address" style="width: 100%" />
                 </RadzenColumn>
                 <RadzenColumn SizeMD="9">
                     <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(congregation.Address)" Name="Address" />
@@ -62,15 +62,15 @@
             </RadzenRow>
             <RadzenRow style="margin-bottom: 1rem">
                 <RadzenColumn SizeMD="3">
-                    <RadzenLabel Text="City" Component="City" style="width: 100%" />
+                    <RadzenLabel Text="Ciudad" Component="City" style="width: 100%" />
                 </RadzenColumn>
                 <RadzenColumn SizeMD="9">
                     <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(congregation.City)" Name="City" />
                 </RadzenColumn>
             </RadzenRow>
           <RadzenStack  Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                    <RadzenButton ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" Icon="save" Text="Save" Variant="Variant.Flat" />
-                    <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancel" Variant="Variant.Flat" Click="@CancelButtonClick"  />
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" Icon="save" Text="Guardar" Variant="Variant.Flat" />
+                    <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancelar" Variant="Variant.Flat" Click="@CancelButtonClick"  />
           </RadzenStack>
         </RadzenTemplateForm>
     </RadzenColumn>
