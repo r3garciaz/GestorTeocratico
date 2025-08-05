@@ -1,15 +1,16 @@
 @page "/meeting-schedules"
+
 @using GestorTeocratico.Entities
 @using GestorTeocratico.Features.MeetingSchedules
 @using GestorTeocratico.Features.Responsibilities
-@using GestorTeocratico.Features.ResponsibilityAssignments
+@using GestorTeocratico.Features.PdfExport
 @using GestorTeocratico.Shared.Enums
 @using System.Globalization
-@using Radzen
-@using Radzen.Blazor
+
+@inject NavigationManager NavigationManager
 @inject IMeetingScheduleService MeetingScheduleService
 @inject IResponsibilityService ResponsibilityService
-@inject IResponsibilityAssignmentService ResponsibilityAssignmentService
+@inject IPdfExportService PdfExportService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
@@ -24,6 +25,10 @@
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
                 <RadzenDropDown @bind-Value="@_selectedViewType" Data="@_viewTypes" TextProperty="Text" ValueProperty="Value" 
                                Change="@(args => OnViewTypeChanged())" Style="width: 150px;"/>
+                @if (_selectedViewType == "month" && _meetingSchedules?.Any() == true)
+                {
+                    <RadzenButton Icon="picture_as_pdf" Text="Exportar PDF" Click="@ExportToPdf" ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Disabled="@_exportingPdf"/>
+                }
                 <RadzenButton Icon="content_copy" Text="Copiar Semana" Click="@ShowCopyWeekDialog" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Flat"/>
                 <RadzenButton Icon="refresh" Text="Actualizar" Click="@LoadDataAsync" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat"/>
             </RadzenStack>
@@ -134,18 +139,19 @@
     private IEnumerable<MeetingSchedule> _meetingSchedules = [];
     private IEnumerable<Responsibility> _responsibilities = [];
     private List<WeeklyScheduleDto> _weeklySchedules = [];
+    private bool _exportingPdf;
     
     private string _selectedViewType = "month";
     private int _selectedYear = DateTime.Now.Year;
     private int _selectedMonth = DateTime.Now.Month;
     private int _selectedWeek = ISOWeek.GetWeekOfYear(DateTime.Now);
     
-    private readonly List<ViewTypeOption> _viewTypes = new()
-    {
-        new ViewTypeOption { Text = "Por Semana", Value = "week" },
-        new ViewTypeOption { Text = "Por Mes", Value = "month" },
-        new ViewTypeOption { Text = "Lista Completa", Value = "list" }
-    };
+    private readonly List<ViewTypeOption> _viewTypes =
+    [
+        new() { Text = "Por Semana", Value = "week" },
+        new() { Text = "Por Mes", Value = "month" },
+        new() { Text = "Lista Completa", Value = "list" }
+    ];
 
     protected override async Task OnInitializedAsync()
     {
@@ -346,6 +352,36 @@
         catch
         {
             NotificationService.Notify(NotificationSeverity.Error, "Error", "Error al crear los horarios");
+        }
+    }
+
+    private void ShowInCompanion()
+    {
+        NotificationService.Notify(NotificationSeverity.Info, "Companion", $"{_selectedMonth}{_selectedYear}");
+        PdfExportService.ShowInCompanionAsync(_selectedMonth, _selectedYear);
+    }
+
+    private void ExportToPdf()
+    {
+        try
+        {
+            _exportingPdf = true;
+            StateHasChanged();
+            
+            // Navegar directamente al endpoint para descargar el PDF
+            var url = $"/api/meeting-schedules/monthly-schedule/{_selectedYear}/{_selectedMonth}";
+            NavigationManager.NavigateTo(url, forceLoad: true);
+
+            NotificationService.Notify(NotificationSeverity.Success, "Éxito", "PDF generado correctamente");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Error", $"Error al generar PDF: {ex.Message}");
+        }
+        finally
+        {
+            _exportingPdf = false;
+            StateHasChanged();
         }
     }
 

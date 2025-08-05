@@ -4,14 +4,21 @@ using Microsoft.EntityFrameworkCore;
 using GestorTeocratico.Components;
 using GestorTeocratico.Components.Account;
 using GestorTeocratico.Data;
+using QuestPDF.Infrastructure;
 using GestorTeocratico.Features.Congregations;
 using GestorTeocratico.Features.Departments;
 using GestorTeocratico.Features.Publishers;
 using GestorTeocratico.Features.Responsibilities;
 using GestorTeocratico.Features.PublisherResponsibilities;
 using GestorTeocratico.Features.MeetingSchedules;
+using GestorTeocratico.Features.MeetingSchedules.Endpoints;
 using GestorTeocratico.Features.ResponsibilityAssignments;
 using Radzen;
+
+using GestorTeocratico.Features.PdfExport;
+
+// Configure QuestPDF
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +64,15 @@ builder.Services.AddScoped<IResponsibilityService, ResponsibilityService>();
 builder.Services.AddScoped<IPublisherResponsibilityService, PublisherResponsibilityService>();
 builder.Services.AddScoped<IMeetingScheduleService, MeetingScheduleService>();
 builder.Services.AddScoped<IResponsibilityAssignmentService, ResponsibilityAssignmentService>();
+builder.Services.AddScoped<IPdfExportService, PdfExportService>();
+
+// Configure HttpClient for PDF downloads
+builder.Services.AddHttpClient<PdfExportHttpClient>(client =>
+{
+    // This will be the base URL for the same application
+    // In production, you might want to configure this differently
+    client.BaseAddress = new Uri("https://localhost:7095"); // Adjust as needed
+});
 
 var app = builder.Build();
 
@@ -89,5 +105,8 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+app.MapGroup("/api")
+    .MapMeetingSchedulesEndpoints();
 
 app.Run();

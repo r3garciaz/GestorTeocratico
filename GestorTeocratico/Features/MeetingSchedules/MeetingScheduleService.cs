@@ -90,6 +90,7 @@ public class MeetingScheduleService : IMeetingScheduleService
                 .ThenInclude(ra => ra.Publisher)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Responsibility)
+            .ThenInclude(r => r.Department)
             .OrderBy(ms => ms.Date)
             .ToListAsync();
     }
