@@ -13,11 +13,12 @@ public static class DataSeeder
     // Department IDs
     private static readonly Guid AudioVisualDeptId = new("01934567-89AB-7DEF-8012-3456789ABCD1");
     private static readonly Guid AccommodationDeptId = new("01934567-89AB-7DEF-8012-3456789ABCD2");
-    private static readonly Guid PlatformDeptId = new("01934567-89AB-7DEF-8012-3456789ABCD3");
-    private static readonly Guid MicrophoneDeptId = new("01934567-89AB-7DEF-8012-3456789ABCD4");
+    private static readonly Guid PublicationId = new("01934567-89AB-7DEF-8012-3456789ABCD3");
+    // private static readonly Guid MicrophoneDeptId = new("01934567-89AB-7DEF-8012-3456789ABCD4");
     
     // Responsibility IDs
-    private static readonly Guid[] ResponsibilityIds = {
+    private static readonly Guid[] ResponsibilityIds =
+    [
         new("01934567-89AB-7DEF-8012-3456789ABC10"),
         new("01934567-89AB-7DEF-8012-3456789ABC11"),
         new("01934567-89AB-7DEF-8012-3456789ABC12"),
@@ -26,11 +27,12 @@ public static class DataSeeder
         new("01934567-89AB-7DEF-8012-3456789ABC15"),
         new("01934567-89AB-7DEF-8012-3456789ABC16"),
         new("01934567-89AB-7DEF-8012-3456789ABC17"),
-        new("01934567-89AB-7DEF-8012-3456789ABC18")
-    };
+        // new("01934567-89AB-7DEF-8012-3456789ABC18")
+    ];
 
     // Publisher IDs - starting from 100
-    private static readonly Guid[] PublisherIds = {
+    private static readonly Guid[] PublisherIds =
+    [
         new("01934567-89AB-7DEF-8012-34567890A100"),
         new("01934567-89AB-7DEF-8012-34567890A101"),
         new("01934567-89AB-7DEF-8012-34567890A102"),
@@ -62,7 +64,7 @@ public static class DataSeeder
         new("01934567-89AB-7DEF-8012-34567890A128"),
         new("01934567-89AB-7DEF-8012-34567890A129"),
         new("01934567-89AB-7DEF-8012-34567890A130")
-    };
+    ];
 
     public static async Task SeedDataAsync(ApplicationDbContext context)
     {
@@ -80,13 +82,13 @@ public static class DataSeeder
         var congregation = new Congregation
         {
             CongregationId = CongregationId,
-            Name = "Cerro Moreno",
+            Name = "Nombre Congregación",
             MidweekMeetingDayEvenYear = DayOfWeek.Wednesday,
-            MidweekMeetingDayOddYear = DayOfWeek.Wednesday,
-            WeekendMeetingDayEvenYear = DayOfWeek.Sunday,
+            MidweekMeetingDayOddYear = DayOfWeek.Thursday,
+            WeekendMeetingDayEvenYear = DayOfWeek.Saturday,
             WeekendMeetingDayOddYear = DayOfWeek.Sunday,
-            Address = "Calle Principal 123",
-            City = "Cerro Moreno"
+            Address = "Dirección Salón del Reino",
+            City = "Ciudad"
         };
         
         context.Congregations.Add(congregation);
@@ -95,17 +97,20 @@ public static class DataSeeder
 
     private static async Task SeedDepartmentsAsync(ApplicationDbContext context)
     {
+        var departmentsInDatabase = await context.Departments.ToDictionaryAsync(d => d.DepartmentId);
+        
         var departments = new[]
         {
-            new { Id = AudioVisualDeptId, Name = "Audio/Visual" },
+            new { Id = AudioVisualDeptId, Name = "Audio y Video" },
             new { Id = AccommodationDeptId, Name = "Acomodación" },
-            new { Id = PlatformDeptId, Name = "Plataforma" },
-            new { Id = MicrophoneDeptId, Name = "Micrófonos" }
+            new { Id = PublicationId, Name = "Publicaciones"}
+            // new { Id = PlatformDeptId, Name = "Plataforma" },
+            // new { Id = MicrophoneDeptId, Name = "Micrófonos" }
         };
 
         foreach (var dept in departments)
         {
-            if (await context.Departments.FindAsync(dept.Id) == null)
+            if (!departmentsInDatabase.ContainsKey(dept.Id))
             {
                 context.Departments.Add(new Department 
                 { 
@@ -120,22 +125,23 @@ public static class DataSeeder
 
     private static async Task SeedResponsibilitiesAsync(ApplicationDbContext context)
     {
+        var responsibilitiesInDatabase = await context.Responsibilities.ToDictionaryAsync(r => r.ResponsibilityId);
+        
         var responsibilities = new[]
         {
-            new { Id = ResponsibilityIds[0], Name = "Encargado Audio/Video", DepartmentId = AudioVisualDeptId },
-            new { Id = ResponsibilityIds[1], Name = "Audio", DepartmentId = AudioVisualDeptId },
-            new { Id = ResponsibilityIds[2], Name = "Video", DepartmentId = AudioVisualDeptId },
-            new { Id = ResponsibilityIds[3], Name = "Encargado Acomodación", DepartmentId = AccommodationDeptId },
-            new { Id = ResponsibilityIds[4], Name = "Acomodadores Zoom", DepartmentId = AccommodationDeptId },
-            new { Id = ResponsibilityIds[5], Name = "Acomodadores Auditorio", DepartmentId = AccommodationDeptId },
-            new { Id = ResponsibilityIds[6], Name = "Acomodadores Entrada", DepartmentId = AccommodationDeptId },
-            new { Id = ResponsibilityIds[7], Name = "Plataforma", DepartmentId = PlatformDeptId },
-            new { Id = ResponsibilityIds[8], Name = "Micrófonos", DepartmentId = MicrophoneDeptId }
+            new { Id = ResponsibilityIds[0], Name = "Audio", DepartmentId = AudioVisualDeptId },
+            new { Id = ResponsibilityIds[1], Name = "Video", DepartmentId = AudioVisualDeptId },
+            new { Id = ResponsibilityIds[2], Name = "Micrófono 1", DepartmentId = AudioVisualDeptId },
+            new { Id = ResponsibilityIds[3], Name = "Micrófono 2", DepartmentId = AudioVisualDeptId },
+            new { Id = ResponsibilityIds[4], Name = "Plataforma", DepartmentId = AudioVisualDeptId },
+            new { Id = ResponsibilityIds[5], Name = "Acomodador Zoom", DepartmentId = AccommodationDeptId },
+            new { Id = ResponsibilityIds[6], Name = "Acomodador Entrada", DepartmentId = AccommodationDeptId },
+            new { Id = ResponsibilityIds[7], Name = "Acomodador Auditorio", DepartmentId = AccommodationDeptId }
         };
 
         foreach (var resp in responsibilities)
         {
-            if (await context.Responsibilities.FindAsync(resp.Id) == null)
+            if (!responsibilitiesInDatabase.ContainsKey(resp.Id))
             {
                 context.Responsibilities.Add(new Responsibility 
                 { 
@@ -151,6 +157,7 @@ public static class DataSeeder
 
     private static async Task SeedPublishersAsync(ApplicationDbContext context)
     {
+        var publishersInDatabase = await context.Publishers.ToDictionaryAsync(p => p.PublisherId);
         var publisherData = new[]
         {
             new { Id = PublisherIds[0], FirstName = "Ivan", LastName = "Valenzuela" },
@@ -188,7 +195,7 @@ public static class DataSeeder
 
         foreach (var pubData in publisherData)
         {
-            if (await context.Publishers.FindAsync(pubData.Id) == null)
+            if (!publishersInDatabase.ContainsKey(pubData.Id))
             {
                 context.Publishers.Add(new Publisher 
                 { 
@@ -207,7 +214,7 @@ public static class DataSeeder
     {
         // Check if relationships already exist
         if (await context.PublisherResponsibilities.AnyAsync()) return;
-
+    
         var publisherResponsibilities = new List<PublisherResponsibility>();
         
         // Assign all publishers to all responsibilities for testing
