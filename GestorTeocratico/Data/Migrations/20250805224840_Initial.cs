@@ -63,7 +63,7 @@ namespace GestorTeocratico.Data.Migrations
                     WeekendMeetingDayOddYear = table.Column<string>(type: "text", nullable: false),
                     Address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     City = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -71,18 +71,19 @@ namespace GestorTeocratico.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MeetingTypes",
+                name: "MeetingSchedules",
                 columns: table => new
                 {
-                    MeetingTypeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
-                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false)
+                    MeetingScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Date = table.Column<DateOnly>(type: "date", nullable: false),
+                    Month = table.Column<int>(type: "integer", nullable: false),
+                    Year = table.Column<int>(type: "integer", nullable: false),
+                    WeekOfYear = table.Column<int>(type: "integer", nullable: false),
+                    MeetingType = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MeetingTypes", x => x.MeetingTypeId);
+                    table.PrimaryKey("PK_MeetingSchedules", x => x.MeetingScheduleId);
                 });
 
             migrationBuilder.CreateTable(
@@ -95,9 +96,9 @@ namespace GestorTeocratico.Data.Migrations
                     MotherLastName = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true),
                     Phone = table.Column<string>(type: "character varying(15)", maxLength: 15, nullable: true),
                     Email = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true),
-                    Gender = table.Column<int>(type: "integer", nullable: false),
-                    Privilege = table.Column<int>(type: "integer", nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false)
+                    Gender = table.Column<string>(type: "text", nullable: false),
+                    Privilege = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -211,35 +212,13 @@ namespace GestorTeocratico.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MeetingSchedules",
-                columns: table => new
-                {
-                    MeetingScheduleId = table.Column<Guid>(type: "uuid", nullable: false),
-                    MeetingTypeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Date = table.Column<DateOnly>(type: "date", nullable: false),
-                    Month = table.Column<int>(type: "integer", nullable: false),
-                    Year = table.Column<int>(type: "integer", nullable: false),
-                    WeekOfYear = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_MeetingSchedules", x => x.MeetingScheduleId);
-                    table.ForeignKey(
-                        name: "FK_MeetingSchedules_MeetingTypes_MeetingTypeId",
-                        column: x => x.MeetingTypeId,
-                        principalTable: "MeetingTypes",
-                        principalColumn: "MeetingTypeId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Departments",
                 columns: table => new
                 {
                     DepartmentId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    ResponsiblePublisherId = table.Column<Guid>(type: "uuid", nullable: true)
+                    ResponsiblePublisherId = table.Column<Guid>(type: "uuid", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -248,7 +227,8 @@ namespace GestorTeocratico.Data.Migrations
                         name: "FK_Departments_Publishers_ResponsiblePublisherId",
                         column: x => x.ResponsiblePublisherId,
                         principalTable: "Publishers",
-                        principalColumn: "PublisherId");
+                        principalColumn: "PublisherId",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -258,8 +238,8 @@ namespace GestorTeocratico.Data.Migrations
                     ResponsibilityId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    DepartmentId = table.Column<Guid>(type: "uuid", nullable: true)
+                    DepartmentId = table.Column<Guid>(type: "uuid", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -370,11 +350,6 @@ namespace GestorTeocratico.Data.Migrations
                 column: "ResponsiblePublisherId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MeetingSchedules_MeetingTypeId",
-                table: "MeetingSchedules",
-                column: "MeetingTypeId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_PublisherResponsibilities_ResponsibilityId",
                 table: "PublisherResponsibilities",
                 column: "ResponsibilityId");
@@ -433,9 +408,6 @@ namespace GestorTeocratico.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "Responsibilities");
-
-            migrationBuilder.DropTable(
-                name: "MeetingTypes");
 
             migrationBuilder.DropTable(
                 name: "Departments");

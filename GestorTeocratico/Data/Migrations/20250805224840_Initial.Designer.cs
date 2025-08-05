@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GestorTeocratico.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250729011200_RemoveMeetingTypeEntity")]
-    partial class RemoveMeetingTypeEntity
+    [Migration("20250805224840_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
