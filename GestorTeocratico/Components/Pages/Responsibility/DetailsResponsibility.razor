@@ -5,15 +5,15 @@
 
 <RadzenCard Style="min-width:400px; max-width:600px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); border-radius: 16px;">
     <div class="mb-4">
-        <h3 class="fw-bold text-primary" style="margin-bottom: 0.5rem;">Responsibility Details</h3>
+        <h3 class="fw-bold text-primary" style="margin-bottom: 0.5rem;">Detalles de la Responsabilidad</h3>
         <hr />
     </div>
     <RadzenFieldset Style="border:none; padding:0;">
         <div class="row gy-3">
-            <div class="col-5 text-secondary">Name:</div>
+            <div class="col-5 text-secondary">Nombre:</div>
             <div class="col-7 fw-semibold">@responsibility.Name</div>
             
-            <div class="col-5 text-secondary">Description:</div>
+            <div class="col-5 text-secondary">Descripción:</div>
             <div class="col-7">
                 @if (!string.IsNullOrEmpty(responsibility.Description))
                 {
@@ -25,7 +25,7 @@
                 }
             </div>
             
-            <div class="col-5 text-secondary">Department:</div>
+            <div class="col-5 text-secondary">Departamento:</div>
             <div class="col-7">
                 @if (responsibility.Department != null)
                 {
@@ -37,7 +37,7 @@
                 }
             </div>
             
-            <div class="col-5 text-secondary">Assigned Publishers:</div>
+            <div class="col-5 text-secondary">Publicadores Asignados:</div>
             <div class="col-7">
                 @if (responsibility.PublisherResponsibilities?.Any() == true)
                 {
@@ -60,13 +60,13 @@
                 }
                 else
                 {
-                    <span class="text-muted">Sin publishers asignados</span>
+                    <span class="text-muted">Sin publicadores asignados</span>
                 }
             </div>
         </div>
     </RadzenFieldset>
     <div class="d-flex justify-content-end mt-4">
-        <RadzenButton Text="Close" Icon="close" ButtonStyle="ButtonStyle.Secondary" Style="min-width: 120px;" Click="@Close" />
+        <RadzenButton Text="Cerrar" Icon="close" ButtonStyle="ButtonStyle.Secondary" Style="min-width: 120px;" Click="@Close" />
     </div>
 </RadzenCard>
 
