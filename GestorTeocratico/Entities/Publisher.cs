@@ -9,12 +9,12 @@ namespace GestorTeocratico.Entities;
 public class Publisher : SoftDeleteEntity
 {
     public Guid PublisherId { get; set; } = Guid.CreateVersion7();
-    [MaxLength(250)] public required string FirstName { get; set; }
-    [MaxLength(250)] public string?LastName { get; set; }
+    [MaxLength(250)] public string FirstName { get; set; }
+    [MaxLength(250)] public string LastName { get; set; }
     [MaxLength(250)] public string? MotherLastName { get; set; }
     [DataType(DataType.PhoneNumber)] public string? Phone { get; set; }
     [DataType(DataType.EmailAddress)] public string? Email { get; set; }
-    public required Gender Gender { get; set; }
+    public Gender Gender { get; set; }
     public Privilege? Privilege { get; set; }
 
     public ICollection<Department> ResponsibleDepartments { get; set; } = [];

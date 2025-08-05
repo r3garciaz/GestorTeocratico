@@ -86,7 +86,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Publisher>(entity =>
         {
             entity.Property(p => p.FirstName).HasMaxLength(250).IsRequired();
-            entity.Property(p => p.LastName).HasMaxLength(250);
+            entity.Property(p => p.LastName).HasMaxLength(250).IsRequired();
             entity.Property(p => p.MotherLastName).HasMaxLength(250);
             entity.Property(p => p.Phone).HasMaxLength(15);
             entity.Property(p => p.Email).HasMaxLength(250);
