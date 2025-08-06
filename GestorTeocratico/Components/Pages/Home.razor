@@ -15,215 +15,345 @@
 <AuthorizeView>
     <Authorized>
         <div class="dashboard-container">
-            <!-- Header Section -->
-            <div class="dashboard-header mb-4">
-                <RadzenRow>
-                    <RadzenColumn Size="12">
-                        <RadzenCard Class="rz-p-4 header-card">
+            <!-- Modern Header with Breadcrumbs -->
+            <div class="dashboard-header">
+                <RadzenRow AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Class="rz-mb-4">
+                    <RadzenColumn Size="12" SizeMD="8">
+                        <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                            <RadzenText TextStyle="TextStyle.H4" Class="rz-mb-0 header-title">
+                                ¡Bienvenido de vuelta, @context.User.Identity?.Name!
+                            </RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body2" Class="header-subtitle">
+                                Aquí tienes un resumen de la actividad de tu congregación
+                            </RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4" Class="rz-text-align-right">
+                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" AlignItems="AlignItems.Center">
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                                @DateTime.Now.ToString("dddd, dd MMMM yyyy")
+                            </RadzenText>
+                            <RadzenButton Click="RefreshDashboard" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small">
+                                <RadzenIcon Icon="refresh" />
+                            </RadzenButton>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </div>
+
+            <!-- Enhanced Statistics Cards with Actions -->
+            <div class="stats-grid mb-5">
+                <RadzenRow Gap="1.5rem">
+                    <!-- Publishers Card -->
+                    <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+                        <RadzenCard Class="stat-card publishers-card" onclick="@(() => Navigation.NavigateTo("/publishers"))">
+                            <div class="stat-content">
+                                <div class="stat-header">
+                                    <RadzenIcon Icon="people" Class="stat-icon" />
+                                    <RadzenText TextStyle="TextStyle.Overline" Class="stat-label">PUBLICADORES</RadzenText>
+                                </div>
+                                <RadzenText TextStyle="TextStyle.H3" Class="stat-number">@_totalPublishers</RadzenText>
+                                <div class="stat-details">
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                                        @_activePublishers activos • @_elderCount ancianos
+                                    </RadzenText>
+                                </div>
+                                <div class="stat-action">
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="action-text">
+                                        <RadzenIcon Icon="arrow_forward" Style="font-size: 14px;" />
+                                        Gestionar
+                                    </RadzenText>
+                                </div>
+                            </div>
+                        </RadzenCard>
+                    </RadzenColumn>
+
+                    <!-- Departments Card -->
+                    <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+                        <RadzenCard Class="stat-card departments-card" onclick="@(() => Navigation.NavigateTo("/departments"))">
+                            <div class="stat-content">
+                                <div class="stat-header">
+                                    <RadzenIcon Icon="business" Class="stat-icon" />
+                                    <RadzenText TextStyle="TextStyle.Overline" Class="stat-label">DEPARTAMENTOS</RadzenText>
+                                </div>
+                                <RadzenText TextStyle="TextStyle.H3" Class="stat-number">@_totalDepartments</RadzenText>
+                                <div class="stat-details">
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                                        @_departmentsWithResponsible con responsable
+                                    </RadzenText>
+                                </div>
+                                <div class="stat-action">
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="action-text">
+                                        <RadzenIcon Icon="arrow_forward" Style="font-size: 14px;" />
+                                        Gestionar
+                                    </RadzenText>
+                                </div>
+                            </div>
+                        </RadzenCard>
+                    </RadzenColumn>
+
+                    <!-- Responsibilities Card -->
+                    <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+                        <RadzenCard Class="stat-card responsibilities-card" onclick="@(() => Navigation.NavigateTo("/responsibilities"))">
+                            <div class="stat-content">
+                                <div class="stat-header">
+                                    <RadzenIcon Icon="assignment" Class="stat-icon" />
+                                    <RadzenText TextStyle="TextStyle.Overline" Class="stat-label">RESPONSABILIDADES</RadzenText>
+                                </div>
+                                <RadzenText TextStyle="TextStyle.H3" Class="stat-number">@_totalResponsibilities</RadzenText>
+                                <div class="stat-details">
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                                        @_assignedResponsibilities asignadas
+                                    </RadzenText>
+                                </div>
+                                <div class="stat-action">
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="action-text">
+                                        <RadzenIcon Icon="arrow_forward" Style="font-size: 14px;" />
+                                        Gestionar
+                                    </RadzenText>
+                                </div>
+                            </div>
+                        </RadzenCard>
+                    </RadzenColumn>
+
+                    <!-- Meetings Card -->
+                    <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
+                        <RadzenCard Class="stat-card meetings-card" onclick="@(() => Navigation.NavigateTo("/meeting-schedules"))">
+                            <div class="stat-content">
+                                <div class="stat-header">
+                                    <RadzenIcon Icon="event" Class="stat-icon" />
+                                    <RadzenText TextStyle="TextStyle.Overline" Class="stat-label">REUNIONES</RadzenText>
+                                </div>
+                                <RadzenText TextStyle="TextStyle.H3" Class="stat-number">@_totalMeetings</RadzenText>
+                                <div class="stat-details">
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                                        @_upcomingMeetingsCount próximas
+                                    </RadzenText>
+                                </div>
+                                <div class="stat-action">
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="action-text">
+                                        <RadzenIcon Icon="arrow_forward" Style="font-size: 14px;" />
+                                        Programar
+                                    </RadzenText>
+                                </div>
+                            </div>
+                        </RadzenCard>
+                    </RadzenColumn>
+                </RadzenRow>
+            </div>
+
+            <!-- Main Content Area -->
+            <RadzenRow Gap="2rem">
+                <!-- Left Column - Upcoming Meetings -->
+                <RadzenColumn Size="12" SizeLG="8">
+                    <RadzenCard Class="content-card">
+                        <div class="card-header">
                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
                                 <div>
-                                    <RadzenText TextStyle="TextStyle.H3" Class="rz-mb-0 header-title">
-                                        <RadzenIcon Icon="dashboard" Class="rz-mr-2" />
-                                        Panel de Control
+                                    <RadzenText TextStyle="TextStyle.H6" Class="card-title">
+                                        <RadzenIcon Icon="schedule" Class="rz-mr-2" />
+                                        Próximas Reuniones
                                     </RadzenText>
-                                    <RadzenText TextStyle="TextStyle.Body1" Class="header-subtitle">
-                                        Bienvenido, @context.User.Identity?.Name
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                                        Reuniones programadas para las próximas semanas
                                     </RadzenText>
                                 </div>
-                                <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@($"Última actualización: {DateTime.Now:HH:mm}")" />
+                                <RadzenButton Click="@(() => Navigation.NavigateTo("/meeting-schedules"))" 
+                                            ButtonStyle="ButtonStyle.Light" 
+                                            Size="ButtonSize.Small">
+                                    <RadzenIcon Icon="add" Class="rz-mr-1" />
+                                    Nueva
+                                </RadzenButton>
                             </RadzenStack>
-                        </RadzenCard>
-                    </RadzenColumn>
-                </RadzenRow>
-            </div>
+                        </div>
 
-            <!-- Statistics Cards -->
-            <div class="statistics-section mb-4">
-                <RadzenRow Gap="1rem">
-                    <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
-                        <RadzenCard Class="stat-card stat-card-primary rz-p-3">
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-                                <RadzenIcon Icon="people" Style="font-size: 2.5rem; color: #2196F3;" />
-                                <div>
-                                    <RadzenText TextStyle="TextStyle.H4" Class="rz-mb-0">@_totalPublishers</RadzenText>
-                                    <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-secondary">Publicadores</RadzenText>
-                                </div>
-                            </RadzenStack>
-                        </RadzenCard>
-                    </RadzenColumn>
-                    
-                    <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
-                        <RadzenCard Class="stat-card stat-card-success rz-p-3">
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-                                <RadzenIcon Icon="business" Style="font-size: 2.5rem; color: #4CAF50;" />
-                                <div>
-                                    <RadzenText TextStyle="TextStyle.H4" Class="rz-mb-0">@_totalDepartments</RadzenText>
-                                    <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-secondary">Departamentos</RadzenText>
-                                </div>
-                            </RadzenStack>
-                        </RadzenCard>
-                    </RadzenColumn>
-                    
-                    <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
-                        <RadzenCard Class="stat-card stat-card-warning rz-p-3">
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-                                <RadzenIcon Icon="assignment" Style="font-size: 2.5rem; color: #FF9800;" />
-                                <div>
-                                    <RadzenText TextStyle="TextStyle.H4" Class="rz-mb-0">@_totalResponsibilities</RadzenText>
-                                    <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-secondary">Responsabilidades</RadzenText>
-                                </div>
-                            </RadzenStack>
-                        </RadzenCard>
-                    </RadzenColumn>
-                    
-                    <RadzenColumn Size="12" SizeMD="6" SizeLG="3">
-                        <RadzenCard Class="stat-card stat-card-info rz-p-3">
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-                                <RadzenIcon Icon="event" Style="font-size: 2.5rem; color: #00BCD4;" />
-                                <div>
-                                    <RadzenText TextStyle="TextStyle.H4" Class="rz-mb-0">@_totalMeetings</RadzenText>
-                                    <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-secondary">Reuniones</RadzenText>
-                                </div>
-                            </RadzenStack>
-                        </RadzenCard>
-                    </RadzenColumn>
-                </RadzenRow>
-            </div>
+                        @if (_upcomingMeetings?.Any() == true)
+                        {
+                            <div class="table-container">
+                                <RadzenDataGrid Data="@_upcomingMeetings.Take(6)" 
+                                              TItem="GestorTeocratico.Entities.MeetingSchedule" 
+                                              AllowSorting="false"
+                                              AllowPaging="false"
+                                              GridLines="DataGridGridLines.None"
+                                              Class="professional-grid">
+                                    <Columns>
+                                        <RadzenDataGridColumn TItem="GestorTeocratico.Entities.MeetingSchedule" Width="80px" Sortable="false">
+                                            <HeaderTemplate>
+                                                <RadzenText TextStyle="TextStyle.Caption" Class="column-header">FECHA</RadzenText>
+                                            </HeaderTemplate>
+                                            <Template Context="meetingScheduleContext">
+                                                <div class="date-cell">
+                                                    <div class="date-day">@meetingScheduleContext.Date.Day</div>
+                                                    <div class="date-month">@meetingScheduleContext.Date.ToString("MMM").ToUpper()</div>
+                                                </div>
+                                            </Template>
+                                        </RadzenDataGridColumn>
+                                        
+                                        <RadzenDataGridColumn TItem="GestorTeocratico.Entities.MeetingSchedule" Sortable="false">
+                                            <HeaderTemplate>
+                                                <RadzenText TextStyle="TextStyle.Caption" Class="column-header">REUNIÓN</RadzenText>
+                                            </HeaderTemplate>
+                                            <Template Context="meetingScheduleContext">
+                                                <div class="meeting-info">
+                                                    <RadzenText TextStyle="TextStyle.Body1" Class="meeting-type">
+                                                        @meetingScheduleContext.MeetingType
+                                                    </RadzenText>
+                                                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                                                        Semana @meetingScheduleContext.WeekOfYear
+                                                    </RadzenText>
+                                                </div>
+                                            </Template>
+                                        </RadzenDataGridColumn>
 
-            <!-- Quick Actions and Recent Activity -->
-            <RadzenRow Gap="1rem">
-                <!-- Quick Actions -->
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenCard Class="rz-p-4">
-                        <RadzenText TextStyle="TextStyle.H5" Class="rz-mb-3">
-                            <RadzenIcon Icon="bolt" Class="rz-mr-2" />
-                            Acciones Rápidas
-                        </RadzenText>
+                                        <RadzenDataGridColumn TItem="GestorTeocratico.Entities.MeetingSchedule" Width="120px" Sortable="false">
+                                            <HeaderTemplate>
+                                                <RadzenText TextStyle="TextStyle.Caption" Class="column-header">ASIGNACIONES</RadzenText>
+                                            </HeaderTemplate>
+                                            <Template Context="meetingScheduleContext">
+                                                <RadzenBadge BadgeStyle="BadgeStyle.Secondary" 
+                                                           Text="@($"{meetingScheduleContext.ResponsibilityAssignments.Count} asignadas")" 
+                                                           Class="assignment-badge" />
+                                            </Template>
+                                        </RadzenDataGridColumn>
+
+                                        <RadzenDataGridColumn TItem="GestorTeocratico.Entities.MeetingSchedule" Width="100px" Sortable="false">
+                                            <HeaderTemplate>
+                                                <RadzenText TextStyle="TextStyle.Caption" Class="column-header">ACCIONES</RadzenText>
+                                            </HeaderTemplate>
+                                            <Template Context="meetingScheduleContext">
+                                                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                                                    <RadzenButton Click="@(() => NavigateToEdit(meetingScheduleContext.MeetingScheduleId))" 
+                                                                ButtonStyle="ButtonStyle.Light" 
+                                                                Size="ButtonSize.ExtraSmall"
+                                                                Class="action-btn">
+                                                        <RadzenIcon Icon="edit" Style="font-size: 14px;" />
+                                                    </RadzenButton>
+                                                    <RadzenButton Click="@(() => ViewMeetingDetails(meetingScheduleContext.MeetingScheduleId))" 
+                                                                ButtonStyle="ButtonStyle.Light" 
+                                                                Size="ButtonSize.ExtraSmall"
+                                                                Class="action-btn">
+                                                        <RadzenIcon Icon="visibility" Style="font-size: 14px;" />
+                                                    </RadzenButton>
+                                                </RadzenStack>
+                                            </Template>
+                                        </RadzenDataGridColumn>
+                                    </Columns>
+                                </RadzenDataGrid>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="empty-state">
+                                <RadzenIcon Icon="event_note" Style="font-size: 3rem; color: #e0e0e0;" Class="rz-mb-3" />
+                                <RadzenText TextStyle="TextStyle.H6" Class="rz-color-secondary rz-mb-2">
+                                    No hay reuniones programadas
+                                </RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-secondary rz-mb-3">
+                                    Programa tu primera reunión para comenzar
+                                </RadzenText>
+                                <RadzenButton Click="@(() => Navigation.NavigateTo("/meeting-schedules"))" 
+                                            ButtonStyle="ButtonStyle.Primary">
+                                    Programar Reunión
+                                </RadzenButton>
+                            </div>
+                        }
+                    </RadzenCard>
+                </RadzenColumn>
+
+                <!-- Right Column - Quick Actions & Recent Activity -->
+                <RadzenColumn Size="12" SizeLG="4">
+                    <!-- Quick Actions -->
+                    <RadzenCard Class="content-card rz-mb-4">
+                        <div class="card-header">
+                            <RadzenText TextStyle="TextStyle.H6" Class="card-title">
+                                <RadzenIcon Icon="bolt" Class="rz-mr-2" />
+                                Acciones Rápidas
+                            </RadzenText>
+                        </div>
                         
-                        <RadzenStack Gap="0.5rem">
+                        <RadzenStack Gap="0.75rem">
                             <RadzenButton Click="@(() => Navigation.NavigateTo("/publishers"))" 
                                         ButtonStyle="ButtonStyle.Light" 
-                                        Size="ButtonSize.Medium" 
-                                        Class="action-button">
-                                <RadzenIcon Icon="person_add" Class="rz-mr-2" />
-                                Gestionar Publicadores
-                            </RadzenButton>
-                            
-                            <RadzenButton Click="@(() => Navigation.NavigateTo("/departments"))" 
-                                        ButtonStyle="ButtonStyle.Light" 
-                                        Size="ButtonSize.Medium" 
-                                        Class="action-button">
-                                <RadzenIcon Icon="business_center" Class="rz-mr-2" />
-                                Gestionar Departamentos
-                            </RadzenButton>
-                            
-                            <RadzenButton Click="@(() => Navigation.NavigateTo("/responsibilities"))" 
-                                        ButtonStyle="ButtonStyle.Light" 
-                                        Size="ButtonSize.Medium" 
-                                        Class="action-button">
-                                <RadzenIcon Icon="assignment_ind" Class="rz-mr-2" />
-                                Gestionar Responsabilidades
+                                        Class="quick-action-btn">
+                                <RadzenIcon Icon="person_add" Class="rz-mr-3" />
+                                <div class="action-content">
+                                    <div class="action-title">Nuevo Publicador</div>
+                                    <div class="action-desc">Agregar miembro a la congregación</div>
+                                </div>
                             </RadzenButton>
                             
                             <RadzenButton Click="@(() => Navigation.NavigateTo("/meeting-schedules"))" 
                                         ButtonStyle="ButtonStyle.Light" 
-                                        Size="ButtonSize.Medium" 
-                                        Class="action-button">
-                                <RadzenIcon Icon="calendar_today" Class="rz-mr-2" />
-                                Programar Reuniones
+                                        Class="quick-action-btn">
+                                <RadzenIcon Icon="calendar_today" Class="rz-mr-3" />
+                                <div class="action-content">
+                                    <div class="action-title">Programar Reunión</div>
+                                    <div class="action-desc">Crear nueva reunión y asignaciones</div>
+                                </div>
+                            </RadzenButton>
+                            
+                            <RadzenButton Click="@(() => Navigation.NavigateTo("/responsibilities"))" 
+                                        ButtonStyle="ButtonStyle.Light" 
+                                        Class="quick-action-btn">
+                                <RadzenIcon Icon="assignment_ind" Class="rz-mr-3" />
+                                <div class="action-content">
+                                    <div class="action-title">Asignar Responsabilidad</div>
+                                    <div class="action-desc">Gestionar tareas y asignaciones</div>
+                                </div>
                             </RadzenButton>
                         </RadzenStack>
                     </RadzenCard>
-                </RadzenColumn>
 
-                <!-- Recent Publishers -->
-                <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenCard Class="rz-p-4">
-                        <RadzenText TextStyle="TextStyle.H5" Class="rz-mb-3">
-                            <RadzenIcon Icon="recent_actors" Class="rz-mr-2" />
-                            Publicadores Recientes
-                        </RadzenText>
+                    <!-- Recent Publishers -->
+                    <RadzenCard Class="content-card">
+                        <div class="card-header">
+                            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                <RadzenText TextStyle="TextStyle.H6" Class="card-title">
+                                    <RadzenIcon Icon="recent_actors" Class="rz-mr-2" />
+                                    Publicadores Recientes
+                                </RadzenText>
+                                <RadzenButton Click="@(() => Navigation.NavigateTo("/publishers"))" 
+                                            ButtonStyle="ButtonStyle.Light" 
+                                            Size="ButtonSize.ExtraSmall">
+                                    Ver todos
+                                </RadzenButton>
+                            </RadzenStack>
+                        </div>
                         
                         @if (_recentPublishers?.Any() == true)
                         {
-                            <RadzenDataList Data="@_recentPublishers.Take(5)" TItem="GestorTeocratico.Entities.Publisher">
-                                <Template Context="publisherContext">
-                                    <RadzenCard Class="rz-mb-2 rz-p-2 publisher-item">
-                                        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                            <div>
-                                                <RadzenText TextStyle="TextStyle.Body1" Class="rz-mb-0">
-                                                    @publisherContext.FirstName @publisherContext.LastName
+                            <RadzenStack Gap="0.75rem">
+                                @foreach (var publisher in _recentPublishers.Take(4))
+                                {
+                                    <div class="publisher-item">
+                                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                                            <div class="publisher-avatar">
+                                                <RadzenIcon Icon="person" />
+                                            </div>
+                                            <div class="publisher-info">
+                                                <RadzenText TextStyle="TextStyle.Body1" Class="publisher-name">
+                                                    @publisher.FirstName @publisher.LastName
                                                 </RadzenText>
                                                 <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
-                                                    @(publisherContext.Privilege?.ToString() ?? "Publicador")
+                                                    @(publisher.Privilege?.ToString() ?? "Publicador") • @publisher.ResponsibleDepartments.Count dept.
                                                 </RadzenText>
                                             </div>
-                                            <RadzenBadge BadgeStyle="BadgeStyle.Light" Text="@publisherContext.ResponsibleDepartments.Count.ToString()" />
                                         </RadzenStack>
-                                    </RadzenCard>
-                                </Template>
-                            </RadzenDataList>
-                            
-                            <RadzenButton Click="@(() => Navigation.NavigateTo("/publishers"))" 
-                                        ButtonStyle="ButtonStyle.Secondary" 
-                                        Size="ButtonSize.Small" 
-                                        Class="rz-mt-2">
-                                Ver todos
-                            </RadzenButton>
+                                    </div>
+                                }
+                            </RadzenStack>
                         }
                         else
                         {
-                            <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="false">
-                                No hay publicadores registrados aún.
-                            </RadzenAlert>
+                            <div class="empty-state-small">
+                                <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-secondary">
+                                    No hay publicadores registrados aún
+                                </RadzenText>
+                            </div>
                         }
                     </RadzenCard>
                 </RadzenColumn>
             </RadzenRow>
-
-            <!-- Upcoming Meetings Section -->
-            <div class="mt-4">
-                <RadzenCard Class="rz-p-4">
-                    <RadzenText TextStyle="TextStyle.H5" Class="rz-mb-3">
-                        <RadzenIcon Icon="schedule" Class="rz-mr-2" />
-                        Próximas Reuniones
-                    </RadzenText>
-                    
-                    @if (_upcomingMeetings?.Any() == true)
-                    {
-                        <RadzenDataGrid Data="@_upcomingMeetings.Take(5)" TItem="GestorTeocratico.Entities.MeetingSchedule" Class="rz-mt-3">
-                            <Columns>
-                                <RadzenDataGridColumn TItem="GestorTeocratico.Entities.MeetingSchedule" Property="Date" Title="Fecha" Width="120px">
-                                    <Template Context="meetingScheduleContext">
-                                        @meetingScheduleContext.Date.ToString("dd/MM/yyyy")
-                                    </Template>
-                                </RadzenDataGridColumn>
-                                <RadzenDataGridColumn TItem="GestorTeocratico.Entities.MeetingSchedule" Property="MeetingType" Title="Tipo" />
-                                <RadzenDataGridColumn TItem="GestorTeocratico.Entities.MeetingSchedule" Title="Asignaciones" Width="100px">
-                                    <Template Context="meetingScheduleContext">
-                                        <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="@meetingScheduleContext.ResponsibilityAssignments.Count.ToString()" />
-                                    </Template>
-                                </RadzenDataGridColumn>
-                                <RadzenDataGridColumn TItem="GestorTeocratico.Entities.MeetingSchedule" Title="Acciones" Width="100px">
-                                    <Template Context="meetingScheduleContext">
-                                        <RadzenButton Click="@(() => NavigateToEdit(meetingScheduleContext.MeetingScheduleId))" 
-                                                    ButtonStyle="ButtonStyle.Light" 
-                                                    Size="ButtonSize.Small">
-                                            <RadzenIcon Icon="edit" />
-                                        </RadzenButton>
-                                    </Template>
-                                </RadzenDataGridColumn>
-                            </Columns>
-                        </RadzenDataGrid>
-                    }
-                    else
-                    {
-                        <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="false">
-                            No hay reuniones programadas próximamente.
-                        </RadzenAlert>
-                    }
-                </RadzenCard>
-            </div>
         </div>
     </Authorized>
     <NotAuthorized>
@@ -246,55 +376,323 @@
 
 <style>
     .dashboard-container {
-        padding: 1rem;
+        padding: 2rem;
+        background: #fafafa;
+        min-height: 100vh;
     }
 
-    .stat-card {
-        transition: transform 0.2s ease-in-out;
-        border-left: 4px solid #2196F3;
-    }
-
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .stat-card-primary {
-        border-left-color: #2196F3;
-    }
-
-    .stat-card-success {
-        border-left-color: #4CAF50;
-    }
-
-    .stat-card-warning {
-        border-left-color: #FF9800;
-    }
-
-    .stat-card-info {
-        border-left-color: #00BCD4;
-    }
-
-    .header-card {
-        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-        color: white;
-    }
-
-    .header-title {
-        color: white !important;
+    /* Header Styles */
+    .dashboard-header .header-title {
+        color: #1a1a1a;
+        font-weight: 600;
     }
 
     .header-subtitle {
-        color: rgba(255,255,255,0.8) !important;
+        color: #666;
+        font-weight: 400;
     }
 
-    .action-button {
-        width: 100% !important;
-        justify-content: flex-start !important;
+    /* Stats Grid */
+    .stats-grid {
+        margin: 2rem 0;
     }
 
+    .stat-card {
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+        height: 140px;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .stat-content {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 1.5rem;
+    }
+
+    .stat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-icon {
+        font-size: 1.5rem;
+        opacity: 0.8;
+    }
+
+    .stat-label {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        opacity: 0.7;
+    }
+
+    .stat-number {
+        font-weight: 700;
+        margin: 0.5rem 0;
+        line-height: 1;
+    }
+
+    .stat-details {
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+    }
+
+    .stat-action {
+        margin-top: auto;
+    }
+
+    .action-text {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: #666;
+        font-weight: 500;
+    }
+
+    /* Card Color Variations */
+    .publishers-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .publishers-card .stat-label,
+    .publishers-card .stat-details,
+    .publishers-card .action-text {
+        color: rgba(255,255,255,0.9);
+    }
+
+    .departments-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+    }
+
+    .departments-card .stat-label,
+    .departments-card .stat-details,
+    .departments-card .action-text {
+        color: rgba(255,255,255,0.9);
+    }
+
+    .responsibilities-card {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+    }
+
+    .responsibilities-card .stat-label,
+    .responsibilities-card .stat-details,
+    .responsibilities-card .action-text {
+        color: rgba(255,255,255,0.9);
+    }
+
+    .meetings-card {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        color: white;
+    }
+
+    .meetings-card .stat-label,
+    .meetings-card .stat-details,
+    .meetings-card .action-text {
+        color: rgba(255,255,255,0.9);
+    }
+
+    /* Content Cards */
+    .content-card {
+        border: none;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .card-header {
+        padding: 1.5rem 1.5rem 1rem 1.5rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .card-title {
+        color: #1a1a1a;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    /* Professional Grid */
+    .table-container {
+        padding: 0;
+    }
+
+    .professional-grid {
+        border: none;
+    }
+
+    .professional-grid .rz-datatable-data td {
+        border-bottom: 1px solid #f5f5f5;
+        padding: 1rem 1.5rem;
+        vertical-align: middle;
+    }
+
+    .professional-grid .rz-datatable-data tr:hover {
+        background-color: #fafafa;
+    }
+
+    .column-header {
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .date-cell {
+        text-align: center;
+    }
+
+    .date-day {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #1a1a1a;
+    }
+
+    .date-month {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #666;
+        letter-spacing: 0.5px;
+    }
+
+    .meeting-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .meeting-type {
+        font-weight: 500;
+        color: #1a1a1a;
+    }
+
+    .assignment-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+    }
+
+    .action-btn {
+        border: 1px solid #e0e0e0;
+        background: white;
+    }
+
+    .action-btn:hover {
+        background: #f5f5f5;
+        border-color: #d0d0d0;
+    }
+
+    /* Quick Actions */
+    .quick-action-btn {
+        width: 100%;
+        padding: 1rem;
+        text-align: left;
+        border: 1px solid #e8e8e8;
+        background: white;
+        height: auto;
+        min-height: 60px;
+    }
+
+    .quick-action-btn:hover {
+        background: #f8f9fa;
+        border-color: #d0d0d0;
+        transform: translateY(-1px);
+    }
+
+    .action-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .action-title {
+        font-weight: 500;
+        color: #1a1a1a;
+        font-size: 0.875rem;
+    }
+
+    .action-desc {
+        color: #666;
+        font-size: 0.75rem;
+    }
+
+    /* Publisher Items */
     .publisher-item {
-        background-color: #f5f5f5;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 1px solid #f0f0f0;
+        background: white;
+        transition: all 0.2s ease;
+    }
+
+    .publisher-item:hover {
+        background: #fafafa;
+        border-color: #e0e0e0;
+    }
+
+    .publisher-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+    }
+
+    .publisher-info {
+        flex: 1;
+    }
+
+    .publisher-name {
+        font-weight: 500;
+        color: #1a1a1a;
+        margin: 0;
+    }
+
+    /* Empty States */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+    }
+
+    .empty-state-small {
+        text-align: center;
+        padding: 2rem 1rem;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .dashboard-container {
+            padding: 1rem;
+        }
+        
+        .stats-grid {
+            margin: 1rem 0;
+        }
+        
+        .stat-card {
+            height: 120px;
+        }
+        
+        .stat-content {
+            padding: 1rem;
+        }
     }
 </style>
 
@@ -303,6 +701,12 @@
     private int _totalDepartments;
     private int _totalResponsibilities;
     private int _totalMeetings;
+    private int _activePublishers;
+    private int _elderCount;
+    private int _departmentsWithResponsible;
+    private int _assignedResponsibilities;
+    private int _upcomingMeetingsCount;
+    
     private IEnumerable<GestorTeocratico.Entities.Publisher>? _recentPublishers;
     private IEnumerable<GestorTeocratico.Entities.MeetingSchedule>? _upcomingMeetings;
 
@@ -320,42 +724,73 @@
     {
         try
         {
-            // Load Publishers
-            var publishersQuery = await PublisherService.GetAllAsync();
-            var publishers = publishersQuery.ToList();
-            _totalPublishers = publishers.Count;
-            _recentPublishers = publishers.OrderByDescending(p => p.PublisherId).Take(5);
-
-            // Load Departments  
-            var departmentsQuery = await DepartmentService.GetAllAsync();
-            var departments = departmentsQuery.ToList();
-            _totalDepartments = departments.Count;
-
-            // Load Responsibilities
-            var responsibilitiesQuery = await ResponsibilityService.GetAllAsync();
-            var responsibilities = responsibilitiesQuery.ToList();
-            _totalResponsibilities = responsibilities.Count;
-
-            // Load Meeting Schedules
-            var meetingsQuery = await MeetingScheduleService.GetAllAsync();
-            var meetings = meetingsQuery.ToList();
-            _totalMeetings = meetings.Count;
-            _upcomingMeetings = meetings
-                .Where(m => m.Date >= DateOnly.FromDateTime(DateTime.Today))
-                .OrderBy(m => m.Date)
-                .Take(5);
-
+            await LoadPublishersData();
+            await LoadDepartmentsData();
+            await LoadResponsibilitiesData();
+            await LoadMeetingsData();
+            
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            // Log error - in a real app you might want to show a notification
             Console.WriteLine($"Error loading dashboard data: {ex.Message}");
         }
+    }
+
+    private async Task LoadPublishersData()
+    {
+        var publishersQuery = await PublisherService.GetAllAsync();
+        var publishers = publishersQuery.ToList();
+        
+        _totalPublishers = publishers.Count;
+        _activePublishers = publishers.Count; // Assuming all are active since no IsActive property
+        _elderCount = publishers.Count(p => p.Privilege == GestorTeocratico.Shared.Enums.Privilege.Elder);
+        _recentPublishers = publishers.OrderByDescending(p => p.PublisherId).Take(5);
+    }
+
+    private async Task LoadDepartmentsData()
+    {
+        var departmentsQuery = await DepartmentService.GetAllAsync();
+        var departments = departmentsQuery.ToList();
+        
+        _totalDepartments = departments.Count;
+        _departmentsWithResponsible = departments.Count(d => d.ResponsiblePublisherId != null);
+    }
+
+    private async Task LoadResponsibilitiesData()
+    {
+        var responsibilitiesQuery = await ResponsibilityService.GetAllAsync();
+        var responsibilities = responsibilitiesQuery.ToList();
+        
+        _totalResponsibilities = responsibilities.Count;
+        _assignedResponsibilities = responsibilities.Count; // Could be enhanced with actual assignment logic
+    }
+
+    private async Task LoadMeetingsData()
+    {
+        var meetingsQuery = await MeetingScheduleService.GetAllAsync();
+        var meetings = meetingsQuery.ToList();
+        
+        _totalMeetings = meetings.Count;
+        _upcomingMeetings = meetings
+            .Where(m => m.Date >= DateOnly.FromDateTime(DateTime.Today))
+            .OrderBy(m => m.Date)
+            .Take(6);
+        _upcomingMeetingsCount = _upcomingMeetings.Count();
+    }
+
+    private async Task RefreshDashboard()
+    {
+        await LoadDashboardData();
     }
 
     private void NavigateToEdit(Guid meetingId)
     {
         Navigation.NavigateTo($"/meetingschedule/edit/{meetingId}");
+    }
+
+    private void ViewMeetingDetails(Guid meetingId)
+    {
+        Navigation.NavigateTo($"/meetingschedule/details/{meetingId}");
     }
 }
