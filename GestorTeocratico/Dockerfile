@@ -7,17 +7,17 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["PreachingProgram/PreachingProgram.csproj", "PreachingProgram/"]
-RUN dotnet restore "PreachingProgram/PreachingProgram.csproj"
+COPY ["GestorTeocratico/GestorTeocratico.csproj", "GestorTeocratico/"]
+RUN dotnet restore "GestorTeocratico/GestorTeocratico.csproj"
 COPY . .
-WORKDIR "/src/PreachingProgram"
-RUN dotnet build "./PreachingProgram.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/GestorTeocratico"
+RUN dotnet build "./GestorTeocratico.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./PreachingProgram.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./GestorTeocratico.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "PreachingProgram.dll"]
+ENTRYPOINT ["dotnet", "GestorTeocratico.dll"]
