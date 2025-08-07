@@ -16,6 +16,7 @@ using GestorTeocratico.Features.ResponsibilityAssignments;
 using Radzen;
 
 using GestorTeocratico.Features.PdfExport;
+using Microsoft.AspNetCore.Authorization;
 
 // Configure QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
@@ -55,6 +56,13 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
+
+builder.Services.AddAuthorization(option =>
+{
+    option.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddScoped<ICongregationService, CongregationService>();
@@ -99,7 +107,7 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
-app.MapStaticAssets();
+app.MapStaticAssets().AllowAnonymous();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
