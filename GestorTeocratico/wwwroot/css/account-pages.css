@@ -1,0 +1,104 @@
+/* Card principal */
+.account-card {
+    max-width: 400px;
+    margin: 40px auto;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    background: #fff;
+}
+
+/* Contenido interno del card */
+.account-card-content {
+    padding: 32px;
+}
+
+/* Título principal */
+.account-title {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: #1976d2;
+}
+
+/* Subtítulo */
+.account-subtitle {
+    text-align: center;
+    font-weight: 500;
+    margin-bottom: 16px;
+    color: #333;
+}
+
+/* Botón principal */
+.account-btn-primary {
+    width: 100%;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    padding: 12px 0;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+/* Mensaje de error */
+.account-msg-error {
+    color: #d32f2f;
+    background: #fff3f3;
+    border-radius: 8px;
+    padding: 8px 16px;
+    margin-bottom: 16px;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Mensaje de éxito */
+.account-msg-success {
+    color: #388e3c;
+    background: #e8f5e9;
+    border-radius: 8px;
+    padding: 8px 16px;
+    margin-bottom: 16px;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Mensaje de información */
+.account-msg-info {
+    background: #e3f2fd;
+    color: #1976d2;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Input */
+.account-input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    margin-bottom: 20px;
+}
+
+/* Enlace secundario */
+.account-link {
+    display: block;
+    margin-bottom: 8px;
+    color: #1976d2;
+    font-weight: 500;
+    text-decoration: none;
+    text-align: center;
+}
+
+/* Mensaje de alerta */
+.account-msg-alert {
+    color: #1976d2;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-align: center;
+}

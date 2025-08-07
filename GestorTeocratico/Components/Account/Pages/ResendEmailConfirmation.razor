@@ -14,26 +14,24 @@
 
 <PageTitle>Resend email confirmation</PageTitle>
 
-<div style="max-width: 400px; margin: 40px auto; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border-radius: 16px; background: #fff;">
-    <div style="padding: 32px;">
-        <h1 style="text-align:center; font-weight:600; margin-bottom:16px;">Resend email confirmation</h1>
-        <h2 style="text-align:center; font-weight:500; margin-bottom:16px;">Enter your email</h2>
-        <hr style="margin-bottom:24px;"/>
+<div class="account-card">
+    <div class="account-card-content">
+        <h1 class="account-title">Resend email confirmation</h1>
         @if (!string.IsNullOrEmpty(message))
         {
-            <div style="color:#388e3c; background:#e8f5e9; border-radius:8px; padding:8px 16px; margin-bottom:16px; text-align:center; font-weight:500;">
+            <div class="account-msg-info">
                 @message
             </div>
         }
         <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post">
             <DataAnnotationsValidator/>
             <ValidationSummary class="text-danger" role="alert"/>
-            <div style="margin-bottom: 20px;">
-                <InputText @bind-Value="Input.Email" id="Input.Email" placeholder="Email" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:1rem;" />
+            <div>
+                <InputText @bind-Value="Input.Email" id="Input.Email" class="account-input" placeholder="Email" autocomplete="username" required />
                 <ValidationMessage For="() => Input.Email" class="text-danger" />
             </div>
-            <div style="margin-bottom: 20px;">
-                <button type="submit" style="width:100%; font-size:1.1rem; font-weight:600; border-radius:8px; background:#1976d2; color:#fff; border:none; padding:12px 0; cursor:pointer; transition:background 0.2s;">Resend</button>
+            <div>
+                <button type="submit" class="account-btn-primary">Resend confirmation email</button>
             </div>
         </EditForm>
     </div>
