@@ -11,9 +11,17 @@
 
 <PageTitle>Confirm email change</PageTitle>
 
-<h1>Confirm email change</h1>
-
-<StatusMessage Message="@message"/>
+<div style="max-width: 400px; margin: 40px auto; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border-radius: 16px; background: #fff;">
+    <div style="padding: 32px;">
+        <h1 style="text-align:center; font-weight:600; margin-bottom:24px;">Confirm email change</h1>
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div style="color:@(message.Contains("Thank you") ? "#388e3c" : "#d32f2f"); background:@(message.Contains("Thank you") ? "#e8f5e9" : "#fff3f3"); border-radius:8px; padding:8px 16px; margin-bottom:16px; text-align:center; font-weight:500;">
+                @message
+            </div>
+        }
+    </div>
+</div>
 
 @code {
     private string? message;
