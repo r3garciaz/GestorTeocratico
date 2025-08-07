@@ -17,38 +17,37 @@
 
 <PageTitle>Register</PageTitle>
 
-@* <div style="max-width: 400px; margin: 40px auto; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border-radius: 16px; background: #fff;"> *@
-<div Style="max-width: 400px; margin: 40px auto; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border-radius: 16px;">
-    <div style="padding: 32px;">
-        <h1 style="text-align:center; font-weight:600; margin-bottom:24px;">Register</h1>
+<div class="account-card">
+    <div class="account-card-content">
+        <h1 class="account-title">Register</h1>
         <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
             <DataAnnotationsValidator/>
             @if (!string.IsNullOrEmpty(Message))
             {
-                <div style="color:#d32f2f; background:#fff3f3; border-radius:8px; padding:8px 16px; margin-bottom:16px; text-align:center; font-weight:500;">
+                <div class="account-msg-error">
                     @Message
                 </div>
             }
-            <div style="margin-bottom: 20px;">
-                <InputText @bind-Value="Input.Email" id="Input.Email" placeholder="Email" autocomplete="username" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:1rem;" />
+            <div>
+                <InputText @bind-Value="Input.Email" id="Input.Email" class="account-input" placeholder="Email" autocomplete="username" required />
                 <ValidationMessage For="() => Input.Email" class="text-danger" />
             </div>
-            <div style="margin-bottom: 20px;">
-                <InputText @bind-Value="Input.Password" id="Input.Password" type="password" placeholder="Password" autocomplete="new-password" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:1rem;" />
+            <div>
+                <InputText @bind-Value="Input.Password" id="Input.Password" type="password" class="account-input" placeholder="Password" autocomplete="new-password" required />
                 <ValidationMessage For="() => Input.Password" class="text-danger" />
             </div>
-            <div style="margin-bottom: 20px;">
-                <InputText @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" type="password" placeholder="Confirm Password" autocomplete="new-password" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:1rem;" />
+            <div>
+                <InputText @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" type="password" class="account-input" placeholder="Confirm Password" autocomplete="new-password" required />
                 <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
             </div>
-            <div style="margin-bottom: 20px;">
-                <button type="submit" style="width:100%; font-size:1.1rem; font-weight:600; border-radius:8px; background:#1976d2; color:#fff; border:none; padding:12px 0; cursor:pointer; transition:background 0.2s;">Register</button>
+            <div>
+                <button type="submit" class="account-btn-primary">Register</button>
             </div>
         </EditForm>
-        <div style="margin-top:32px; text-align:center;">
-            <h3 style="font-weight:500;">Use another service to register.</h3>
+        @* <div style="margin-top:32px; text-align:center;">
+            <h3 class="account-subtitle">Use another service to register.</h3>
             <ExternalLoginPicker/>
-        </div>
+        </div> *@
     </div>
 </div>
 

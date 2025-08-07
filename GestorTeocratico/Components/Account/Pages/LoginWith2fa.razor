@@ -11,39 +11,37 @@
 
 <PageTitle>Two-factor authentication</PageTitle>
 
-<div style="max-width: 400px; margin: 40px auto; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border-radius: 16px; background: #fff;">
-    <div style="padding: 32px;">
-        <h1 style="text-align:center; font-weight:600; margin-bottom:16px;">Two-factor authentication</h1>
+<div class="account-card">
+    <div class="account-card-content">
+        <h1 class="account-title">Two-factor authentication</h1>
         <hr style="margin-bottom:24px;"/>
         @if (!string.IsNullOrEmpty(message))
         {
-            <div style="color:#d32f2f; background:#fff3f3; border-radius:8px; padding:8px 16px; margin-bottom:16px; text-align:center; font-weight:500;">
+            <div class="account-msg-error">
                 @message
             </div>
         }
-        <p style="text-align:center; color:#1976d2; font-weight:500; margin-bottom:24px;">
-            Your login is protected with an authenticator app. Enter your authenticator code below.
-        </p>
+        <p class="account-msg-alert">Your login is protected with an authenticator app. Enter your authenticator code below.</p>
         <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
             <input type="hidden" name="ReturnUrl" value="@ReturnUrl"/>
             <input type="hidden" name="RememberMe" value="@RememberMe"/>
             <DataAnnotationsValidator/>
             <ValidationSummary class="text-danger" role="alert"/>
-            <div style="margin-bottom: 20px;">
-                <InputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode" placeholder="Authenticator code" autocomplete="off" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:1rem;" />
+            <div>
+                <InputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode" class="account-input" placeholder="Authenticator code" autocomplete="off" required />
                 <ValidationMessage For="() => Input.TwoFactorCode" class="text-danger" />
             </div>
             <div style="margin-bottom: 20px; display: flex; align-items: center;">
                 <InputCheckbox @bind-Value="Input.RememberMachine" id="remember-machine" style="margin-right:8px; accent-color:#1976d2;" />
                 <label for="remember-machine" style="margin-bottom:0;">Remember this machine</label>
             </div>
-            <div style="margin-bottom: 20px;">
-                <button type="submit" style="width:100%; font-size:1.1rem; font-weight:600; border-radius:8px; background:#1976d2; color:#fff; border:none; padding:12px 0; cursor:pointer; transition:background 0.2s;">Log in</button>
+            <div>
+                <button type="submit" class="account-btn-primary">Log in</button>
             </div>
         </EditForm>
         <p style="margin-top:24px; text-align:center; color:#1976d2; font-size:0.95rem;">
             Don't have access to your authenticator device? You can
-            <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl" style="color:#1976d2; font-weight:500;">log in with a recovery code</a>.
+            <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl" class="account-link">log in with a recovery code</a>.
         </p>
     </div>
 </div>

@@ -10,12 +10,12 @@
 
 <PageTitle>Confirm email</PageTitle>
 
-<div Style="max-width: 400px; margin: 40px auto; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border-radius: 16px;">
-    <div style="padding: 32px;">
-        <h1 style="text-align:center; font-weight:600; margin-bottom:24px;">Confirm email</h1>
+<div class="account-card">
+    <div class="account-card-content">
+        <h1 class="account-title">Confirm email</h1>
         @if (!string.IsNullOrEmpty(statusMessage))
         {
-            <div style="color:@(statusMessage.Contains("Thank you") ? "#388e3c" : "#d32f2f"); background:@(statusMessage.Contains("Thank you") ? "#e8f5e9" : "#fff3f3"); border-radius:8px; padding:8px 16px; margin-bottom:16px; text-align:center; font-weight:500;">
+            <div class="@(statusMessage.Contains("Thank you") ? "account-msg-success" : "account-msg-error")">
                 @statusMessage
             </div>
         }
