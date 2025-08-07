@@ -17,40 +17,38 @@
 
 <PageTitle>Register</PageTitle>
 
-<h1>Register</h1>
-
-<div class="row">
-    <div class="col-lg-6">
-        <StatusMessage Message="@Message"/>
-        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+@* <div style="max-width: 400px; margin: 40px auto; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border-radius: 16px; background: #fff;"> *@
+<div Style="max-width: 400px; margin: 40px auto; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border-radius: 16px;">
+    <div style="padding: 32px;">
+        <h1 style="text-align:center; font-weight:600; margin-bottom:24px;">Register</h1>
+        <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
             <DataAnnotationsValidator/>
-            <h2>Create a new account.</h2>
-            <hr/>
-            <ValidationSummary class="text-danger" role="alert"/>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com"/>
-                <label for="Input.Email">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger"/>
+            @if (!string.IsNullOrEmpty(Message))
+            {
+                <div style="color:#d32f2f; background:#fff3f3; border-radius:8px; padding:8px 16px; margin-bottom:16px; text-align:center; font-weight:500;">
+                    @Message
+                </div>
+            }
+            <div style="margin-bottom: 20px;">
+                <InputText @bind-Value="Input.Email" id="Input.Email" placeholder="Email" autocomplete="username" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:1rem;" />
+                <ValidationMessage For="() => Input.Email" class="text-danger" />
             </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password"/>
-                <label for="Input.Password">Password</label>
-                <ValidationMessage For="() => Input.Password" class="text-danger"/>
+            <div style="margin-bottom: 20px;">
+                <InputText @bind-Value="Input.Password" id="Input.Password" type="password" placeholder="Password" autocomplete="new-password" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:1rem;" />
+                <ValidationMessage For="() => Input.Password" class="text-danger" />
             </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password"/>
-                <label for="Input.ConfirmPassword">Confirm Password</label>
-                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger"/>
+            <div style="margin-bottom: 20px;">
+                <InputText @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" type="password" placeholder="Confirm Password" autocomplete="new-password" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:1rem;" />
+                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
             </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+            <div style="margin-bottom: 20px;">
+                <button type="submit" style="width:100%; font-size:1.1rem; font-weight:600; border-radius:8px; background:#1976d2; color:#fff; border:none; padding:12px 0; cursor:pointer; transition:background 0.2s;">Register</button>
+            </div>
         </EditForm>
-    </div>
-    <div class="col-lg-4 col-lg-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr/>
+        <div style="margin-top:32px; text-align:center;">
+            <h3 style="font-weight:500;">Use another service to register.</h3>
             <ExternalLoginPicker/>
-        </section>
+        </div>
     </div>
 </div>
 

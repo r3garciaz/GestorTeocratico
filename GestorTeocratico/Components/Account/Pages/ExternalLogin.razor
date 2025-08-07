@@ -18,28 +18,31 @@
 
 <PageTitle>Register</PageTitle>
 
-<StatusMessage Message="@message"/>
-<h1>Register</h1>
-<h2>Associate your @ProviderDisplayName account.</h2>
-<hr/>
-
-<div class="alert alert-info">
-    You've successfully authenticated with <strong>@ProviderDisplayName</strong>.
-    Please enter an email address for this site below and click the Register button to finish
-    logging in.
-</div>
-
-<div class="row">
-    <div class="col-md-4">
+<div style="max-width: 400px; margin: 40px auto; box-shadow: 0 4px 24px rgba(0,0,0,0.08); border-radius: 16px; background: #fff;">
+    <div style="padding: 32px;">
+        <h1 style="text-align:center; font-weight:600; margin-bottom:16px;">Register</h1>
+        <h2 style="text-align:center; font-weight:500; margin-bottom:16px;">Associate your @ProviderDisplayName account</h2>
+        <hr style="margin-bottom:24px;"/>
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div style="color:#d32f2f; background:#fff3f3; border-radius:8px; padding:8px 16px; margin-bottom:16px; text-align:center; font-weight:500;">
+                @message
+            </div>
+        }
+        <div style="background:#e3f2fd; color:#1976d2; border-radius:8px; padding:12px 16px; margin-bottom:24px; text-align:center; font-weight:500;">
+            You've successfully authenticated with <strong>@ProviderDisplayName</strong>.<br />
+            Please enter an email address for this site below and click the Register button to finish logging in.
+        </div>
         <EditForm Model="Input" OnValidSubmit="OnValidSubmitAsync" FormName="confirmation" method="post">
             <DataAnnotationsValidator/>
             <ValidationSummary class="text-danger" role="alert"/>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="email" placeholder="Please enter your email."/>
-                <label for="Input.Email" class="form-label">Email</label>
-                <ValidationMessage For="() => Input.Email"/>
+            <div style="margin-bottom: 20px;">
+                <InputText @bind-Value="Input.Email" id="Input.Email" placeholder="Email" autocomplete="email" required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc; font-size:1rem;" />
+                <ValidationMessage For="() => Input.Email" class="text-danger" />
             </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+            <div style="margin-bottom: 20px;">
+                <button type="submit" style="width:100%; font-size:1.1rem; font-weight:600; border-radius:8px; background:#1976d2; color:#fff; border:none; padding:12px 0; cursor:pointer; transition:background 0.2s;">Register</button>
+            </div>
         </EditForm>
     </div>
 </div>
