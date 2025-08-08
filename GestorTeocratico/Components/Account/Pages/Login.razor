@@ -12,46 +12,51 @@
 
 <PageTitle>Log in</PageTitle>
 
-<div class="account-card">
-    <div class="account-card-content">
-        <h1 class="account-title">Log in</h1>
-        <StatusMessage Message="@errorMessage" />
-        <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
-            <DataAnnotationsValidator/>
-            @* @if (!string.IsNullOrEmpty(errorMessage))
+<RadzenCard class="rz-my-12 rz-mx-auto rz-p-4 rz-p-md-12 rz-border-radius-4" style="max-width: 600px;">
+    <RadzenText TextStyle="TextStyle.DisplayH4" Text="Inicio Sesión" TextAlign="TextAlign.Center"
+                class="rz-color-primary rz-mb-4"/>
+    <StatusMessage Message="@errorMessage"/>
+    <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+        <DataAnnotationsValidator/>
+        @* @if (!string.IsNullOrEmpty(errorMessage))
             {
                 <div class="account-msg-error">
                     @errorMessage
                 </div>
             } *@
-            <ValidationSummary class="account-msg-error" role="alert"/>
-            <div>
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="account-input" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <ValidationMessage For="() => Input.Email" class="account-msg-error" />
-            </div>
-            <div>
-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="account-input" autocomplete="current-password" aria-required="true" placeholder="password" />
-                <ValidationMessage For="() => Input.Password" class="account-msg-error" />
-            </div>
-            <div style="margin-bottom: 20px; display: flex; align-items: center;">
-                <InputCheckbox @bind-Value="Input.RememberMe" class="form-check-input" id="Input.RememberMe" style="margin-right:8px; accent-color:#1976d2;" />
-                <label for="Input.RememberMe" style="margin-bottom:0;">Remember me</label>
-            </div>
-            <div>
-                <button type="submit" class="account-btn-primary">Log in</button>
-            </div>
-            <div style="margin-top: 8px; text-align: center;">
-                <a href="Account/ForgotPassword" class="account-link">Forgot your password?</a>
-                <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))" class="account-link">Register as a new user</a>
-                <a href="Account/ResendEmailConfirmation" class="account-link">Resend email confirmation</a>
-            </div>
-        </EditForm>
-        @* <div style="margin-top:32px; text-align:center;">
+        <ValidationSummary class="account-msg-error" role="alert"/>
+        <div>
+            <InputText @bind-Value="Input.Email" id="Input.Email" class="account-input" autocomplete="username"
+                       aria-required="true" placeholder="name@example.com"/>
+            <ValidationMessage For="() => Input.Email" class="account-msg-error"/>
+        </div>
+        <div>
+            <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="account-input"
+                       autocomplete="current-password" aria-required="true" placeholder="password"/>
+            <ValidationMessage For="() => Input.Password" class="account-msg-error"/>
+        </div>
+        <div style="margin-bottom: 20px; display: flex; align-items: center;">
+            <InputCheckbox @bind-Value="Input.RememberMe" class="form-check-input" id="Input.RememberMe"
+                           style="margin-right:8px; accent-color:#1976d2;"/>
+            <label for="Input.RememberMe" style="margin-bottom:0;">Remember me</label>
+        </div>
+        <RadzenStack>
+            <button type="submit" class="rz-button rz-primary rz-button-lg rz-border-radius-2">Iniciar Sesión</button>
+            <a href="/" class="rz-button rz-button-lg rz-secondary text-center rz-border-radius-2">Volver</a>
+        </RadzenStack>
+        <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="4px" class="rz-m-4">
+            <RadzenLink Path="Account/ForgotPassword" Text="¿Olvidaste tu contraseña?"/>
+            <RadzenLink
+                Path="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))"
+                Text="Registrarse como nuevo usuario"/>
+            <RadzenLink Path="Account/ResendEmailConfirmation" Text="Reenviar correo electrónico confirmación"/>
+        </RadzenStack>
+    </EditForm>
+    @* <div style="margin-top:32px; text-align:center;">
             <h3 class="account-subtitle">Use another service to log in.</h3>
             <ExternalLoginPicker/>
-        </div> *@
-    </div>
-</div>
+    @* </div> *@
+</RadzenCard>
 
 @code {
     private string? errorMessage;
@@ -79,7 +84,7 @@
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
-            RedirectManager.RedirectTo(ReturnUrl);
+            RedirectManager.RedirectTo(ReturnUrl ?? "/dashboard");
         }
         else if (result.RequiresTwoFactor)
         {
@@ -96,6 +101,11 @@
         {
             errorMessage = "Error: Invalid login attempt.";
         }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/");
     }
 
     public class InputModel

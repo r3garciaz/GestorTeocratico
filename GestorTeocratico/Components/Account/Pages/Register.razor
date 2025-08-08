@@ -17,9 +17,9 @@
 
 <PageTitle>Register</PageTitle>
 
-<div class="account-card">
-    <div class="account-card-content">
-        <h1 class="account-title">Register</h1>
+<RadzenCard class="rz-my-12 rz-mx-auto rz-p-4 rz-p-md-12 rz-border-radius-4" style="max-width: 600px;">
+<RadzenText TextStyle="TextStyle.DisplayH4" Text="Registrarse" TextAlign="TextAlign.Center"
+            class="rz-color-primary rz-mb-4"/>
         <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
             <DataAnnotationsValidator/>
             @if (!string.IsNullOrEmpty(Message))
@@ -40,16 +40,16 @@
                 <InputText @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" type="password" class="account-input" placeholder="Confirm Password" autocomplete="new-password" required />
                 <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
             </div>
-            <div>
-                <button type="submit" class="account-btn-primary">Register</button>
-            </div>
+            <RadzenStack>
+                <button type="submit" class="rz-button rz-primary rz-button-lg rz-border-radius-2">Registrarse</button>
+                <a href="/" class="rz-button rz-button-lg rz-secondary text-center rz-border-radius-2">Volver</a>
+            </RadzenStack>
         </EditForm>
         @* <div style="margin-top:32px; text-align:center;">
             <h3 class="account-subtitle">Use another service to register.</h3>
             <ExternalLoginPicker/>
         </div> *@
-    </div>
-</div>
+</RadzenCard>
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
