@@ -1,17 +1,25 @@
 ﻿@inherits LayoutComponentBase
 @layout GestorTeocratico.Components.Layout.MainLayout
 
-<h1>Manage your account</h1>
+<h1>Administra tu cuenta</h1>
 
 <div>
-    <h2>Change your account settings</h2>
+    <h2>Cambia la configuración de tu cuenta</h2>
     <hr/>
-    <div class="row">
-        <div class="col-lg-3">
-            <ManageNavMenu/>
-        </div>
-        <div class="col-lg-9">
-            @Body
-        </div>
-    </div>
+    <RadzenCard>
+        <RadzenRow>
+            <RadzenColumn SizeLG="3">
+                <ManageNavMenu/>
+            </RadzenColumn>
+            <RadzenColumn SizeLG="9" class="rz-p-lg-3">
+                @Body
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+
+    <RadzenCard class="rz-display-lg-none rz-mt-3">
+        <RadzenStack JustifyContent="JustifyContent.Center">
+            <a href="/" class="btn btn-primary">Volver al Inicio</a>
+        </RadzenStack>
+    </RadzenCard>
 </div>
