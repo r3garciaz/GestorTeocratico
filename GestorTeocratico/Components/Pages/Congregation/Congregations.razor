@@ -14,7 +14,10 @@
         <RadzenColumn Size="12" SizeMD="6">
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
                          JustifyContent="JustifyContent.End" Gap="0.5rem">
-                <RadzenButton Icon="add_circle_outline" Text="Agregar Congregación" Click="@AddButtonClick" Variant="Variant.Flat"/>
+                @if (!_congregations.Any())
+                {
+                    <RadzenButton Icon="add_circle_outline" Text="Agregar Congregación" Click="@AddButtonClick" Variant="Variant.Flat"/>
+                }
             </RadzenStack>
         </RadzenColumn>
     </RadzenRow>
