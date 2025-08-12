@@ -17,6 +17,7 @@ using Radzen;
 
 using GestorTeocratico.Features.PdfExport;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 
 // Configure QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
@@ -45,6 +46,13 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
+builder.Services.AddAuthorization(option =>
+{
+    option.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                        throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -57,12 +65,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
     .AddSignInManager()
     .AddDefaultTokenProviders();
 
-builder.Services.AddAuthorization(option =>
-{
-    option.FallbackPolicy = new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build();
-});
+builder.Services.AddDataProtection()
+    .PersistKeysToDbContext<ApplicationDbContext>();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddScoped<ICongregationService, CongregationService>();
@@ -84,22 +88,45 @@ builder.Services.AddHttpClient<PdfExportHttpClient>(client =>
 
 var app = builder.Build();
 
+var scope = app.Services.CreateScope();
+var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
-    var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await dbContext.Database.MigrateAsync();
-    
-    // Seed sample data
-    await DataSeeder.SeedDataAsync(dbContext);
+
+    try
+    {
+        logger.LogInformation("Applying migrations in development environment...");
+        await dbContext.Database.MigrateAsync();
+        await DataSeederDevelopment.SeedDataAsync(dbContext);
+
+    }
+    catch (Exception e)
+    {
+        logger.LogError("An error occurred while migrating or seeding the database. {Error}", e.Message);
+        throw;
+    }
 }
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+    
+    try
+    {
+        logger.LogInformation("Applying migrations in production environment...");
+        await dbContext.Database.MigrateAsync();
+        await DataSeeder.SeedDataAsync(dbContext);
+    }
+    catch (Exception e)
+    {
+        logger.LogError("An error occurred while migrating the database. {Error}", e.Message);
+        throw;
+    }
 }
 
 app.UseHttpsRedirection();

@@ -1,13 +1,15 @@
 using System.Linq.Expressions;
 using GestorTeocratico.Entities;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestorTeocratico.Data;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-    : IdentityDbContext<ApplicationUser>(options)
+    : IdentityDbContext<ApplicationUser>(options), IDataProtectionKeyContext
 {
+    public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
     
     public DbSet<Congregation> Congregations { get; set; }
     public DbSet<Department> Departments { get; set; }
