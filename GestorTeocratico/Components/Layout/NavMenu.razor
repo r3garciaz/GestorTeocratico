@@ -6,25 +6,25 @@
     <Authorized>
         <RadzenPanelMenu>
             <RadzenPanelMenuItem Text="Inicio" Path="/dashboard" Icon="home" />
-            <AuthorizeView Roles="Admin">
+            <AuthorizeView Roles="@($"{Shared.Roles.Admin}, {Shared.Roles.Manager}")">
                 <Authorized Context="adminContext">
                     <RadzenPanelMenu>
                         <RadzenPanelMenuItem Text="Administración" Icon="security">
                             <RadzenPanelMenuItem Text="Roles" Path="/administration/roles" Icon="manage_accounts" />
                         </RadzenPanelMenuItem>
                     </RadzenPanelMenu>
+                    <RadzenPanelMenuItem Text="Congregación" Path="/congregations" Icon="fort" />
+                    <RadzenPanelMenuItem Text="Departamentos" Path="/departments" Icon="business" />
+                    <RadzenPanelMenuItem Text="Responsabilidades" Path="/responsibilities" Icon="assignment" />
+                    <RadzenPanelMenuItem Text="Publicadores" Path="/publishers" Icon="people" />
+                    <RadzenPanelMenuItem Text="Programación Reuniones" Path="/meeting-schedules" Icon="event_note" />
                 </Authorized>
             </AuthorizeView>
-            <RadzenPanelMenuItem Text="Congregación" Path="/congregations" Icon="fort" />
-            <RadzenPanelMenuItem Text="Departamentos" Path="/departments" Icon="business" />
-            <RadzenPanelMenuItem Text="Responsabilidades" Path="/responsibilities" Icon="assignment" />
-            <RadzenPanelMenuItem Text="Publicadores" Path="/publishers" Icon="people" />
-            <RadzenPanelMenuItem Text="Programación Reuniones" Path="/meeting-schedules" Icon="event_note" />
         </RadzenPanelMenu>
         
         <RadzenPanelMenu>
             <RadzenStack class="rz-mt-4" Gap="0.5rem">
-                <RadzenPanelMenuItem Text="@context.User.Identity?.Name" Path="Account/Manage" Icon="person" />
+                @* <RadzenPanelMenuItem Text="@context.User.Identity?.Name" Path="Account/Manage" Icon="person" /> *@
                 
                 <form action="Account/Logout" method="post" class="rz-w-100">
                     <AntiforgeryToken/>

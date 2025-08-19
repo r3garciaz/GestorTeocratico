@@ -1,4 +1,5 @@
 using GestorTeocratico.Entities;
+using GestorTeocratico.Shared;
 using GestorTeocratico.Shared.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -251,20 +252,20 @@ public static class DataSeederDevelopment
             new IdentityRole
             {
                 Id = RoleIds[0].ToString(),
-                Name = "Admin",
-                NormalizedName = "ADMIN"
+                Name = Roles.Admin,
+                NormalizedName = Roles.Admin.ToUpperInvariant()
             },
             new IdentityRole
             {
                 Id = RoleIds[1].ToString(),
-                Name = "Manager",
-                NormalizedName = "MANAGER"
+                Name = Roles.Manager,
+                NormalizedName = Roles.Manager.ToUpperInvariant()
             },
             new IdentityRole
             {
                 Id = RoleIds[2].ToString(),
-                Name = "User",
-                NormalizedName = "USER"
+                Name = Roles.User,
+                NormalizedName = Roles.User.ToUpperInvariant()
             }
         };
         
