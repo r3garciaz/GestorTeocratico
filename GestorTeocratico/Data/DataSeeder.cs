@@ -1,4 +1,5 @@
 using GestorTeocratico.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace GestorTeocratico.Data;
@@ -25,11 +26,19 @@ public static class DataSeeder
         new ("01989b4e-93f7-70df-bd7f-8a4e667e9633")
     ];
     
+    private static readonly Guid[] RoleIds =
+    [   
+        new("0198c2ae-6d60-77d7-9bfa-791a8abe8a0e"), // Admin
+        new("0198c2ae-6d61-77ba-8039-408b8c3d31ef"), // Manager
+        new("0198c2ae-6d61-77ba-8039-44037008daa7")  // User
+    ];
+    
     public static async Task SeedDataAsync(ApplicationDbContext context)
     {
         await SeedCongregationAsync(context);
         await SeedDepartmentsAsync(context);
         await SeedResponsibilitiesAsync(context);
+        await SeedRolesAsync(context);
     }
     
     private static async Task SeedCongregationAsync(ApplicationDbContext context)
@@ -106,6 +115,43 @@ public static class DataSeeder
                     Name = resp.Name,
                     DepartmentId = resp.DepartmentId
                 });
+            }
+        }
+        
+        await context.SaveChangesAsync();
+    }
+    
+    private static async Task SeedRolesAsync(ApplicationDbContext context)
+    {
+        var roles = new[]
+        {
+            new IdentityRole
+            {
+                Id = RoleIds[0].ToString(),
+                Name = "Admin",
+                NormalizedName = "ADMIN"
+            },
+            new IdentityRole
+            {
+                Id = RoleIds[1].ToString(),
+                Name = "Manager",
+                NormalizedName = "MANAGER"
+            },
+            new IdentityRole
+            {
+                Id = RoleIds[2].ToString(),
+                Name = "User",
+                NormalizedName = "USER"
+            }
+        };
+        
+        var currentRoles = await context.Roles.ToListAsync();
+        
+        foreach (var roleName in roles)
+        {
+            if (currentRoles.All(r => r.Name != roleName.Name))
+            {
+                context.Roles.Add(roleName);
             }
         }
         
