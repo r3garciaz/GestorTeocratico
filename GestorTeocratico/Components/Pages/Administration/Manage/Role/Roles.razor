@@ -1,0 +1,96 @@
+@page "/administration/roles"
+@using Microsoft.AspNetCore.Identity
+@using GestorTeocratico.Features.Roles
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+@using Radzen
+@using Radzen.Blazor
+@using GestorTeocratico.Components.Pages.Administration.Manage.Role
+@inject IRoleService RoleService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<PageTitle>Roles</PageTitle>
+<RadzenStack>
+    <RadzenRow AlignItems="AlignItems.Center">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText Text="Roles" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                         JustifyContent="JustifyContent.End" Gap="0.5rem">
+                <RadzenButton Icon="add_circle_outline" Text="Agregar Rol" Click="@CreateAsync" Variant="Variant.Flat"/>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+    <RadzenRow>
+        <RadzenColumn SizeMD="12">
+            <RadzenDataGrid @ref="grid0" ColumnWidth="200px" AllowFiltering="true" FilterMode="FilterMode.Advanced"
+                            AllowPaging="true" AllowSorting="true" ShowPagingSummary="true"
+                            PageSizeOptions=@(new int[] { 5, 10, 20, 30 })
+                            Data="@(_roles)" >
+                <Columns>
+                    <RadzenDataGridColumn Property="@nameof(IdentityRole.Name)" Title="Nombre"/>
+                    <RadzenDataGridColumn Filterable="false" Sortable="false" Width="150px" Title="Acciones"
+                                          TextAlign="TextAlign.Center">
+                        <Template Context="role">
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Variant="Variant.Outlined"
+                                          Size="ButtonSize.Medium"
+                                          Click="@(() => ShowEditModal(role))" @onclick:stopPropagation="true"/>
+                            <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"
+                                          Shade="Shade.Lighter" Variant="Variant.Outlined"
+                                          Click="@(args => DeleteAsync(args, role))"
+                                          @onclick:stopPropagation="true"/>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>
+
+@code {
+    private IEnumerable<IdentityRole> _roles = []; 
+    private RadzenDataGrid<IdentityRole>? grid0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _roles = await RoleService.GetAllAsync();
+    }
+
+    private async Task CreateAsync(MouseEventArgs args)
+    {
+    await DialogService.OpenAsync<CreateRole>("Agregar Rol", null);
+    _roles = await RoleService.GetAllAsync();
+    await grid0!.Reload();
+    }
+
+    private async Task ShowEditModal(IdentityRole role)
+    {
+    await DialogService.OpenAsync<EditRole>("Editar Rol", new Dictionary<string, object> { { "RoleId", role.Id } });
+    _roles = await RoleService.GetAllAsync();
+    await grid0!.Reload();
+    }
+
+    private async Task DeleteAsync(MouseEventArgs args, IdentityRole role)
+    {
+        try
+        {
+            if (await DialogService.Confirm("¿Está seguro que desea eliminar este rol?", "Confirmar", new ConfirmOptions { OkButtonText = "Eliminar", CancelButtonText = "Cancelar" }) == true)
+            {
+                await RoleService.DeleteAsync(role.Id);
+                _roles = await RoleService.GetAllAsync();
+                await grid0!.Reload();
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = $"Error, {ex.Message}",
+                Detail = "No se pudo eliminar el rol"
+            });
+        }
+    }
+}

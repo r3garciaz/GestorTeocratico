@@ -77,6 +77,7 @@ builder.Services.AddScoped<IPublisherResponsibilityService, PublisherResponsibil
 builder.Services.AddScoped<IMeetingScheduleService, MeetingScheduleService>();
 builder.Services.AddScoped<IResponsibilityAssignmentService, ResponsibilityAssignmentService>();
 builder.Services.AddScoped<IPdfExportService, PdfExportService>();
+builder.Services.AddScoped<GestorTeocratico.Features.Roles.IRoleService, GestorTeocratico.Features.Roles.RoleService>();
 
 // Configure HttpClient for PDF downloads
 builder.Services.AddHttpClient<PdfExportHttpClient>(client =>
