@@ -2,6 +2,7 @@
 @using GestorTeocratico.Entities
 @inject DialogService DialogService
 @inject GestorTeocratico.Features.Congregations.ICongregationService CongregationService
+@inject NotificationService NotificationService
 
 <PageTitle>Agregar Congregación</PageTitle>
 <RadzenColumn SizeMD=12>
@@ -89,7 +90,7 @@
 </RadzenColumn>
 
 @code {
-    private readonly Congregation _congregation = new();
+    private readonly Congregation _congregation = new() { Name = string.Empty };
     private bool _errorVisible;
     private readonly List<DayOfWeek> _daysOfWeek = Enum.GetValues(typeof(DayOfWeek)).Cast<DayOfWeek>().ToList();
     
@@ -100,14 +101,21 @@
             await CongregationService.AddAsync(_congregation);
             DialogService.Close(true);
         }
+        catch (InvalidOperationException ex)
+        {
+            // Business rule: only one congregation allowed
+            _errorVisible = true;
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Atención", Detail = ex.Message });
+        }
         catch
         {
             _errorVisible = true;
         }
     }
 
-    private async Task CancelButtonClick(MouseEventArgs args)
+    private Task CancelButtonClick(MouseEventArgs args)
     {
         DialogService.Close(null);
+        return Task.CompletedTask;
     }
 }

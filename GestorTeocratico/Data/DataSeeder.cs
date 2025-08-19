@@ -43,9 +43,8 @@ public static class DataSeeder
     
     private static async Task SeedCongregationAsync(ApplicationDbContext context)
     {
-        var congregationInDatabase = await context.Congregations.FindAsync(CongregationId);
-        // If the congregation already exists, no need to seed it again.
-        if (congregationInDatabase != null) return;
+    // If any congregation exists, do not seed another. Enforce singleton in seeding.
+    if (await context.Congregations.AnyAsync()) return;
 
         var congregation = new Congregation
         {
