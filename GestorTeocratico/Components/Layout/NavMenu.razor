@@ -6,6 +6,15 @@
     <Authorized>
         <RadzenPanelMenu>
             <RadzenPanelMenuItem Text="Inicio" Path="/dashboard" Icon="home" />
+            <AuthorizeView Roles="Admin">
+                <Authorized Context="adminContext">
+                    <RadzenPanelMenu>
+                        <RadzenPanelMenuItem Text="Administración" Icon="security">
+                            <RadzenPanelMenuItem Text="Roles" Path="/administration/roles" Icon="manage_accounts" />
+                        </RadzenPanelMenuItem>
+                    </RadzenPanelMenu>
+                </Authorized>
+            </AuthorizeView>
             <RadzenPanelMenuItem Text="Congregación" Path="/congregations" Icon="fort" />
             <RadzenPanelMenuItem Text="Departamentos" Path="/departments" Icon="business" />
             <RadzenPanelMenuItem Text="Responsabilidades" Path="/responsibilities" Icon="assignment" />
