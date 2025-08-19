@@ -31,19 +31,25 @@ public class CongregationService : ICongregationService
 
     public async Task AddAsync(Congregation congregation)
     {
-        var existingCongregation = await _context.Congregations
-            .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == congregation.Name.ToLower());
-        
-        if (existingCongregation != null)
+        // Ensure only one congregation can exist
+        if (await _context.Congregations.AnyAsync())
         {
-            _logger.LogWarning("Attempted to add a congregation with a duplicate name: {Name}", congregation.Name);
-            return;
-            //throw new InvalidOperationException("A congregation with the same name already exists.");
+            _logger.LogWarning("Attempted to add a second congregation: {Name}", congregation.Name);
+            throw new InvalidOperationException("Ya existe una congregación. No se puede crear otra.");
         }
 
+        // Optional: also avoid same-name duplicates as additional guard (defensive)
+        if (await _context.Congregations.AsNoTracking().AnyAsync(c => c.Name.ToLower() == congregation.Name.ToLower()))
+        {
+            _logger.LogWarning("Attempted to add a congregation with duplicate name: {Name}", congregation.Name);
+            throw new InvalidOperationException("Ya existe una congregación con el mismo nombre.");
+        }
+
+        // Use a transaction and re-check to reduce race conditions
+        await using var tx = await _context.Database.BeginTransactionAsync();
         _context.Congregations.Add(congregation);
         await _context.SaveChangesAsync();
+        await tx.CommitAsync();
     }
 
     public async Task UpdateAsync(Congregation congregation)
@@ -52,18 +58,10 @@ public class CongregationService : ICongregationService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<Congregation> DeleteAsync(Guid id)
+    public Task<Congregation> DeleteAsync(Guid id)
     {
-        var congregation = await _context.Congregations.FindAsync(id);
-        
-        if (congregation == null)
-        {
-            _logger.LogWarning("Attempted to delete a congregation that does not exist: {Id}", id);
-            throw new KeyNotFoundException("Congregation not found.");
-        }
-        
-        congregation.IsDeleted = true;
-        await _context.SaveChangesAsync();
-        return congregation;
+        // Deleting congregations is not allowed by business rules.
+        _logger.LogWarning("Attempted to delete congregation: {Id}", id);
+        return Task.FromException<Congregation>(new NotSupportedException("La eliminación de congregación no está permitida."));
     }
 }

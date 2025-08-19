@@ -86,7 +86,8 @@ public static class DataSeederDevelopment
 
     private static async Task SeedCongregationAsync(ApplicationDbContext context)
     {
-        if (await context.Congregations.FindAsync(CongregationId) != null) return;
+    // If any congregation exists, do not seed another.
+    if (await context.Congregations.AnyAsync()) return;
 
         var congregation = new Congregation
         {

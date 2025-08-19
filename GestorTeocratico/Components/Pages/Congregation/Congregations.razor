@@ -2,135 +2,151 @@
 @using GestorTeocratico.Entities
 @using GestorTeocratico.Features.Congregations
 @inject ICongregationService CongregationService
-@inject DialogService DialogService
 @inject NotificationService NotificationService
 
-<PageTitle>Congregaciones</PageTitle>
-<RadzenStack>
-    <RadzenRow AlignItems="AlignItems.Center">
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenText Text="Congregaciones" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
+<PageTitle>Congregación</PageTitle>
+
+<RadzenCard Style="min-width:400px; max-width:1000px; margin:auto; box-shadow: 0 4px 24px rgba(0,0,0,0.06); border-radius: 8px; padding: 1rem;">
+     <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText Text="Congregación" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
         </RadzenColumn>
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
-                         JustifyContent="JustifyContent.End" Gap="0.5rem">
-                @if (!_congregations.Any())
-                {
-                    <RadzenButton Icon="add_circle_outline" Text="Agregar Congregación" Click="@AddButtonClick" Variant="Variant.Flat"/>
-                }
-            </RadzenStack>
-        </RadzenColumn>
-    </RadzenRow>
-    <RadzenRow>
-        <RadzenColumn SizeMD="12">
-            <RadzenDataGrid @ref="grid0" ColumnWidth="200px" AllowFiltering="true" FilterMode="FilterMode.Advanced"
-                            AllowPaging="true" AllowSorting="true" ShowPagingSummary="true"
-                            PageSizeOptions=@(new int[] { 5, 10, 20, 30 })
-                            Data="@(_congregations)" >
-                <Columns>
-                    <RadzenDataGridColumn Property="@nameof(Congregation.Name)" Title="Nombre"/>
-                    <RadzenDataGridColumn Property="@nameof(Congregation.MidweekMeetingDayEvenYear)" Title="Día Semana Año Par"/>
-                    <RadzenDataGridColumn Property="@nameof(Congregation.MidweekMeetingDayOddYear)" Title="Día Semana Año Impar" />
-                    <RadzenDataGridColumn Property="@nameof(Congregation.WeekendMeetingDayEvenYear)" Title="Día Fin de Semana Año Par" />
-                    <RadzenDataGridColumn Property="@nameof(Congregation.WeekendMeetingDayOddYear)" Title="Día Fin de Semana Año Impar" />
-                    <RadzenDataGridColumn Property="@nameof(Congregation.Address)" Title="Dirección" />
-                    <RadzenDataGridColumn Property="@nameof(Congregation.City)" Title="Ciudad" />
-                    <RadzenDataGridColumn Filterable="false" Sortable="false" Width="150px" Title="Acciones"
-                                          TextAlign="TextAlign.Center">
-                        <Template Context="congregation">
-                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
-                                          Size="ButtonSize.Medium"
-                                          Click="@(() => EditRow(congregation))" @onclick:stopPropagation="true"/>
-                            <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"
-                                          Shade="Shade.Lighter" Variant="Variant.Flat"
-                                          Click="@(args => GridDeleteButtonClick(args, congregation))"
-                                          @onclick:stopPropagation="true"/>
-                        </Template>
-                    </RadzenDataGridColumn>
-                </Columns>
-            </RadzenDataGrid>
-        </RadzenColumn>
-    </RadzenRow>
-</RadzenStack>
+    <RadzenTemplateForm TItem="Congregation" Data="@_congregation" Submit="@HandleValidSubmit">
+        <RadzenRow Gap="2rem" class="rz-p-0 rz-p-lg-4">
+            <RadzenColumn Size="12">
+                <RadzenFieldset Text="Detalles de la Congregación">
+                    <RadzenStack  Gap="1rem">
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Nombre" Component="Name" style="width: 100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_congregation.Name)" Name="Name" />
+                            <RadzenRequiredValidator Component="Name" Text="El nombre es obligatorio" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow >
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Día Semana Año Par" Component="MidweekMeetingDayEvenYear" style="width: 100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDropDown @bind-Value="@_congregation.MidweekMeetingDayEvenYear" Data="@_daysOfWeek" Style="width: 100%; max-width: 400px;" Name="MidweekMeetingDayEvenYear" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow >
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Día Semana Año Impar" Component="MidweekMeetingDayOddYear" style="width: 100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDropDown @bind-Value="@_congregation.MidweekMeetingDayOddYear" Data="@_daysOfWeek" Style="width: 100%; max-width: 400px;" Name="MidweekMeetingDayOddYear" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow >
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Día Fin de Semana Año Par" Component="WeekendMeetingDayEvenYear" style="width: 100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDropDown @bind-Value="@_congregation.WeekendMeetingDayEvenYear" Data="@_daysOfWeek" Style="width: 100%; max-width: 400px;" Name="WeekendMeetingDayEvenYear" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow >
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Día Fin de Semana Año Impar" Component="WeekendMeetingDayOddYear" style="width: 100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDropDown @bind-Value="@_congregation.WeekendMeetingDayOddYear" Data="@_daysOfWeek" Style="width: 100%; max-width: 400px;" Name="WeekendMeetingDayOddYear" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow >
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Dirección" Component="Address" style="width: 100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_congregation.Address)" Name="Address" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    <RadzenRow >
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Ciudad" Component="City" style="width: 100%" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_congregation.City)" Name="City" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenColumn>
+        </RadzenRow>
+
+         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                     JustifyContent="JustifyContent.End" Gap="0.5rem">
+                <RadzenButton ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" Icon="save" Text="Guardar" Variant="Variant.Filled" Style="min-width:120px;" />
+                @* <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancelar" Variant="Variant.Outlined" Click="@Cancel" Style="min-width:120px;" /> *@
+        </RadzenStack>
+    </RadzenTemplateForm>
+</RadzenCard>
 
 @code {
-    private IEnumerable<Congregation> _congregations = [];
-    private RadzenDataGrid<Congregation> grid0;
+    private Congregation _congregation = new() { Name = string.Empty };
+    private readonly List<DayOfWeek> _daysOfWeek = Enum.GetValues(typeof(DayOfWeek)).Cast<DayOfWeek>().ToList();
+    private bool _isNew = false;
 
     protected override async Task OnInitializedAsync()
     {
-        _congregations = await CongregationService.GetAllAsync();
+        var items = await CongregationService.GetAllAsync();
+        var first = items.FirstOrDefault();
+        if (first == null)
+        {
+            _congregation = new Congregation { Name = string.Empty };
+            _isNew = true;
+        }
+        else
+        {
+            _congregation = first;
+            _isNew = false;
+        }
     }
 
-    private async Task AddButtonClick(MouseEventArgs args)
-    {
-        await DialogService.OpenAsync<CreateCongregation>("Agregar Congregación", null);
-        await grid0.Reload();
-    }
-
-    private async Task EditRow(Congregation args)
-    {
-        await DialogService.OpenAsync<EditCongregation>("Editar Congregación", new Dictionary<string, object> { { "CongregationId", args.CongregationId } });
-        await grid0.Reload();
-    }
-
-    private async Task GridDeleteButtonClick(MouseEventArgs args, Congregation congregation)
+    private async Task HandleValidSubmit()
     {
         try
         {
-            if (await DialogService.Confirm("¿Está seguro que desea eliminar este registro?", "Confirmar", new ConfirmOptions { OkButtonText = "Eliminar", CancelButtonText = "Cancelar" }) == true)
+            if (_isNew)
             {
-                var deleteResult = await CongregationService.DeleteAsync(congregation.CongregationId);
-                await grid0.Reload();
+                await CongregationService.AddAsync(_congregation);
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Creado", Detail = "Congregación creada." });
+                _isNew = false;
+            }
+            else
+            {
+                await CongregationService.UpdateAsync(_congregation);
+                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Guardado", Detail = "Congregación actualizada." });
             }
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Error",
-                Detail = "No se pudo eliminar la congregación"
-            });
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Atención", Detail = ex.Message });
+        }
+        catch (Exception)
+        {
+            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error", Detail = "Ocurrió un error al guardar." });
         }
     }
 
-    private async Task OpenCreateModal()
+    private async Task Cancel(MouseEventArgs args)
     {
-        var result = await DialogService.OpenAsync<CreateCongregation>("Add Congregation", null, new DialogOptions { Width = "600px", Height = "auto", Resizable = true });
-        if (result == true)
+        // reload current state from DB
+        var items = await CongregationService.GetAllAsync();
+        var first = items.FirstOrDefault();
+        if (first == null)
         {
-            _congregations = await CongregationService.GetAllAsync();
-            StateHasChanged();
+            _congregation = new Congregation { Name = string.Empty };
+            _isNew = true;
         }
-    }
-
-    private async Task OpenEditModal(Congregation congregation)
-    {
-        var parameters = new Dictionary<string, object> { ["congregation"] = congregation };
-        var result = await DialogService.OpenAsync<EditCongregation>("Edit Congregation", parameters, new DialogOptions { Width = "600px", Height = "auto", Resizable = true });
-        if (result == true)
+        else
         {
-            _congregations = await CongregationService.GetAllAsync();
-            StateHasChanged();
+            _congregation = first;
+            _isNew = false;
         }
+        StateHasChanged();
     }
-
-    private async Task ShowDetailsModal(Congregation congregation)
-    {
-        var parameters = new Dictionary<string, object> { ["congregation"] = congregation };
-        await DialogService.OpenAsync<DetailsCongregation>("Congregation Details", parameters, new DialogOptions { Width = "600px", Height = "auto", Resizable = true });
-    }
-
-    private async Task ConfirmDelete(Congregation congregation)
-    {
-        bool? confirmed = await DialogService.Confirm("Are you sure you want to delete this record?", "Confirm", new ConfirmOptions { OkButtonText = "OK", CancelButtonText = "Cancel" });
-        if (confirmed == true)
-        {
-            await CongregationService.DeleteAsync(congregation.CongregationId);
-            _congregations = await CongregationService.GetAllAsync();
-            StateHasChanged();
-        }
-    }
-
 }

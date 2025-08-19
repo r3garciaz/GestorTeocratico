@@ -8,5 +8,5 @@ public interface ICongregationService
     Task<Congregation?> GetByIdAsync(Guid id);
     Task AddAsync(Congregation congregation);
     Task UpdateAsync(Congregation congregation);
-    Task<Congregation> DeleteAsync(Guid id);
+
 }
