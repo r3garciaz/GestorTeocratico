@@ -3,6 +3,7 @@
 @using GestorTeocratico.Features.Congregations
 @inject ICongregationService CongregationService
 @inject NotificationService NotificationService
+@attribute [Authorize(Roles = "Admin, Manager")]
 
 <PageTitle>Congregación</PageTitle>
 

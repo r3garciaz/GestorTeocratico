@@ -1,14 +1,16 @@
 @page "/administration/roles"
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Identity
 @using GestorTeocratico.Features.Roles
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Web
 @using Radzen
 @using Radzen.Blazor
-@using GestorTeocratico.Components.Pages.Administration.Manage.Role
 @inject IRoleService RoleService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
+
+@attribute [Authorize(Roles = "Admin, Manager")]
 
 <PageTitle>Roles</PageTitle>
 <RadzenStack>

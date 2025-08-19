@@ -4,6 +4,7 @@
 @inject IDepartmentService DepartmentService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
+@attribute [Authorize(Roles = "Admin, Manager")]
 
 <PageTitle>Departamentos</PageTitle>
 <RadzenStack>

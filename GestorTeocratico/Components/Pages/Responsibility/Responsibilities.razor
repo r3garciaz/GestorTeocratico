@@ -4,6 +4,7 @@
 @inject IResponsibilityService ResponsibilityService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
+@attribute [Authorize(Roles = "Admin, Manager")]
 
 <PageTitle>Responsabilidades</PageTitle>
 <RadzenStack>
