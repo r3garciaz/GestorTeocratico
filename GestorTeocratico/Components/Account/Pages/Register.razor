@@ -1,11 +1,13 @@
 ﻿@page "/Account/Register"
 
 @using System.ComponentModel.DataAnnotations
+@using System.Security.Cryptography
 @using System.Text
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using GestorTeocratico.Data
+@using Microsoft.EntityFrameworkCore
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
@@ -67,6 +69,16 @@
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         var emailStore = GetEmailStore();
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+        
+        // Generate a unique public ID for the user
+        // Ensure that the public ID is unique by checking against existing users
+        string publicId;
+        do
+        {
+            publicId = PublicIdGenerator.Generate();
+        } while (await UserManager.Users.AnyAsync(u => u.PublicId == publicId));
+        user.PublicId = publicId;
+        
         var result = await UserManager.CreateAsync(user, Input.Password);
 
         if (!result.Succeeded)
@@ -118,6 +130,44 @@
         }
 
         return (IUserEmailStore<ApplicationUser>)UserStore;
+    }
+    
+    private static class PublicIdGenerator
+    {
+        private static readonly char[] Letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray();
+        private static readonly char[] Numbers = "123456789".ToCharArray();
+        private static readonly char[] AllChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
+        private static readonly int Length = 8;
+
+        public static string Generate()
+        {
+            var result = new char[Length];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                // First, ensure at least one number is included
+                var numberPosition = GetRandomInt(rng, Length);
+                result[numberPosition] = Numbers[GetRandomInt(rng, Numbers.Length)];
+
+                // Fill the remaining positions with random characters (letters and numbers)
+                for (int i = 0; i < Length; i++)
+                {
+                    if (i != numberPosition) // Skip the position we already filled with a number
+                    {
+                        result[i] = AllChars[GetRandomInt(rng, AllChars.Length)];
+                    }
+                }
+            }
+
+            return new string(result);
+        }
+
+        private static int GetRandomInt(RandomNumberGenerator rng, int maxValue)
+        {
+            var data = new byte[4];
+            rng.GetBytes(data);
+            var value = BitConverter.ToUInt32(data, 0);
+            return (int)(value % maxValue);
+        }
     }
 
     private sealed class InputModel
