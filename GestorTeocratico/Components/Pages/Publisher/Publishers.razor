@@ -5,6 +5,7 @@
 @inject IPublisherService PublisherService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
+@attribute [Authorize(Roles = "Admin, Manager")]
 
 <PageTitle>Publicadores</PageTitle>
 <RadzenStack>

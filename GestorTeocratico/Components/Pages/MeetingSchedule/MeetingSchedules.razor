@@ -13,6 +13,7 @@
 @inject IPdfExportService PdfExportService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
+@attribute [Authorize(Roles = "Admin, Manager")]
 
 <PageTitle>Programación de Responsabilidades</PageTitle>
 
