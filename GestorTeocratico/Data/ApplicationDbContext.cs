@@ -45,6 +45,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             }
         }
         
+        modelBuilder.Entity<ApplicationUser>()
+            .HasIndex(u => u.PublicId).IsUnique();
+        
+        modelBuilder.Entity<ApplicationUser>()
+            .Property(u => u.PublicId).HasMaxLength(20).IsRequired();
+        
         modelBuilder.Entity<Congregation>(entity =>
         {
             entity.Property(p => p.Name).HasMaxLength(250).IsRequired();
