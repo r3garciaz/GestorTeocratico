@@ -10,13 +10,13 @@ public static class DataSeederDevelopment
 {
     // Fixed UUIDs for consistent seeding
     private static readonly Guid CongregationId = new("01934567-89AB-7DEF-8012-3456789ABCDE");
-    
+
     // Department IDs
     private static readonly Guid AudioVisualDeptId = new("01934567-89AB-7DEF-8012-3456789ABCD1");
     private static readonly Guid AccommodationDeptId = new("01934567-89AB-7DEF-8012-3456789ABCD2");
     private static readonly Guid PublicationId = new("01934567-89AB-7DEF-8012-3456789ABCD3");
     // private static readonly Guid MicrophoneDeptId = new("01934567-89AB-7DEF-8012-3456789ABCD4");
-    
+
     // Responsibility IDs
     private static readonly Guid[] ResponsibilityIds =
     [
@@ -66,10 +66,10 @@ public static class DataSeederDevelopment
         new("01934567-89AB-7DEF-8012-34567890A129"),
         new("01934567-89AB-7DEF-8012-34567890A130")
     ];
-    
+
     // Role IDs
     private static readonly Guid[] RoleIds =
-    [   
+    [
         new("0198c2ae-6d60-77d7-9bfa-791a8abe8a0e"), // Admin
         new("0198c2ae-6d61-77ba-8039-408b8c3d31ef"), // Manager
         new("0198c2ae-6d61-77ba-8039-44037008daa7")  // User
@@ -87,8 +87,8 @@ public static class DataSeederDevelopment
 
     private static async Task SeedCongregationAsync(ApplicationDbContext context)
     {
-    // If any congregation exists, do not seed another.
-    if (await context.Congregations.AnyAsync()) return;
+        // If any congregation exists, do not seed another.
+        if (await context.Congregations.AnyAsync()) return;
 
         var congregation = new Congregation
         {
@@ -101,15 +101,15 @@ public static class DataSeederDevelopment
             Address = "Dirección Salón del Reino",
             City = "Ciudad"
         };
-        
+
         context.Congregations.Add(congregation);
         await context.SaveChangesAsync();
     }
 
     private static async Task SeedDepartmentsAsync(ApplicationDbContext context)
     {
-        var departmentsInDatabase = await context.Departments.ToDictionaryAsync(d => d.DepartmentId);
-        
+        var departmentsInDatabase = await context.Departments.IgnoreQueryFilters().ToDictionaryAsync(d => d.DepartmentId);
+
         var departments = new[]
         {
             new { Id = AudioVisualDeptId, Name = "Audio y Video" },
@@ -123,21 +123,21 @@ public static class DataSeederDevelopment
         {
             if (!departmentsInDatabase.ContainsKey(dept.Id))
             {
-                context.Departments.Add(new Department 
-                { 
+                context.Departments.Add(new Department
+                {
                     DepartmentId = dept.Id,
-                    Name = dept.Name 
+                    Name = dept.Name
                 });
             }
         }
-        
+
         await context.SaveChangesAsync();
     }
 
     private static async Task SeedResponsibilitiesAsync(ApplicationDbContext context)
     {
-        var responsibilitiesInDatabase = await context.Responsibilities.ToDictionaryAsync(r => r.ResponsibilityId);
-        
+        var responsibilitiesInDatabase = await context.Responsibilities.IgnoreQueryFilters().ToDictionaryAsync(r => r.ResponsibilityId);
+
         var responsibilities = new[]
         {
             new { Id = ResponsibilityIds[0], Name = "Audio", DepartmentId = AudioVisualDeptId },
@@ -154,21 +154,21 @@ public static class DataSeederDevelopment
         {
             if (!responsibilitiesInDatabase.ContainsKey(resp.Id))
             {
-                context.Responsibilities.Add(new Responsibility 
-                { 
+                context.Responsibilities.Add(new Responsibility
+                {
                     ResponsibilityId = resp.Id,
                     Name = resp.Name,
                     DepartmentId = resp.DepartmentId
                 });
             }
         }
-        
+
         await context.SaveChangesAsync();
     }
 
     private static async Task SeedPublishersAsync(ApplicationDbContext context)
     {
-        var publishersInDatabase = await context.Publishers.ToDictionaryAsync(p => p.PublisherId);
+        var publishersInDatabase = await context.Publishers.IgnoreQueryFilters().ToDictionaryAsync(p => p.PublisherId);
         var publisherData = new[]
         {
             new { Id = PublisherIds[0], FirstName = "Ivan", LastName = "Valenzuela" },
@@ -208,8 +208,8 @@ public static class DataSeederDevelopment
         {
             if (!publishersInDatabase.ContainsKey(pubData.Id))
             {
-                context.Publishers.Add(new Publisher 
-                { 
+                context.Publishers.Add(new Publisher
+                {
                     PublisherId = pubData.Id,
                     FirstName = pubData.FirstName,
                     LastName = pubData.LastName,
@@ -217,7 +217,7 @@ public static class DataSeederDevelopment
                 });
             }
         }
-        
+
         await context.SaveChangesAsync();
     }
 
@@ -225,9 +225,9 @@ public static class DataSeederDevelopment
     {
         // Check if relationships already exist
         if (await context.PublisherResponsibilities.AnyAsync()) return;
-    
+
         var publisherResponsibilities = new List<PublisherResponsibility>();
-        
+
         // Assign all publishers to all responsibilities for testing
         foreach (var publisherId in PublisherIds)
         {
@@ -240,11 +240,11 @@ public static class DataSeederDevelopment
                 });
             }
         }
-        
+
         context.PublisherResponsibilities.AddRange(publisherResponsibilities);
         await context.SaveChangesAsync();
     }
-    
+
     private static async Task SeedRolesAsync(ApplicationDbContext context)
     {
         var roles = new[]
@@ -268,9 +268,9 @@ public static class DataSeederDevelopment
                 NormalizedName = Roles.User.ToUpperInvariant()
             }
         };
-        
+
         var currentRoles = await context.Roles.ToListAsync();
-        
+
         foreach (var roleName in roles)
         {
             if (currentRoles.All(r => r.Name != roleName.Name))
@@ -278,7 +278,7 @@ public static class DataSeederDevelopment
                 context.Roles.Add(roleName);
             }
         }
-        
+
         await context.SaveChangesAsync();
     }
 }
