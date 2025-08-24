@@ -1,0 +1,360 @@
+@page "/administration/users"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using GestorTeocratico.Data
+@using GestorTeocratico.Shared
+@inject UserManager<ApplicationUser> UserManager
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+@attribute [Authorize(Roles = "Admin, Manager")]
+
+<PageTitle>Administrar Usuarios</PageTitle>
+
+<RadzenStack Gap="1.5rem">
+    <!-- Header Section -->
+    <RadzenRow AlignItems="AlignItems.Center">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenText Text="Administrar Usuarios" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                         JustifyContent="JustifyContent.End" Gap="0.5rem">
+                <RadzenButton Icon="refresh" Text="Actualizar" Click="@LoadUsersAsync" Variant="Variant.Outlined"/>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <!-- Search and Filter Section -->
+    <RadzenCard>
+        <RadzenStack Gap="1rem">
+            <RadzenText TextStyle="TextStyle.H6" Text="Búsqueda y Filtros" />
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenTextBox @bind-Value="@_searchEmail" Placeholder="Buscar por email..." 
+                                   Style="width: 100%" @oninput="@OnSearchChanged" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenTextBox @bind-Value="@_searchPublicId" Placeholder="Buscar por ID público..." 
+                                   Style="width: 100%" @oninput="@OnSearchChanged" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenDropDown @bind-Value="@_selectedRoleFilter" Data="@_availableRoles" 
+                                    TextProperty="Value" ValueProperty="Key" 
+                                    Placeholder="Filtrar por rol..." AllowClear="true"
+                                    Change="@OnRoleFilterChanged" Style="width: 100%" />
+                </RadzenColumn>
+            </RadzenRow>
+            <RadzenRow>
+                <RadzenColumn Size="12">
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                        <RadzenButton Icon="search" Text="Buscar" Click="@ApplyFiltersAsync" 
+                                      ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
+                        <RadzenButton Icon="clear" Text="Limpiar" Click="@ClearFiltersAsync" 
+                                      ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenCard>
+
+    <!-- Users DataGrid -->
+    <RadzenDataGrid Data="@_filteredUsers" TItem="ApplicationUser"
+                    AllowFiltering="true" FilterMode="FilterMode.Advanced"
+                    AllowPaging="true" AllowSorting="true" ShowPagingSummary="true"
+                    PageSize="15" PageSizeOptions="@(new [] { 10, 15, 25, 50 })"
+                    ColumnWidth="200px">
+        <Columns>
+            <RadzenDataGridColumn Property="@nameof(ApplicationUser.PublicId)" Title="ID Público" Width="120px">
+                <Template Context="user">
+                    <RadzenBadge Text="@user.PublicId" BadgeStyle="BadgeStyle.Info" />
+                </Template>
+            </RadzenDataGridColumn>
+            
+            <RadzenDataGridColumn Property="@nameof(ApplicationUser.Email)" Title="Email" Width="250px">
+                <Template Context="user">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <RadzenIcon Icon="@(user.EmailConfirmed ? "verified" : "mail")" />
+                        <RadzenText Text="@user.Email" />
+                    </RadzenStack>
+                </Template>
+            </RadzenDataGridColumn>
+            
+            <RadzenDataGridColumn Property="@nameof(ApplicationUser.UserName)" Title="Usuario" Width="200px" />
+            
+            <RadzenDataGridColumn Filterable="false" Sortable="false" Width="200px" Title="Roles">
+                <Template Context="user">
+                    @if (_userRoles.ContainsKey(user.Id))
+                    {
+                        <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap" Gap="0.25rem">
+                            @foreach (var role in _userRoles[user.Id])
+                            {
+                                <RadzenBadge Text="@role" BadgeStyle="@GetRoleBadgeStyle(role)" />
+                            }
+                        </RadzenStack>
+                    }
+                    else
+                    {
+                        <RadzenText Text="Sin roles" TextStyle="TextStyle.Caption" />
+                    }
+                </Template>
+            </RadzenDataGridColumn>
+            
+            <RadzenDataGridColumn Filterable="false" Sortable="false" Width="100px" Title="Estado">
+                <Template Context="user">
+                    <RadzenBadge Text="@(user.LockoutEnd > DateTimeOffset.UtcNow ? "Bloqueado" : "Activo")" 
+                                BadgeStyle="@(user.LockoutEnd > DateTimeOffset.UtcNow ? BadgeStyle.Danger : BadgeStyle.Success)" />
+                </Template>
+            </RadzenDataGridColumn>
+            
+            <RadzenDataGridColumn Filterable="false" Sortable="false" Width="180px" Title="Acciones" TextAlign="TextAlign.Center">
+                <Template Context="user">
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem" JustifyContent="JustifyContent.Center">
+                        <RadzenButton Icon="admin_panel_settings" ButtonStyle="ButtonStyle.Primary" 
+                                     Size="ButtonSize.Small" Variant="Variant.Outlined"
+                                     Click="@(() => ManageUserRolesAsync(user))" 
+                                     TooltipText="Administrar Roles" />
+                        <RadzenButton Icon="@(user.LockoutEnd > DateTimeOffset.UtcNow ? "lock_open" : "lock")" 
+                                     ButtonStyle="@(user.LockoutEnd > DateTimeOffset.UtcNow ? ButtonStyle.Success : ButtonStyle.Warning)" 
+                                     Size="ButtonSize.Small" Variant="Variant.Outlined"
+                                     Click="@(() => ToggleUserLockoutAsync(user))"
+                                     TooltipText="@(user.LockoutEnd > DateTimeOffset.UtcNow ? "Desbloquear Usuario" : "Bloquear Usuario")" />
+                        <RadzenButton Icon="info" ButtonStyle="ButtonStyle.Info" 
+                                     Size="ButtonSize.Small" Variant="Variant.Outlined"
+                                     Click="@(() => ViewUserDetailsAsync(user))"
+                                     TooltipText="Ver Detalles" />
+                    </RadzenStack>
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+
+    <!-- Statistics Card -->
+    <RadzenCard>
+        <RadzenRow>
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenStack AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenIcon Icon="people" Style="font-size: 2rem;" />
+                    <RadzenText TextStyle="TextStyle.H6" Text="@_allUsers.Count().ToString()" />
+                    <RadzenText TextStyle="TextStyle.Caption" Text="Total Usuarios" />
+                </RadzenStack>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenStack AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenIcon Icon="admin_panel_settings" Style="font-size: 2rem;" />
+                    <RadzenText TextStyle="TextStyle.H6" Text="@_roleStatistics.GetValueOrDefault(Roles.Admin, 0).ToString()" />
+                    <RadzenText TextStyle="TextStyle.Caption" Text="Administradores" />
+                </RadzenStack>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenStack AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenIcon Icon="manage_accounts" Style="font-size: 2rem;" />
+                    <RadzenText TextStyle="TextStyle.H6" Text="@_roleStatistics.GetValueOrDefault(Roles.Manager, 0).ToString()" />
+                    <RadzenText TextStyle="TextStyle.Caption" Text="Managers" />
+                </RadzenStack>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="3">
+                <RadzenStack AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenIcon Icon="person" Style="font-size: 2rem;" />
+                    <RadzenText TextStyle="TextStyle.H6" Text="@_roleStatistics.GetValueOrDefault(Roles.User, 0).ToString()" />
+                    <RadzenText TextStyle="TextStyle.Caption" Text="Usuarios" />
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private RadzenDataGrid<ApplicationUser>? _usersGrid;
+    private List<ApplicationUser> _allUsers = new();
+    private List<ApplicationUser> _filteredUsers = new();
+    private Dictionary<string, List<string>> _userRoles = new();
+    private Dictionary<string, int> _roleStatistics = new();
+    
+    // Search and filter properties
+    private string _searchEmail = string.Empty;
+    private string _searchPublicId = string.Empty;
+    private string? _selectedRoleFilter;
+    private List<KeyValuePair<string, string>> _availableRoles = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        LoadRoles();
+        await LoadUsersAsync();
+    }
+
+    private void LoadRoles()
+    {
+        _availableRoles = new List<KeyValuePair<string, string>>
+        {
+            new(Roles.Admin, "Administrador"),
+            new(Roles.Manager, "Manager"),
+            new(Roles.User, "Usuario")
+        };
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        try
+        {
+            _allUsers = UserManager.Users.ToList();
+            await LoadUserRolesAsync();
+            CalculateRoleStatistics();
+            ApplyFilters();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(NotificationSeverity.Error, "Error", "Error al cargar usuarios: " + ex.Message);
+        }
+    }
+
+    private async Task LoadUserRolesAsync()
+    {
+        _userRoles.Clear();
+        
+        // Process users sequentially to avoid DbContext threading issues
+        foreach (var user in _allUsers)
+        {
+            try
+            {
+                var roles = await UserManager.GetRolesAsync(user);
+                _userRoles[user.Id] = roles.ToList();
+            }
+            catch (Exception ex)
+            {
+                // Log individual user role loading errors but continue with others
+                Console.WriteLine($"Error loading roles for user {user.Email}: {ex.Message}");
+                _userRoles[user.Id] = new List<string>();
+            }
+        }
+    }
+
+    private void CalculateRoleStatistics()
+    {
+        _roleStatistics.Clear();
+        _roleStatistics[Roles.Admin] = _userRoles.Values.Count(roles => roles.Contains(Roles.Admin));
+        _roleStatistics[Roles.Manager] = _userRoles.Values.Count(roles => roles.Contains(Roles.Manager));
+        _roleStatistics[Roles.User] = _userRoles.Values.Count(roles => roles.Contains(Roles.User));
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredUsers = _allUsers.Where(user =>
+        {
+            var matchesEmail = string.IsNullOrEmpty(_searchEmail) || 
+                             (user.Email?.Contains(_searchEmail, StringComparison.OrdinalIgnoreCase) == true);
+            
+            var matchesPublicId = string.IsNullOrEmpty(_searchPublicId) || 
+                                user.PublicId.Contains(_searchPublicId, StringComparison.OrdinalIgnoreCase);
+            
+            var matchesRole = string.IsNullOrEmpty(_selectedRoleFilter) || 
+                            _userRoles.GetValueOrDefault(user.Id, new List<string>()).Contains(_selectedRoleFilter);
+            
+            return matchesEmail && matchesPublicId && matchesRole;
+        }).ToList();
+
+        StateHasChanged();
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        ApplyFilters();
+    }
+
+    private async Task ClearFiltersAsync()
+    {
+        _searchEmail = string.Empty;
+        _searchPublicId = string.Empty;
+        _selectedRoleFilter = null;
+        ApplyFilters();
+    }
+
+    private async Task OnSearchChanged(ChangeEventArgs e)
+    {
+        // Auto-apply filters with a small delay to avoid excessive filtering
+        await Task.Delay(300);
+        ApplyFilters();
+    }
+
+    private void OnRoleFilterChanged(object value)
+    {
+        _selectedRoleFilter = value?.ToString();
+        ApplyFilters();
+    }
+
+    private async Task ManageUserRolesAsync(ApplicationUser user)
+    {
+        var currentRoles = _userRoles.GetValueOrDefault(user.Id, new List<string>());
+        
+        var parameters = new Dictionary<string, object> 
+        { 
+            { "User", user },
+            { "CurrentRoles", currentRoles },
+            { "AvailableRoles", _availableRoles.Select(r => r.Key).ToList() }
+        };
+
+        var result = await DialogService.OpenAsync("Administrar Roles", 
+            ds => @<UserRoleDialog User="user" CurrentRoles="currentRoles" AvailableRoles="_availableRoles.Select(r => r.Key).ToList()" />,
+            new DialogOptions() { Width = "600px", Height = "500px" });
+
+        if (result == true)
+        {
+            await LoadUsersAsync();
+            ShowNotification(NotificationSeverity.Success, "Éxito", "Roles actualizados correctamente");
+        }
+    }
+
+    private async Task ToggleUserLockoutAsync(ApplicationUser user)
+    {
+        try
+        {
+            if (user.LockoutEnd > DateTimeOffset.UtcNow)
+            {
+                // Unlock user
+                await UserManager.SetLockoutEndDateAsync(user, null);
+                ShowNotification(NotificationSeverity.Success, "Usuario Desbloqueado", $"El usuario {user.Email} ha sido desbloqueado");
+            }
+            else
+            {
+                // Lock user for 30 days
+                await UserManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddDays(30));
+                ShowNotification(NotificationSeverity.Warning, "Usuario Bloqueado", $"El usuario {user.Email} ha sido bloqueado");
+            }
+
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(NotificationSeverity.Error, "Error", "Error al cambiar el estado del usuario: " + ex.Message);
+        }
+    }
+
+    private async Task ViewUserDetailsAsync(ApplicationUser user)
+    {
+        await DialogService.OpenAsync("Detalles del Usuario", 
+            ds => @<UserDetailsDialog User="user" />,
+            new DialogOptions() { Width = "500px", Height = "600px" });
+    }
+
+    private BadgeStyle GetRoleBadgeStyle(string role)
+    {
+        return role switch
+        {
+            Roles.Admin => BadgeStyle.Danger,
+            Roles.Manager => BadgeStyle.Info,
+            Roles.User => BadgeStyle.Success,
+            _ => BadgeStyle.Secondary
+        };
+    }
+
+    private void ShowNotification(NotificationSeverity severity, string summary, string detail)
+    {
+        NotificationService.Notify(new NotificationMessage 
+        { 
+            Severity = severity, 
+            Summary = summary, 
+            Detail = detail 
+        });
+    }
+}

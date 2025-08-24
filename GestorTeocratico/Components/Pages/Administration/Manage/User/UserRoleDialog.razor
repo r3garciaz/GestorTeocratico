@@ -1,0 +1,178 @@
+@using Microsoft.AspNetCore.Identity
+@using GestorTeocratico.Data
+@using GestorTeocratico.Shared
+@inject UserManager<ApplicationUser> UserManager
+@inject NotificationService NotificationService
+
+<RadzenStack Gap="1.5rem">
+    <!-- User Information Header -->
+    <RadzenCard>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+            <RadzenGravatar Email="@User.Email" Size="60" />
+            <RadzenStack Gap="0.25rem">
+                <RadzenText TextStyle="TextStyle.H6" Text="@User.Email" />
+                <RadzenText TextStyle="TextStyle.Caption" Text="@($"ID Público: {User.PublicId}")" />
+                <RadzenBadge Text="@(User.EmailConfirmed ? "Email Verificado" : "Email Pendiente")" 
+                            BadgeStyle="@(User.EmailConfirmed ? BadgeStyle.Success : BadgeStyle.Warning)" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+
+    <!-- Current Roles Section -->
+    <RadzenFieldset Text="Roles Actuales">
+        @if (CurrentRoles.Any())
+        {
+            <RadzenStack Orientation="Orientation.Horizontal" Wrap="FlexWrap.Wrap" Gap="0.5rem">
+                @foreach (var role in CurrentRoles)
+                {
+                    <RadzenBadge Text="@GetRoleDisplayName(role)" BadgeStyle="@GetRoleBadgeStyle(role)" />
+                }
+            </RadzenStack>
+        }
+        else
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" ShowIcon="true">
+                <RadzenText Text="El usuario no tiene roles asignados" />
+            </RadzenAlert>
+        }
+    </RadzenFieldset>
+
+    <!-- Role Assignment Section -->
+    <RadzenFieldset Text="Asignar/Remover Roles">
+        <RadzenListBox @bind-Value="@_selectedRoles" 
+                       Data="@_roleItems" 
+                       TextProperty="DisplayName" 
+                       ValueProperty="Name"
+                       Multiple="true"
+                       AllowSelectAll="true"
+                       SelectAllText="Seleccionar Todo"
+                       Chips="true"
+                       AllowClear="true"
+                       Placeholder="Seleccione los roles para el usuario..."
+                       Style="width: 100%; min-height: 120px;" />
+    </RadzenFieldset>
+
+    <!-- Action Buttons -->
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Light" 
+                     Click="@(() => DialogService.Close(false))" />
+        <RadzenButton Text="Guardar Cambios" ButtonStyle="ButtonStyle.Primary" 
+                     Click="@SaveRolesAsync" Icon="save" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public ApplicationUser User { get; set; } = new();
+    [Parameter] public List<string> CurrentRoles { get; set; } = new();
+    [Parameter] public List<string> AvailableRoles { get; set; } = new();
+
+    [CascadingParameter] public DialogService DialogService { get; set; } = default!;
+
+    private IEnumerable<string> _selectedRoles = new List<string>();
+    private List<RoleItem> _roleItems = new();
+
+    public class RoleItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+    }
+
+    protected override void OnInitialized()
+    {
+        // Initialize role items for the ListBox
+        _roleItems = AvailableRoles.Select(role => new RoleItem
+        {
+            Name = role,
+            DisplayName = GetRoleDisplayName(role)
+        }).ToList();
+
+        // Set initially selected roles
+        _selectedRoles = CurrentRoles.ToList();
+    }
+
+    private async Task SaveRolesAsync()
+    {
+        try
+        {
+            var selectedRolesList = _selectedRoles.ToList();
+            
+            // Get roles to add and remove
+            var rolesToAdd = selectedRolesList.Where(role => !CurrentRoles.Contains(role)).ToList();
+            var rolesToRemove = CurrentRoles.Where(role => !selectedRolesList.Contains(role)).ToList();
+
+            // Remove roles
+            if (rolesToRemove.Any())
+            {
+                var removeResult = await UserManager.RemoveFromRolesAsync(User, rolesToRemove);
+                if (!removeResult.Succeeded)
+                {
+                    ShowNotification(NotificationSeverity.Error, "Error", 
+                        "Error al remover roles: " + string.Join(", ", removeResult.Errors.Select(e => e.Description)));
+                    return;
+                }
+            }
+
+            // Add roles
+            if (rolesToAdd.Any())
+            {
+                var addResult = await UserManager.AddToRolesAsync(User, rolesToAdd);
+                if (!addResult.Succeeded)
+                {
+                    ShowNotification(NotificationSeverity.Error, "Error", 
+                        "Error al agregar roles: " + string.Join(", ", addResult.Errors.Select(e => e.Description)));
+                    return;
+                }
+            }
+
+            ShowNotification(NotificationSeverity.Success, "Éxito", "Roles actualizados correctamente");
+            DialogService.Close(true);
+        }
+        catch (Exception ex)
+        {
+            ShowNotification(NotificationSeverity.Error, "Error", "Error inesperado: " + ex.Message);
+        }
+    }
+
+    private string GetRoleDisplayName(string role)
+    {
+        return role switch
+        {
+            Roles.Admin => "Administrador",
+            Roles.Manager => "Manager", 
+            Roles.User => "Usuario",
+            _ => role
+        };
+    }
+
+    private BadgeStyle GetRoleBadgeStyle(string role)
+    {
+        return role switch
+        {
+            Roles.Admin => BadgeStyle.Danger,
+            Roles.Manager => BadgeStyle.Info,
+            Roles.User => BadgeStyle.Success,
+            _ => BadgeStyle.Secondary
+        };
+    }
+
+    private void ShowNotification(NotificationSeverity severity, string summary, string detail)
+    {
+        try
+        {
+            if (NotificationService != null)
+            {
+                NotificationService.Notify(new NotificationMessage 
+                { 
+                    Severity = severity, 
+                    Summary = summary, 
+                    Detail = detail 
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            // Fallback: log to console if notification service fails
+            Console.WriteLine($"Notification error: {ex.Message}");
+        }
+    }
+}
