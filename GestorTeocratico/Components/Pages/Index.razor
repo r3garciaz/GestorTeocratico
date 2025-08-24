@@ -1,181 +1,334 @@
 @page "/"
 @layout Layout.IndexLayout
 @attribute [ExcludeFromInteractiveRouting]
-@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@attribute [AllowAnonymous]
 
-<RadzenStack Gap="2rem">
-
-    <!-- Hero / Masthead -->
-    <section style="border-radius: 1rem; border: 1px solid rgba(0,0,0,.06); background: linear-gradient(135deg, rgba(0,114,229,.08), rgba(110,48,235,.08));">
-        <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Center" class="rz-px-4 rz-px-md-6 rz-px-lg-8 rz-py-6 rz-py-md-8 rz-py-lg-10">
-            <RadzenColumn Size="12" SizeMd="10" SizeLg="8">
-                <RadzenStack AlignItems="AlignItems.Center" Gap="1rem" class="rz-text-center">
-                    <RadzenText Text="Gestor Teocrático" TextStyle="TextStyle.H1" />
-                    <RadzenText Text="Administra congregaciones, departamentos, publicadores y asignaciones de reuniones en un solo lugar." TextStyle="TextStyle.Subtitle1" class="rz-opacity-80" />
-                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" JustifyContent="JustifyContent.Center" Wrap="FlexWrap.Wrap">
-                        <a href="/Account/Login" class="rz-button rz-button-md rz-filled rz-primary rz-shadow-2">Iniciar sesión</a>
-                        <a href="/Account/Register" class="rz-button rz-button-md rz-variant-outlined">Registrarse</a>
-                        @* <a href="#features" class="rz-button rz-variant-text">Ver características</a> *@
-                    </RadzenStack>
-                </RadzenStack>
-            </RadzenColumn>
-        </RadzenRow>
-    </section>
-
-    <!-- Quick stats -->
-    <section aria-label="Resumen de capacidades">
-        <RadzenRow class="rz-text-center">
-            <RadzenColumn Size="12" SizeMd="3">
-                <RadzenStack Gap="0.25rem" AlignItems="AlignItems.Center">
-                    <RadzenCard Variant="Variant.Filled" Style="border-radius: .75rem;" class="w-75">
-                        <RadzenText Text="SSR" TextStyle="TextStyle.Overline" class="rz-opacity-70"/>
-                        <RadzenText Text="Renderizado dinámico" TextStyle="TextStyle.Subtitle2"/>
-                    </RadzenCard>
-                </RadzenStack>
-            </RadzenColumn>
-            <RadzenColumn Size="12" SizeMd="3">
-                <RadzenStack Gap="0.25rem" AlignItems="AlignItems.Center">
-                    <RadzenCard Variant="Variant.Filled" Style="border-radius: .75rem;" class="w-75">
-                        <RadzenText Text="PostgreSQL" TextStyle="TextStyle.Overline" class="rz-opacity-70"/>
-                        <RadzenText Text="Persistencia segura" TextStyle="TextStyle.Subtitle2"/>
-                    </RadzenCard>
-                </RadzenStack>
-            </RadzenColumn>
-            <RadzenColumn Size="12" SizeMd="3">
-                <RadzenStack Gap="0.25rem" AlignItems="AlignItems.Center">
-                    <RadzenCard Variant="Variant.Filled" Style="border-radius: .75rem;" class="w-75">
-                        <RadzenText Text="EF Core" TextStyle="TextStyle.Overline" class="rz-opacity-70"/>
-                        <RadzenText Text="Migrations + Soft Delete" TextStyle="TextStyle.Subtitle2"/>
-                    </RadzenCard>
-                </RadzenStack>
-            </RadzenColumn>
-            <RadzenColumn Size="12" SizeMd="3">
-                <RadzenStack Gap="0.25rem" AlignItems="AlignItems.Center">
-                    <RadzenCard Variant="Variant.Filled" Style="border-radius: .75rem;" class="w-75">
-                        <RadzenText Text="Identity" TextStyle="TextStyle.Overline" class="rz-opacity-70"/>
-                        <RadzenText Text="Roles y seguridad" TextStyle="TextStyle.Subtitle2"/>
-                    </RadzenCard>
-                </RadzenStack>
-            </RadzenColumn>
-        </RadzenRow>
-    </section>
-
-    <!-- Features grid -->
-    <section id="features" aria-label="Características principales">
-        <RadzenStack Gap="1rem" class="rz-px-1">
-            <RadzenText Text="Características" TextStyle="TextStyle.H4" />
-            <RadzenText Text="Todo lo que necesitas para la operación de tu congregación." TextStyle="TextStyle.Body1" class="rz-opacity-80" />
-        </RadzenStack>
-
-        <RadzenRow class="rz-mt-2" Gap="1rem">
-            <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
-                <RadzenCard Style="height: 100%; border-radius: .75rem;">
-                    <RadzenStack Gap="0.5rem">
-                        <RadzenIcon Icon="fort" Style="font-size: 28px; color: var(--rz-primary);" />
-                        <RadzenText Text="Gestión de Congregaciones" TextStyle="TextStyle.Subtitle1" />
-                        <RadzenText Text="Crea y administra datos generales: nombre, dirección y días de reunión." TextStyle="TextStyle.Body2" class="rz-opacity-80" />
-                    </RadzenStack>
-                </RadzenCard>
-            </RadzenColumn>
-
-            <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
-                <RadzenCard Style="height: 100%; border-radius: .75rem;">
-                    <RadzenStack Gap="0.5rem">
-                        <RadzenIcon Icon="business_center" Style="font-size: 28px; color: var(--rz-primary);" />
-                        <RadzenText Text="Departamentos y Responsabilidades" TextStyle="TextStyle.Subtitle1" />
-                        <RadzenText Text="Define departamentos y lista de responsabilidades asociadas." TextStyle="TextStyle.Body2" class="rz-opacity-80" />
-                    </RadzenStack>
-                </RadzenCard>
-            </RadzenColumn>
-
-            <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
-                <RadzenCard Style="height: 100%; border-radius: .75rem;">
-                    <RadzenStack Gap="0.5rem">
-                        <RadzenIcon Icon="groups" Style="font-size: 28px; color: var(--rz-primary);" />
-                        <RadzenText Text="Publicadores" TextStyle="TextStyle.Subtitle1" />
-                        <RadzenText Text="Gestiona datos, privilegios y asignaciones de cada publicador." TextStyle="TextStyle.Body2" class="rz-opacity-80" />
-                    </RadzenStack>
-                </RadzenCard>
-            </RadzenColumn>
-
-            <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
-                <RadzenCard Style="height: 100%; border-radius: .75rem;">
-                    <RadzenStack Gap="0.5rem">
-                        <RadzenIcon Icon="event" Style="font-size: 28px; color: var(--rz-primary);" />
-                        <RadzenText Text="Programación de Reuniones" TextStyle="TextStyle.Subtitle1" />
-                        <RadzenText Text="Planifica reuniones y asigna responsabilidades de manera clara y ordenada." TextStyle="TextStyle.Body2" class="rz-opacity-80" />
-                    </RadzenStack>
-                </RadzenCard>
-            </RadzenColumn>
-
-            <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
-                <RadzenCard Style="height: 100%; border-radius: .75rem;">
-                    <RadzenStack Gap="0.5rem">
-                        <RadzenIcon Icon="task_alt" Style="font-size: 28px; color: var(--rz-primary);" />
-                        <RadzenText Text="Asignaciones" TextStyle="TextStyle.Subtitle1" />
-                        <RadzenText Text="Gestiona quién hace qué y cuándo, con historial de responsabilidades." TextStyle="TextStyle.Body2" class="rz-opacity-80" />
-                    </RadzenStack>
-                </RadzenCard>
-            </RadzenColumn>
-
-            <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
-                <RadzenCard Style="height: 100%; border-radius: .75rem;">
-                    <RadzenStack Gap="0.5rem">
-                        <RadzenIcon Icon="security" Style="font-size: 28px; color: var(--rz-primary);" />
-                        <RadzenText Text="Seguridad y Cumplimiento" TextStyle="TextStyle.Subtitle1" />
-                        <RadzenText Text="Autenticación, control de roles, soft delete y exportación de datos." TextStyle="TextStyle.Body2" class="rz-opacity-80" />
-                    </RadzenStack>
-                </RadzenCard>
-            </RadzenColumn>
-        </RadzenRow>
-    </section>
-
-    <!-- How it works -->
-    <section aria-label="Cómo empezar">
-        <RadzenStack Gap="1rem" class="rz-px-1 rz-mt-4">
-            <RadzenText Text="Cómo empezar" TextStyle="TextStyle.H4" />
-            <RadzenRow>
-                <RadzenColumn Size="12" SizeMd="6" SizeLg="3">
-                    <RadzenCard Style="height: 100%; border-radius: .75rem;">
-                        <RadzenStack Gap="0.5rem">
-                            <RadzenText Text="1. Crea tu cuenta" TextStyle="TextStyle.Subtitle1" />
-                            <RadzenText Text="Regístrate y accede con tus credenciales." TextStyle="TextStyle.Body2" class="rz-opacity-80" />
+<div style="overflow-x: hidden;">
+    <!-- Hero Sectiion CTA final -->
+                @* <RadzenStack AlignItems="AlignItems.Center" Gap="1.5rem" class="rz-text-center rz-mt-6">
+                    <RadzenText Text="¿Listo para comenzar?" TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 600;" />
+                    <RadzenLink Path="/Account/Register" class="rz-text-decoration-none">
+                        <RadzenButton ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Large" Text="Comenzar ahora" 
+                                      class="rz-shadow-4 rz-border-radius-3" 
+                                      Style="font-weight: 600; padding: 14px 36px;" />
+                    </RadzenLink>
+                </RadzenStack> *@
+    <section id="hero" class="rz-background-color-base-50 rz-py-0" style="min-height: 85vh; display: flex; align-items: center; position: relative;">
+        <!-- Elementos decorativos usando colores de Radzen -->
+        <div class="rz-background-color-primary-lighter rz-border-radius-10" 
+             style="position: absolute; top: 10%; right: 10%; width: 100px; height: 100px; opacity: 0.1;"></div>
+        <div class="rz-background-color-secondary-lighter rz-border-radius-10" 
+             style="position: absolute; bottom: 20%; left: 5%; width: 60px; height: 60px; opacity: 0.1;"></div>
+        
+        <div class="rz-container">
+            <RadzenRow JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Center" class="rz-px-4 rz-px-md-6 rz-px-lg-8">
+                <RadzenColumn Size="12" SizeLg="10" SizeXL="8">
+                    <RadzenStack AlignItems="AlignItems.Center" Gap="2rem" class="rz-text-center">
+                        <!-- Badge/Announcement -->
+                        <RadzenBadge BadgeStyle="BadgeStyle.Info" Shade="Shade.Lighter" 
+                                     Text="✨ Nueva versión disponible" 
+                                     class="rz-px-4 rz-py-2 rz-shadow-2 rz-border-radius-6" 
+                                     Style="font-weight: 500;" />
+                        
+                        <!-- Main Heading -->
+                        <RadzenStack AlignItems="AlignItems.Center" Gap="1rem">
+                            <RadzenText Text="Gestor Teocrático" 
+                                        TextStyle="TextStyle.DisplayH3" 
+                                        class="rz-mb-0" 
+                                        Style="font-weight: 700; background: linear-gradient(135deg, var(--rz-primary), var(--rz-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;" />
+                            <RadzenText Text="La plataforma completa para administrar tu congregación" 
+                                        TextStyle="TextStyle.H5" 
+                                        class="rz-opacity-80 rz-mb-0" 
+                                        Style="font-weight: 400; max-width: 600px; line-height: 1.6;" />
                         </RadzenStack>
-                    </RadzenCard>
-                </RadzenColumn>
-                <RadzenColumn Size="12" SizeMd="6" SizeLg="3">
-                    <RadzenCard Style="height: 100%; border-radius: .75rem;">
-                        <RadzenStack Gap="0.5rem">
-                            <RadzenText Text="2. Configura la congregación" TextStyle="TextStyle.Subtitle1" />
-                            <RadzenText Text="Define los datos generales y los días de reunión." TextStyle="TextStyle.Body2" class="rz-opacity-80" />
+                        
+                        <!-- CTA Buttons -->
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" JustifyContent="JustifyContent.Left" AlignItems="AlignItems.Start" 
+                                     Wrap="FlexWrap.Wrap" class="rz-mt-4">
+                            <RadzenLink Path="/Account/Register" class="rz-text-decoration-none">
+                                <RadzenButton ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Large" Text="Comenzar gratis" 
+                                              class="rz-shadow-4 rz-border-radius-3" 
+                                              Style="font-weight: 600; padding: 12px 32px;" />
+                            </RadzenLink>
+                            @* <RadzenButton ButtonStyle="ButtonStyle.Light" Variant="Variant.Outlined" Size="ButtonSize.Large" Text="Ver demo"  *@
+                            @*               Click="@(() => ScrollToSection("features"))" *@
+                            @*               class="rz-border-radius-3" *@
+                            @*               Style="font-weight: 600; padding: 12px 32px;" /> *@
                         </RadzenStack>
-                    </RadzenCard>
-                </RadzenColumn>
-                <RadzenColumn Size="12" SizeMd="6" SizeLg="3">
-                    <RadzenCard Style="height: 100%; border-radius: .75rem;">
-                        <RadzenStack Gap="0.5rem">
-                            <RadzenText Text="3. Agrega publicadores y departamentos" TextStyle="TextStyle.Subtitle1" />
-                            <RadzenText Text="Organiza equipos y responsabilidades." TextStyle="TextStyle.Body2" class="rz-opacity-80" />
+                        
+                        <!-- Trust indicators -->
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="2rem" JustifyContent="JustifyContent.Center" 
+                                     Wrap="FlexWrap.Wrap" class="rz-mt-6 rz-opacity-70">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                                <RadzenIcon Icon="verified" Style="color: var(--rz-success); font-size: 16px;" />
+                                <RadzenText Text="100% Seguro" TextStyle="TextStyle.Caption" class="rz-mb-0" Style="font-weight: 500;" />
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                                <RadzenIcon Icon="cloud_done" Style="color: var(--rz-info); font-size: 16px;" />
+                                <RadzenText Text="En la nube" TextStyle="TextStyle.Caption" class="rz-mb-0" Style="font-weight: 500;" />
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                                <RadzenIcon Icon="support" Style="color: var(--rz-warning); font-size: 16px;" />
+                                <RadzenText Text="Soporte 24/7" TextStyle="TextStyle.Caption" class="rz-mb-0" Style="font-weight: 500;" />
+                            </RadzenStack>
                         </RadzenStack>
-                    </RadzenCard>
-                </RadzenColumn>
-                <RadzenColumn Size="12" SizeMd="6" SizeLg="3">
-                    <RadzenCard Style="height: 100%; border-radius: .75rem;">
-                        <RadzenStack Gap="0.5rem">
-                            <RadzenText Text="4. Programa y asigna" TextStyle="TextStyle.Subtitle1" />
-                            <RadzenText Text="Crea reuniones y asigna tareas de forma ágil." TextStyle="TextStyle.Body2" class="rz-opacity-80" />
-                        </RadzenStack>
-                    </RadzenCard>
+                    </RadzenStack>
                 </RadzenColumn>
             </RadzenRow>
-        </RadzenStack>
+        </div>
     </section>
 
-    <!-- Footer note -->
-    <RadzenFooter Style="background-color: var(--rz-footer-background); color: var(--rz-footer-color);">
-        <section aria-label="Información legal" class="rz-py-4 rz-text-center rz-opacity-70">
-            <RadzenText Text="© 2025 Gestor Teocrático — Organización interna simple, segura y eficiente." TextStyle="TextStyle.Caption" />
-        </section>
-    </RadzenFooter>
+    <!-- Features Section usando solo Radzen -->
+    <section id="features" aria-label="Características principales" class="rz-py-12">
+        <div class="rz-container">
+            <RadzenStack Gap="3rem" class="rz-px-4 rz-px-md-6">
+                <!-- Header de la sección -->
+                <RadzenStack Gap="1rem" AlignItems="AlignItems.Center" class="rz-text-center">
+                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Shade="Shade.Lighter" Text="Características" 
+                                 class="rz-px-3 rz-py-1 rz-border-radius-5" Style="font-weight: 500;" />
+                    <RadzenText Text="Todo lo que necesitas en una plataforma" TextStyle="TextStyle.H3" class="rz-mb-0" 
+                                Style="font-weight: 700; background: linear-gradient(135deg, var(--rz-primary), var(--rz-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;" />
+                    <RadzenText Text="Descubre las herramientas que harán más eficiente la gestión de tu congregación" 
+                                TextStyle="TextStyle.H6" class="rz-opacity-70 rz-mb-0" Style="font-weight: 400; max-width: 600px;" />
+                </RadzenStack>
 
-</RadzenStack>
+                <!-- Features Grid -->
+                <RadzenRow Gap="2rem">
+                    <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
+                        <RadzenCard class="rz-h-100 rz-shadow-3 rz-border-radius-4" Style="border: 1px solid var(--rz-base-200); transition: all 0.3s ease;">
+                            <RadzenStack Gap="1.5rem" class="rz-p-4">
+                                <div class="rz-background-color-primary rz-border-radius-3" style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
+                                    <RadzenIcon Icon="account_balance" Style="color: white; font-size: 32px;" />
+                                </div>
+                                <RadzenStack Gap="0.75rem">
+                                    <RadzenText Text="Gestión de Congregaciones" TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 600;" />
+                                    <RadzenText Text="Administra información completa de la congregación: datos generales, dirección, días de reunión y configuraciones personalizadas." 
+                                                TextStyle="TextStyle.Body1" class="rz-opacity-80 rz-mb-0" Style="line-height: 1.6;" />
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" class="rz-mt-auto">
+                                    <RadzenText Text="Más información" TextStyle="TextStyle.Caption" class="rz-mb-0" Style="color: var(--rz-primary); font-weight: 600;" />
+                                    <RadzenIcon Icon="arrow_forward" Style="color: var(--rz-primary); font-size: 16px;" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
+                        <RadzenCard class="rz-h-100 rz-shadow-3 rz-border-radius-4" Style="border: 1px solid var(--rz-base-200); transition: all 0.3s ease;">
+                            <RadzenStack Gap="1.5rem" class="rz-p-4">
+                                <div class="rz-background-color-secondary rz-border-radius-3" style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
+                                    <RadzenIcon Icon="work" Style="color: white; font-size: 32px;" />
+                                </div>
+                                <RadzenStack Gap="0.75rem">
+                                    <RadzenText Text="Departamentos y Responsabilidades" TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 600;" />
+                                    <RadzenText Text="Organiza departamentos, define responsabilidades específicas y asigna coordinadores para una gestión estructurada." 
+                                                TextStyle="TextStyle.Body1" class="rz-opacity-80 rz-mb-0" Style="line-height: 1.6;" />
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" class="rz-mt-auto">
+                                    <RadzenText Text="Más información" TextStyle="TextStyle.Caption" class="rz-mb-0" Style="color: var(--rz-primary); font-weight: 600;" />
+                                    <RadzenIcon Icon="arrow_forward" Style="color: var(--rz-primary); font-size: 16px;" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
+                        <RadzenCard class="rz-h-100 rz-shadow-3 rz-border-radius-4" Style="border: 1px solid var(--rz-base-200); transition: all 0.3s ease;">
+                            <RadzenStack Gap="1.5rem" class="rz-p-4">
+                                <div class="rz-background-color-info rz-border-radius-3" style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
+                                    <RadzenIcon Icon="groups" Style="color: white; font-size: 32px;" />
+                                </div>
+                                <RadzenStack Gap="0.75rem">
+                                    <RadzenText Text="Gestión de Publicadores" TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 600;" />
+                                    <RadzenText Text="Administra datos completos de publicadores, privilegios, asignaciones y historial de participación de manera integral." 
+                                                TextStyle="TextStyle.Body1" class="rz-opacity-80 rz-mb-0" Style="line-height: 1.6;" />
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" class="rz-mt-auto">
+                                    <RadzenText Text="Más información" TextStyle="TextStyle.Caption" class="rz-mb-0" Style="color: var(--rz-primary); font-weight: 600;" />
+                                    <RadzenIcon Icon="arrow_forward" Style="color: var(--rz-primary); font-size: 16px;" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
+                        <RadzenCard class="rz-h-100 rz-shadow-3 rz-border-radius-4" Style="border: 1px solid var(--rz-base-200); transition: all 0.3s ease;">
+                            <RadzenStack Gap="1.5rem" class="rz-p-4">
+                                <div class="rz-background-color-warning rz-border-radius-3" style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
+                                    <RadzenIcon Icon="event" Style="color: white; font-size: 32px;" />
+                                </div>
+                                <RadzenStack Gap="0.75rem">
+                                    <RadzenText Text="Programación de Reuniones" TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 600;" />
+                                    <RadzenText Text="Planifica y programa reuniones con sistema de asignaciones automático y gestión de calendarios integrada." 
+                                                TextStyle="TextStyle.Body1" class="rz-opacity-80 rz-mb-0" Style="line-height: 1.6;" />
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" class="rz-mt-auto">
+                                    <RadzenText Text="Más información" TextStyle="TextStyle.Caption" class="rz-mb-0" Style="color: var(--rz-primary); font-weight: 600;" />
+                                    <RadzenIcon Icon="arrow_forward" Style="color: var(--rz-primary); font-size: 16px;" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
+                        <RadzenCard class="rz-h-100 rz-shadow-3 rz-border-radius-4" Style="border: 1px solid var(--rz-base-200); transition: all 0.3s ease;">
+                            <RadzenStack Gap="1.5rem" class="rz-p-4">
+                                <div class="rz-background-color-success rz-border-radius-3" style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
+                                    <RadzenIcon Icon="assignment" Style="color: white; font-size: 32px;" />
+                                </div>
+                                <RadzenStack Gap="0.75rem">
+                                    <RadzenText Text="Sistema de Asignaciones" TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 600;" />
+                                    <RadzenText Text="Gestiona asignaciones de responsabilidades con historial completo y seguimiento de participación por publicador." 
+                                                TextStyle="TextStyle.Body1" class="rz-opacity-80 rz-mb-0" Style="line-height: 1.6;" />
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" class="rz-mt-auto">
+                                    <RadzenText Text="Más información" TextStyle="TextStyle.Caption" class="rz-mb-0" Style="color: var(--rz-primary); font-weight: 600;" />
+                                    <RadzenIcon Icon="arrow_forward" Style="color: var(--rz-primary); font-size: 16px;" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMd="6" SizeLg="4">
+                        <RadzenCard class="rz-h-100 rz-shadow-3 rz-border-radius-4" Style="border: 1px solid var(--rz-base-200); transition: all 0.3s ease;">
+                            <RadzenStack Gap="1.5rem" class="rz-p-4">
+                                <div class="rz-background-color-danger rz-border-radius-3" style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;">
+                                    <RadzenIcon Icon="verified_user" Style="color: white; font-size: 32px;" />
+                                </div>
+                                <RadzenStack Gap="0.75rem">
+                                    <RadzenText Text="Seguridad y Cumplimiento" TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 600;" />
+                                    <RadzenText Text="Autenticación robusta, control de roles granular, soft delete y exportación de datos para cumplimiento normativo." 
+                                                TextStyle="TextStyle.Body1" class="rz-opacity-80 rz-mb-0" Style="line-height: 1.6;" />
+                                </RadzenStack>
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" class="rz-mt-auto">
+                                    <RadzenText Text="Más información" TextStyle="TextStyle.Caption" class="rz-mb-0" Style="color: var(--rz-primary); font-weight: 600;" />
+                                    <RadzenIcon Icon="arrow_forward" Style="color: var(--rz-primary); font-size: 16px;" />
+                                </RadzenStack>
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenStack>
+        </div>
+    </section>
+
+    <!-- Steps Section usando solo Radzen -->
+    <section class="rz-background-color-base-50 rz-py-12">
+        <div class="rz-container">
+            <RadzenStack Gap="3rem" class="rz-px-4 rz-px-md-6">
+                <!-- Header de la sección -->
+                <RadzenStack Gap="1rem" AlignItems="AlignItems.Center" class="rz-text-center">
+                    <RadzenBadge BadgeStyle="BadgeStyle.Warning" Shade="Shade.Lighter" Text="Proceso simple" 
+                                 class="rz-px-3 rz-py-1 rz-border-radius-5" Style="font-weight: 500;" />
+                    <RadzenText Text="Comienza en 3 simples pasos" TextStyle="TextStyle.H3" class="rz-mb-0" 
+                                Style="font-weight: 700; background: linear-gradient(135deg, var(--rz-primary), var(--rz-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;" />
+                    <RadzenText Text="Configura tu congregación y comienza a gestionar de manera eficiente" 
+                                TextStyle="TextStyle.H6" class="rz-opacity-70 rz-mb-0" Style="font-weight: 400; max-width: 600px;" />
+                </RadzenStack>
+
+                <!-- Steps Grid -->
+                <RadzenRow Gap="2rem">
+                    <RadzenColumn Size="12" SizeMd="4">
+                        <RadzenStack AlignItems="AlignItems.Center" Gap="1.5rem" class="rz-text-center">
+                            <div style="position: relative;">
+                                <div class="rz-background-color-primary rz-border-radius-10" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
+                                    <RadzenIcon Icon="person_add" Style="color: white; font-size: 36px;" />
+                                </div>
+                                <RadzenBadge BadgeStyle="BadgeStyle.Primary" Text="1" 
+                                            Style="position: absolute; top: -10px; right: -10px; width: 24px; height: 24px; font-weight: 700;" />
+                            </div>
+                            <RadzenStack Gap="0.75rem" AlignItems="AlignItems.Center">
+                                <RadzenText Text="Crear cuenta" TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 600;" />
+                                <RadzenText Text="Regístrate gratis y configura tu perfil de administrador para comenzar a usar la plataforma." 
+                                            TextStyle="TextStyle.Body1" class="rz-opacity-80 rz-mb-0" Style="line-height: 1.6; max-width: 280px;" />
+                            </RadzenStack>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMd="4">
+                        <RadzenStack AlignItems="AlignItems.Center" Gap="1.5rem" class="rz-text-center">
+                            <div style="position: relative;">
+                                <div class="rz-background-color-secondary rz-border-radius-10" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
+                                    <RadzenIcon Icon="settings" Style="color: white; font-size: 36px;" />
+                                </div>
+                                <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="2" 
+                                            Style="position: absolute; top: -10px; right: -10px; width: 24px; height: 24px; font-weight: 700;" />
+                            </div>
+                            <RadzenStack Gap="0.75rem" AlignItems="AlignItems.Center">
+                                <RadzenText Text="Configurar congregación" TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 600;" />
+                                <RadzenText Text="Ingresa los datos de tu congregación, crea departamentos y define las responsabilidades principales." 
+                                            TextStyle="TextStyle.Body1" class="rz-opacity-80 rz-mb-0" Style="line-height: 1.6; max-width: 280px;" />
+                            </RadzenStack>
+                        </RadzenStack>
+                    </RadzenColumn>
+
+                    <RadzenColumn Size="12" SizeMd="4">
+                        <RadzenStack AlignItems="AlignItems.Center" Gap="1.5rem" class="rz-text-center">
+                            <div style="position: relative;">
+                                <div class="rz-background-color-success rz-border-radius-10" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
+                                    <RadzenIcon Icon="rocket_launch" Style="color: white; font-size: 36px;" />
+                                </div>
+                                <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="3" 
+                                            Style="position: absolute; top: -10px; right: -10px; width: 24px; height: 24px; font-weight: 700;" />
+                            </div>
+                            <RadzenStack Gap="0.75rem" AlignItems="AlignItems.Center">
+                                <RadzenText Text="Comenzar a gestionar" TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 600;" />
+                                <RadzenText Text="Agrega publicadores, programa reuniones y comienza a disfrutar de una gestión más eficiente." 
+                                            TextStyle="TextStyle.Body1" class="rz-opacity-80 rz-mb-0" Style="line-height: 1.6; max-width: 280px;" />
+                            </RadzenStack>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <!-- CTA final -->
+                <RadzenStack AlignItems="AlignItems.Center" Gap="1.5rem" class="rz-text-center rz-mt-6">
+                    <RadzenText Text="¿Listo para comenzar?" TextStyle="TextStyle.H5" class="rz-mb-0" Style="font-weight: 600;" />
+                    <RadzenLink Path="/Account/Register">
+                    <RadzenButton ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Large" Text="Comenzar ahora" 
+                                  class="rz-shadow-4 rz-border-radius-3" Style="font-weight: 600; padding: 14px 36px;" />
+                    </RadzenLink>
+                </RadzenStack>
+            </RadzenStack>
+        </div>
+    </section>
+
+    <!-- Footer usando solo Radzen -->
+    <footer class="rz-background-color-base-200 rz-py-8">
+        <div class="rz-container">
+            <RadzenStack Gap="2rem" class="rz-px-4 rz-px-md-6">
+                <RadzenRow JustifyContent="JustifyContent.Center">
+                    <RadzenColumn Size="12" SizeMd="8" SizeLg="6">
+                        <RadzenStack AlignItems="AlignItems.Center" Gap="1.5rem" class="rz-text-center">
+                            <RadzenText Text="Gestor Teocrático" TextStyle="TextStyle.H4" class="rz-mb-0" 
+                                        Style="font-weight: 700; background: linear-gradient(135deg, var(--rz-primary), var(--rz-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;" />
+                            <RadzenText Text="Simplificando la gestión congregacional con tecnología moderna y segura." 
+                                        TextStyle="TextStyle.Body1" class="rz-opacity-70 rz-mb-0" Style="line-height: 1.6;" />
+                            
+                            <!-- Links de navegación -->
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="2rem" JustifyContent="JustifyContent.Center" 
+                                         Wrap="FlexWrap.Wrap" class="rz-mt-2">
+                                <RadzenLink Path="#features" Text="Características" class="rz-text-decoration-none" 
+                                           Style="color: var(--rz-primary); font-weight: 500;" />
+                                <RadzenLink Text="Soporte" class="rz-text-decoration-none" 
+                                           Style="color: var(--rz-primary); font-weight: 500;" />
+                                <RadzenLink Text="Privacidad" class="rz-text-decoration-none" 
+                                           Style="color: var(--rz-primary); font-weight: 500;" />
+                                <RadzenLink Text="Términos" class="rz-text-decoration-none" 
+                                           Style="color: var(--rz-primary); font-weight: 500;" />
+                            </RadzenStack>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+                
+                <!-- Copyright -->
+                <RadzenStack AlignItems="AlignItems.Center" class="rz-text-center rz-border-top rz-pt-4" Style="border-color: var(--rz-base-300);">
+                    <RadzenText Text="© 2025 Gestor Teocrático. Desarrollado para la gestión eficiente de congregaciones." 
+                                TextStyle="TextStyle.Caption" class="rz-opacity-60 rz-mb-0" />
+                </RadzenStack>
+            </RadzenStack>
+        </div>
+    </footer>
+</div>
+
+@code {
+}

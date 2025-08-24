@@ -1,19 +1,37 @@
 ﻿@inherits LayoutComponentBase
 
-<RadzenComponents/>
-
-<RadzenLayout style="grid-template-areas: 'rz-sidebar rz-header' 'rz-sidebar rz-body';">
-    <RadzenHeader>
+<RadzenLayout Style="min-height: 100vh;">
+    <!-- Modern Navigation Header usando solo Radzen -->
+    <RadzenHeader class="rz-shadow-4 rz-background-color-base-50" Style="position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(10px); border-bottom: 1px solid var(--rz-base-200);">
+        <div style="max-width: 1440px; margin: 0 auto; width: 100%;">
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" 
+                         class="rz-px-4 rz-px-md-6 rz-px-lg-8 rz-py-3">
+                <!-- Logo y Brand - Desktop version -->
+                <RadzenLink Path="/" class="rz-text-decoration-none rz-display-flex rz-align-items-center rz-gap-2">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                        <div class="rz-background-color-primary rz-border-radius-3" Style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                            <RadzenIcon Icon="account_balance" Style="color: white; font-size: 18px;" />
+                        </div>
+                        <RadzenText Text="Gestor Teocrático" TextStyle="TextStyle.H6" class="rz-mb-0" Style="font-weight: 600; color: var(--rz-primary);" />
+                    </RadzenStack>
+                </RadzenLink>
+                
+                <!-- Desktop Action Buttons -->
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center"
+                             class="rz-display-none rz-display-sm-flex">
+                    <RadzenLink Path="/Account/Login" class="rz-text-decoration-none">
+                        <RadzenButton ButtonStyle="ButtonStyle.Primary" Variant="Variant.Text" Text="Iniciar sesión" />
+                    </RadzenLink>
+                    <RadzenLink Path="/Account/Register" class="rz-text-decoration-none rz-display-none rz-display-sm-flex">
+                        <RadzenButton ButtonStyle="ButtonStyle.Primary" Variant="Variant.Text" Text="Registrarse" />
+                    </RadzenLink>
+                </RadzenStack>
+            </RadzenStack>
+        </div>
     </RadzenHeader>
-    <RadzenBody>
-        <RadzenRow class="rz-mx-auto rz-px-4 rz-pt-2 rz-pt-md-4 rz-pt-lg-6 rz-pt-xl-12 rz-pb-2 rz-pb-lg-12"
-                   Style="max-width: 1440px;">
-            <RadzenColumn Size="12">
-                @Body
-            </RadzenColumn>
-        </RadzenRow>
+    
+    <!-- Main Content Area -->
+    <RadzenBody Style="padding: 0;">
+        @Body
     </RadzenBody>
 </RadzenLayout>
-
-@code {
-}
