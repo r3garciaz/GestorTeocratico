@@ -1,0 +1,147 @@
+@using Microsoft.AspNetCore.Identity
+@using GestorTeocratico.Data
+@using System.Security.Claims
+
+<RadzenStack Gap="1.5rem">
+    <!-- User Profile Header -->
+    <RadzenCard>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+            <RadzenGravatar Email="@User.Email" Size="80" />
+            <RadzenStack Gap="0.5rem" Style="flex: 1;">
+                <RadzenText TextStyle="TextStyle.H5" Text="@(User.UserName ?? "Sin nombre de usuario")" />
+                <RadzenText TextStyle="TextStyle.Subtitle1" Text="@User.Email" />
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                    <RadzenBadge Text="@User.PublicId" BadgeStyle="BadgeStyle.Info" />
+                    <RadzenBadge Text="@(User.LockoutEnd > DateTimeOffset.UtcNow ? "Bloqueado" : "Activo")" 
+                                BadgeStyle="@(User.LockoutEnd > DateTimeOffset.UtcNow ? BadgeStyle.Danger : BadgeStyle.Success)" />
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+
+    <!-- Account Information -->
+    <RadzenFieldset Text="Información de la Cuenta">
+        <RadzenStack Gap="1rem">
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Caption" Text="Email Confirmado" />
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                            <RadzenIcon Icon="@(User.EmailConfirmed ? "check_circle" : "cancel")" 
+                                       Style="@($"color: {(User.EmailConfirmed ? "var(--rz-success)" : "var(--rz-danger)")}")" />
+                            <RadzenText Text="@(User.EmailConfirmed ? "Sí" : "No")" />
+                        </RadzenStack>
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Caption" Text="Teléfono Confirmado" />
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                            <RadzenIcon Icon="@(User.PhoneNumberConfirmed ? "check_circle" : "cancel")" 
+                                       Style="@($"color: {(User.PhoneNumberConfirmed ? "var(--rz-success)" : "var(--rz-danger)")}")" />
+                            <RadzenText Text="@(User.PhoneNumberConfirmed ? "Sí" : "No")" />
+                        </RadzenStack>
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+            
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Caption" Text="Teléfono" />
+                        <RadzenText Text="@(string.IsNullOrEmpty(User.PhoneNumber) ? "No especificado" : User.PhoneNumber)" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Caption" Text="Autenticación de Dos Factores" />
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                            <RadzenIcon Icon="@(User.TwoFactorEnabled ? "security" : "no_encryption")" 
+                                       Style="@($"color: {(User.TwoFactorEnabled ? "var(--rz-success)" : "var(--rz-warning)")}")" />
+                            <RadzenText Text="@(User.TwoFactorEnabled ? "Habilitada" : "Deshabilitada")" />
+                        </RadzenStack>
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenFieldset>
+
+    <!-- Security Information -->
+    <RadzenFieldset Text="Información de Seguridad">
+        <RadzenStack Gap="1rem">
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Caption" Text="Intentos de Acceso Fallidos" />
+                        <RadzenText Text="@User.AccessFailedCount.ToString()" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Caption" Text="Bloqueo Habilitado" />
+                        <RadzenText Text="@(User.LockoutEnabled ? "Sí" : "No")" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+            
+            @if (User.LockoutEnd.HasValue)
+            {
+                <RadzenRow>
+                    <RadzenColumn Size="12">
+                        <RadzenStack Gap="0.25rem">
+                            <RadzenText TextStyle="TextStyle.Caption" Text="Bloqueado Hasta" />
+                            <RadzenText Text="@User.LockoutEnd.Value.ToString("dd/MM/yyyy HH:mm")" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            }
+        </RadzenStack>
+    </RadzenFieldset>
+
+    <!-- Technical Information -->
+    <RadzenFieldset Text="Información Técnica">
+        <RadzenStack Gap="1rem">
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Caption" Text="ID del Usuario" />
+                        <RadzenText TextStyle="TextStyle.Caption" Text="@User.Id" Style="word-break: break-all;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Caption" Text="Sello de Seguridad" />
+                        <RadzenText TextStyle="TextStyle.Caption" Text="@(string.IsNullOrEmpty(User.SecurityStamp) ? "No especificado" : User.SecurityStamp[..8] + "...")" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+            
+            <RadzenRow>
+                <RadzenColumn Size="6">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Caption" Text="Sello de Concurrencia" />
+                        <RadzenText TextStyle="TextStyle.Caption" Text="@(string.IsNullOrEmpty(User.ConcurrencyStamp) ? "No especificado" : User.ConcurrencyStamp[..8] + "...")" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="6">
+                    <RadzenStack Gap="0.25rem">
+                        <RadzenText TextStyle="TextStyle.Caption" Text="Nombre Normalizado" />
+                        <RadzenText TextStyle="TextStyle.Caption" Text="@(User.NormalizedUserName ?? "No especificado")" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenFieldset>
+
+    <!-- Action Button -->
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End">
+        <RadzenButton Text="Cerrar" ButtonStyle="ButtonStyle.Primary" 
+                     Click="@(() => DialogService.Close())" Icon="close" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter] public ApplicationUser User { get; set; } = new();
+
+    [CascadingParameter] public DialogService DialogService { get; set; } = default!;
+}
