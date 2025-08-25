@@ -71,6 +71,10 @@
 
         if (result.Succeeded)
         {
+            if(ReturnUrl is null || ReturnUrl == "/")
+            {
+                ReturnUrl = "/dashboard";
+            } 
             Logger.LogInformation("User with ID '{UserId}' logged in with 2fa.", userId);
             RedirectManager.RedirectTo(ReturnUrl);
         }
