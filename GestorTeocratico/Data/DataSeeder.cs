@@ -100,7 +100,7 @@ public static class DataSeeder
             new { Id = ResponsibilityIds[2], Name = "Micrófono A", DepartmentId = SoundAndVideoId },
             new { Id = ResponsibilityIds[3], Name = "Micrófono B", DepartmentId = SoundAndVideoId },
             new { Id = ResponsibilityIds[4], Name = "Plataforma", DepartmentId = SoundAndVideoId },
-            new { Id = ResponsibilityIds[5], Name = "Acomodador Zoom", DepartmentId = AttendantId },
+            new { Id = ResponsibilityIds[5], Name = "Acomodador Zoom", DepartmentId = SoundAndVideoId },
             new { Id = ResponsibilityIds[6], Name = "Acomodador Entrada", DepartmentId = AttendantId },
             new { Id = ResponsibilityIds[7], Name = "Acomodador Auditorio", DepartmentId = AttendantId }
         };
