@@ -1,9 +1,7 @@
 ﻿@page "/Account/RegisterConfirmation"
 
 @using System.Text
-@using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
-@using GestorTeocratico.Data
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IEmailSender<ApplicationUser> EmailSender
@@ -12,32 +10,69 @@
 
 <PageTitle>Register confirmation</PageTitle>
 
-<div class="account-card">
-    <div class="account-card-content">
-        <h1 class="account-title">Register confirmation</h1>
-        @if (!string.IsNullOrEmpty(statusMessage))
+<RadzenCard class="rz-my-12 rz-mx-auto rz-p-4 rz-p-md-12 rz-border-radius-4" style="max-width: 600px;">
+    <RadzenText TextStyle="TextStyle.DisplayH4" Text="Confirmación de registro" TextAlign="TextAlign.Center"
+                class="rz-color-primary rz-mb-4"/>
+    <div class="rz-text-align-center">
+        @if (!string.IsNullOrEmpty(_statusMessage))
         {
-            <div class="account-msg-error">
-                @statusMessage
+            <div class="account-msg-error rz-mb-4">
+                @_statusMessage
             </div>
         }
-        @if (emailConfirmationLink is not null)
+        @if (_emailConfirmationLink is not null)
         {
-            <div class="account-msg-info">
-                <p>This app does not currently have a real email sender registered, see <a href="https://aka.ms/aspaccountconf" class="link-info">these docs</a> for how to configure a real email sender.</p>
-                <p>Normally this would be emailed: <a href="@emailConfirmationLink" class="link-info link-info-bold">Click here to confirm your account</a></p>
+            <div class="account-msg-info rz-mb-4">
+                <RadzenAlert AlertStyle="AlertStyle.Info" class="rz-mb-3">
+                    <RadzenText TextStyle="TextStyle.Body1">
+                        <strong>No hay proveedor de email:</strong> El email no se envió automáticamente.
+                    </RadzenText>
+                </RadzenAlert>
+                <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-3">
+                    En un entorno de producción, este enlace se enviaría por email:
+                </RadzenText>
+                <RadzenLink Path="@_emailConfirmationLink">
+                <RadzenButton Text="Confirmar cuenta ahora" 
+                              ButtonStyle="ButtonStyle.Primary" 
+                              Size="ButtonSize.Large"
+                              class="rz-border-radius-2" />
+                </RadzenLink>
             </div>
         }
         else
         {
-            <p role="alert" class="account-msg-success">Please check your email to confirm your account.</p>
+            <RadzenAlert AlertStyle="AlertStyle.Success" class="rz-mb-4">
+                <RadzenText TextStyle="TextStyle.H6" class="rz-mb-2">
+                    ¡Email enviado correctamente! 📧
+                </RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1">
+                    Revisa tu bandeja de entrada y haz clic en el enlace de confirmación para activar tu cuenta.
+                </RadzenText>
+            </RadzenAlert>
+            
+            <RadzenText TextStyle="TextStyle.Body2" class="rz-color-base-600 rz-mb-3">
+                Si no ves el email, revisa también tu carpeta de spam o correo no deseado.
+            </RadzenText>
+            
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="1rem">
+                <RadzenLink Path="/">
+                    <RadzenButton Text="Volver al inicio" 
+                                  ButtonStyle="ButtonStyle.Light" 
+                                  class="rz-border-radius-2" />
+                </RadzenLink>
+                <RadzenLink Path="/Account/Login">
+                    <RadzenButton Text="Ir al login" 
+                                  ButtonStyle="ButtonStyle.Secondary" 
+                                  class="rz-border-radius-2" />
+                </RadzenLink>
+            </RadzenStack>
         }
     </div>
-</div>
+</RadzenCard>
 
 @code {
-    private string? emailConfirmationLink;
-    private string? statusMessage;
+    private string? _emailConfirmationLink;
+    private string? _statusMessage;
 
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
 
@@ -56,18 +91,18 @@
         if (user is null)
         {
             HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
-            statusMessage = "Error finding user for unspecified email";
+            _statusMessage = "Error finding user for unspecified email";
         }
-        else if (EmailSender is IdentityNoOpEmailSender)
+        else if (EmailSender is Components.Account.IdentityNoOpEmailSender)
         {
-            // Once you add a real email sender, you should remove this code that lets you confirm the account
+            // Solo en desarrollo - genera el enlace de confirmación manualmente
             var userId = await UserManager.GetUserIdAsync(user);
             var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-            emailConfirmationLink = NavigationManager.GetUriWithQueryParameters(
+            _emailConfirmationLink = NavigationManager.GetUriWithQueryParameters(
                 NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
                 new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
         }
+        // Si llegamos aquí y _emailConfirmationLink es null, significa que se envió el email correctamente
     }
-
 }
