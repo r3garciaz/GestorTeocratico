@@ -20,6 +20,7 @@ using GestorTeocratico.Features.PdfExport;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using GestorTeocratico.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 
 // Configure QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
@@ -109,6 +110,14 @@ builder.Services.AddHttpClient<PdfExportHttpClient>(client =>
     client.BaseAddress = new Uri("https://localhost:7095"); // Adjust as needed
 });
 
+// Add this after var builder = WebApplication.CreateBuilder(args);
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
 var scope = app.Services.CreateScope();
@@ -152,6 +161,7 @@ else
     }
 }
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 
 
