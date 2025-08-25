@@ -14,10 +14,12 @@ using GestorTeocratico.Features.MeetingSchedules;
 using GestorTeocratico.Features.MeetingSchedules.Endpoints;
 using GestorTeocratico.Features.ResponsibilityAssignments;
 using Radzen;
+using Resend;
 
 using GestorTeocratico.Features.PdfExport;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using GestorTeocratico.Services;
 
 // Configure QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
@@ -68,7 +70,6 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<ApplicationDbContext>();
 
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddScoped<ICongregationService, CongregationService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IPublisherService, PublisherService>();
@@ -79,6 +80,22 @@ builder.Services.AddScoped<IResponsibilityAssignmentService, ResponsibilityAssig
 builder.Services.AddScoped<IPdfExportService, PdfExportService>();
 builder.Services.AddScoped<GestorTeocratico.Features.Roles.IRoleService, GestorTeocratico.Features.Roles.RoleService>();
 
+// Configure Resend Email Service
+var resendApiToken = builder.Configuration["RESEND:APITOKEN"];
+if (!string.IsNullOrWhiteSpace(resendApiToken))
+{
+    builder.Services.AddHttpClient<ResendClient>();
+    builder.Services.Configure<ResendClientOptions>(o =>
+    {
+        o.ApiToken = resendApiToken!;
+    });
+    builder.Services.AddTransient<IResend, ResendClient>();
+    builder.Services.AddScoped<IEmailSender<ApplicationUser>, ResendEmailSender>();
+}
+else
+{
+    builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+}
 // Configure HttpClient for PDF downloads
 builder.Services.AddHttpClient<PdfExportHttpClient>(client =>
 {
