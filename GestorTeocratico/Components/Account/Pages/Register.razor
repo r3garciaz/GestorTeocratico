@@ -10,6 +10,7 @@
 @using Microsoft.EntityFrameworkCore
 
 @inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IEmailSender<ApplicationUser> EmailSender
@@ -89,6 +90,8 @@
 
         Logger.LogInformation("User created a new account with password.");
 
+        await CheckAddAdminRole(user);
+
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
@@ -107,6 +110,22 @@
 
         await SignInManager.SignInAsync(user, isPersistent: false);
         RedirectManager.RedirectTo(ReturnUrl);
+    }
+
+    private async Task CheckAddAdminRole(ApplicationUser user)
+    {
+        if (UserManager.Users.Count() == 1)
+        {
+            const string adminRole = GestorTeocratico.Shared.Roles.Admin;
+            var adminRoleExists = await RoleManager.RoleExistsAsync(adminRole);
+            if (!adminRoleExists)
+            {
+                await RoleManager.CreateAsync(new IdentityRole(adminRole));
+                Logger.LogInformation("Admin role created.");
+            }
+            await UserManager.AddToRoleAsync(user, GestorTeocratico.Shared.Roles.Admin);
+            Logger.LogInformation("First user registered, assigned to Admin role.");
+        }
     }
 
     private ApplicationUser CreateUser()
