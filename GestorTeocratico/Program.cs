@@ -48,6 +48,11 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
+builder.Services.ConfigureApplicationCookie(options => {
+    options.ExpireTimeSpan = TimeSpan.FromDays(5);
+    options.SlidingExpiration = true;
+});
+
 builder.Services.AddAuthorization(option =>
 {
     option.FallbackPolicy = new AuthorizationPolicyBuilder()
