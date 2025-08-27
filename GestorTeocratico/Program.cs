@@ -21,6 +21,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using GestorTeocratico.Services;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.OAuth.Claims;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 
 // Configure QuestPDF
 QuestPDF.Settings.License = LicenseType.Community;
@@ -43,11 +47,53 @@ builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
 builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+}).AddIdentityCookies();
+    
+// Configure Google OIDC Authentication
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = IdentityConstants.ApplicationScheme;
+    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+}).AddGoogle(googleOptions =>
+{
+    var googleConfig = builder.Configuration.GetSection("Authentication:Schemes:GoogleOidc");
+    googleOptions.ClientId = googleConfig["ClientId"] ?? 
+                             throw new InvalidOperationException("Google ClientId not found in configuration");
+    googleOptions.ClientSecret = googleConfig["ClientSecret"] ?? 
+                                 throw new InvalidOperationException("Google ClientSecret not found in configuration");
+
+    // Configure scopes
+    googleOptions.Scope.Add("profile");
+    googleOptions.Scope.Add("email");
+
+    // Map additional claims from Google
+    googleOptions.ClaimActions.MapJsonKey(ClaimTypes.GivenName, "given_name");
+    googleOptions.ClaimActions.MapJsonKey(ClaimTypes.Surname, "family_name");
+    googleOptions.ClaimActions.MapJsonKey("picture", "picture");
+    googleOptions.ClaimActions.MapJsonKey("locale", "locale");
+
+    // Save tokens for potential API access
+    googleOptions.SaveTokens = true;
+
+    // Event handlers for customization
+    googleOptions.Events.OnCreatingTicket = async context =>
     {
-        options.DefaultScheme = IdentityConstants.ApplicationScheme;
-        options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-    })
-    .AddIdentityCookies();
+        // Custom logic when creating authentication ticket
+        var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
+        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
+
+        var response = await context.Backchannel.SendAsync(request,
+            HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
+        response.EnsureSuccessStatusCode();
+
+        var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        context.RunClaimActions(json.RootElement);
+    };
+});
 
 builder.Services.ConfigureApplicationCookie(options => {
     options.ExpireTimeSpan = TimeSpan.FromDays(5);
@@ -56,9 +102,9 @@ builder.Services.ConfigureApplicationCookie(options => {
 
 builder.Services.AddAuthorization(option =>
 {
-    option.FallbackPolicy = new AuthorizationPolicyBuilder()
-        .RequireAuthenticatedUser()
-        .Build();
+    // option.FallbackPolicy = new AuthorizationPolicyBuilder()
+    //     .RequireAuthenticatedUser()
+    //     .Build();
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
