@@ -2,14 +2,17 @@
 
 @using System.ComponentModel.DataAnnotations
 @using System.Security.Claims
+@using System.Security.Cryptography
 @using System.Text
 @using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using GestorTeocratico.Data
+@using Microsoft.EntityFrameworkCore
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject IEmailSender<ApplicationUser> EmailSender
 @inject NavigationManager NavigationManager
@@ -140,10 +143,20 @@
 
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+        
+        // Generate a unique public ID for the user
+        // Ensure that the public ID is unique by checking against existing users
+        string publicId;
+        do
+        {
+            publicId = PublicIdGenerator.Generate();
+        } while (await UserManager.Users.AnyAsync(u => u.PublicId == publicId));
+        user.PublicId = publicId;
 
         var result = await UserManager.CreateAsync(user);
         if (result.Succeeded)
         {
+            await CheckAddAdminRole(user);
             result = await UserManager.AddLoginAsync(user, externalLoginInfo);
             if (result.Succeeded)
             {
@@ -171,6 +184,22 @@
 
         message = $"Error: {string.Join(",", result.Errors.Select(error => error.Description))}";
     }
+    
+    private async Task CheckAddAdminRole(ApplicationUser user)
+    {
+        if (UserManager.Users.Count() == 1)
+        {
+            const string adminRole = GestorTeocratico.Shared.Roles.Admin;
+            var adminRoleExists = await RoleManager.RoleExistsAsync(adminRole);
+            if (!adminRoleExists)
+            {
+                await RoleManager.CreateAsync(new IdentityRole(adminRole));
+                Logger.LogInformation("Admin role created.");
+            }
+            await UserManager.AddToRoleAsync(user, GestorTeocratico.Shared.Roles.Admin);
+            Logger.LogInformation("First user registered, assigned to Admin role.");
+        }
+    }
 
     private ApplicationUser CreateUser()
     {
@@ -193,6 +222,44 @@
         }
 
         return (IUserEmailStore<ApplicationUser>)UserStore;
+    }
+    
+    private static class PublicIdGenerator
+    {
+        private static readonly char[] Letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".ToCharArray();
+        private static readonly char[] Numbers = "123456789".ToCharArray();
+        private static readonly char[] AllChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
+        private static readonly int Length = 8;
+
+        public static string Generate()
+        {
+            var result = new char[Length];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                // First, ensure at least one number is included
+                var numberPosition = GetRandomInt(rng, Length);
+                result[numberPosition] = Numbers[GetRandomInt(rng, Numbers.Length)];
+
+                // Fill the remaining positions with random characters (letters and numbers)
+                for (int i = 0; i < Length; i++)
+                {
+                    if (i != numberPosition) // Skip the position we already filled with a number
+                    {
+                        result[i] = AllChars[GetRandomInt(rng, AllChars.Length)];
+                    }
+                }
+            }
+
+            return new string(result);
+        }
+
+        private static int GetRandomInt(RandomNumberGenerator rng, int maxValue)
+        {
+            var data = new byte[4];
+            rng.GetBytes(data);
+            var value = BitConverter.ToUInt32(data, 0);
+            return (int)(value % maxValue);
+        }
     }
 
     private sealed class InputModel

@@ -15,6 +15,10 @@
 <RadzenCard class="rz-my-12 rz-mx-auto rz-p-4 rz-p-md-12 rz-border-radius-4" style="max-width: 600px;">
     <RadzenText TextStyle="TextStyle.DisplayH4" Text="Inicio Sesión" TextAlign="TextAlign.Center"
                 class="rz-color-primary rz-mb-4"/>
+    <div style="margin-top:15px; text-align:center;">
+        @* <h3 class="account-subtitle">Use another service to log in.</h3> *@
+        <ExternalLoginPicker/>
+    </div>
     <StatusMessage Message="@errorMessage"/>
     <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
         <DataAnnotationsValidator/>
@@ -52,10 +56,6 @@
             <RadzenLink Path="Account/ResendEmailConfirmation" Text="Reenviar correo electrónico confirmación"/>
         </RadzenStack>
     </EditForm>
-    @* <div style="margin-top:32px; text-align:center;">
-            <h3 class="account-subtitle">Use another service to log in.</h3>
-            <ExternalLoginPicker/>
-    @* </div> *@
 </RadzenCard>
 
 @code {
