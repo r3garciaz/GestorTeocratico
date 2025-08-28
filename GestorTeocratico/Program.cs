@@ -72,6 +72,9 @@ builder.Services.AddAuthentication(options =>
         // Save tokens for potential API access
         googleOptions.SaveTokens = true;
 
+        // Configure callback path explicitly
+        googleOptions.CallbackPath = "/signin-google";
+
         // Event handlers for customization
         googleOptions.Events.OnCreatingTicket = async context =>
         {
@@ -155,9 +158,14 @@ builder.Services.AddHttpClient<PdfExportHttpClient>(client =>
 // Add this after var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
+    // Trust all proxies - adjust this in production for security
+    options.ForwardedForHeaderName = "X-Forwarded-For";
+    options.ForwardedProtoHeaderName = "X-Forwarded-Proto";
+    options.ForwardedHostHeaderName = "X-Forwarded-Host";
+    options.RequireHeaderSymmetry = false;
 });
 
 var app = builder.Build();
