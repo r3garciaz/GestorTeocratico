@@ -50,50 +50,46 @@ builder.Services.AddAuthentication(options =>
 {
     options.DefaultScheme = IdentityConstants.ApplicationScheme;
     options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-}).AddIdentityCookies();
-    
-// Configure Google OIDC Authentication
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultScheme = IdentityConstants.ApplicationScheme;
-    options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-}).AddGoogle(googleOptions =>
-{
-    var googleConfig = builder.Configuration.GetSection("Authentication:Schemes:GoogleOidc");
-    googleOptions.ClientId = googleConfig["ClientId"] ?? 
-                             throw new InvalidOperationException("Google ClientId not found in configuration");
-    googleOptions.ClientSecret = googleConfig["ClientSecret"] ?? 
-                                 throw new InvalidOperationException("Google ClientSecret not found in configuration");
-
-    // Configure scopes
-    googleOptions.Scope.Add("profile");
-    googleOptions.Scope.Add("email");
-
-    // Map additional claims from Google
-    googleOptions.ClaimActions.MapJsonKey(ClaimTypes.GivenName, "given_name");
-    googleOptions.ClaimActions.MapJsonKey(ClaimTypes.Surname, "family_name");
-    googleOptions.ClaimActions.MapJsonKey("picture", "picture");
-    googleOptions.ClaimActions.MapJsonKey("locale", "locale");
-
-    // Save tokens for potential API access
-    googleOptions.SaveTokens = true;
-
-    // Event handlers for customization
-    googleOptions.Events.OnCreatingTicket = async context =>
+})
+    .AddGoogle(googleOptions =>
     {
-        // Custom logic when creating authentication ticket
-        var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
-        request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
+        var googleConfig = builder.Configuration.GetSection("Authentication:Schemes:GoogleOidc");
+        googleOptions.ClientId = googleConfig["ClientId"] ??
+                                 throw new InvalidOperationException("Google ClientId not found in configuration");
+        googleOptions.ClientSecret = googleConfig["ClientSecret"] ??
+                                     throw new InvalidOperationException("Google ClientSecret not found in configuration");
 
-        var response = await context.Backchannel.SendAsync(request,
-            HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
-        response.EnsureSuccessStatusCode();
+        // Configure scopes
+        googleOptions.Scope.Add("profile");
+        googleOptions.Scope.Add("email");
 
-        var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        context.RunClaimActions(json.RootElement);
-    };
-});
+        // Map additional claims from Google
+        googleOptions.ClaimActions.MapJsonKey(ClaimTypes.GivenName, "given_name");
+        googleOptions.ClaimActions.MapJsonKey(ClaimTypes.Surname, "family_name");
+        googleOptions.ClaimActions.MapJsonKey("picture", "picture");
+        googleOptions.ClaimActions.MapJsonKey("locale", "locale");
+
+        // Save tokens for potential API access
+        googleOptions.SaveTokens = true;
+
+        // Event handlers for customization
+        googleOptions.Events.OnCreatingTicket = async context =>
+        {
+            // Custom logic when creating authentication ticket
+            var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
+            request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            request.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
+
+            var response = await context.Backchannel.SendAsync(request,
+                HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
+            response.EnsureSuccessStatusCode();
+
+            var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            context.RunClaimActions(json.RootElement);
+        };
+    })
+    .AddIdentityCookies();
 
 builder.Services.ConfigureApplicationCookie(options => {
     options.ExpireTimeSpan = TimeSpan.FromDays(5);
