@@ -181,6 +181,10 @@ public class PdfExportService : IPdfExportService
     {
         if (publisher == null) return string.Empty;
         var shortName = $"{publisher.FirstName[0]}.{publisher.LastName}";
+        if (!string.IsNullOrEmpty(publisher.MotherLastName))
+        {
+            shortName += $".{publisher.MotherLastName[0]}";
+        }
         return shortName;
     }
 
