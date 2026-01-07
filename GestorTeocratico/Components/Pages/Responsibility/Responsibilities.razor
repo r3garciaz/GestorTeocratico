@@ -96,14 +96,20 @@
 
     private async Task AddButtonClick(MouseEventArgs args)
     {
-        await DialogService.OpenAsync<CreateResponsibility>("Agregar Responsabilidad", null);
-        await grid0.Reload();
+        var result = await DialogService.OpenAsync<CreateResponsibility>("Agregar Responsabilidad", null);
+        if (result != null)
+        {
+            _responsibilities = await ResponsibilityService.GetAllAsync();
+        }
     }
 
     private async Task EditRow(Responsibility args)
     {
-        await DialogService.OpenAsync<EditResponsibility>("Editar Responsabilidad", new Dictionary<string, object> { { "ResponsibilityId", args.ResponsibilityId } });
-        await grid0.Reload();
+        var result = await DialogService.OpenAsync<EditResponsibility>("Editar Responsabilidad", new Dictionary<string, object> { { "ResponsibilityId", args.ResponsibilityId } });
+        if (result != null)
+        {
+            _responsibilities = await ResponsibilityService.GetAllAsync();
+        }
     }
 
     private async Task GridDeleteButtonClick(MouseEventArgs args, Responsibility responsibility)
@@ -113,7 +119,7 @@
             if (await DialogService.Confirm("¿Está seguro que desea eliminar este registro?", "Confirmar", new ConfirmOptions { OkButtonText = "Eliminar", CancelButtonText = "Cancelar" }) == true)
             {
                 var deleteResult = await ResponsibilityService.DeleteAsync(responsibility.ResponsibilityId);
-                await grid0.Reload();
+                _responsibilities = await ResponsibilityService.GetAllAsync();
             }
         }
         catch (Exception ex)

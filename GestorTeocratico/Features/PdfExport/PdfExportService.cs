@@ -86,7 +86,7 @@ public class PdfExportService : IPdfExportService
         var meetingSchedules = await _meetingScheduleService.GetByMonthAsync(month, year);
         var responsibilities = await _responsibilityService.GetAllAsync();
         var congregations = await _congregationService.GetAllAsync();
-        var congregation = await congregations.FirstOrDefaultAsync();
+        var congregation = congregations.FirstOrDefault();
         
 
         var culture = new CultureInfo("es-ES");

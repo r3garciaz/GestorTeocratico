@@ -8,16 +8,17 @@ namespace GestorTeocratico.Features.MeetingSchedules;
 
 public class MeetingScheduleService : IMeetingScheduleService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-    public MeetingScheduleService(ApplicationDbContext context)
+    public MeetingScheduleService(IDbContextFactory<ApplicationDbContext> contextFactory)
     {
-        _context = context;
+        _contextFactory = contextFactory;
     }
 
     public async Task<IEnumerable<MeetingSchedule>> GetAllAsync()
     {
-        return await _context.MeetingSchedules
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.MeetingSchedules
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
             .Include(ms => ms.ResponsibilityAssignments)
@@ -28,7 +29,8 @@ public class MeetingScheduleService : IMeetingScheduleService
 
     public async Task<MeetingSchedule?> GetByIdAsync(Guid id)
     {
-        return await _context.MeetingSchedules
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.MeetingSchedules
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
             .Include(ms => ms.ResponsibilityAssignments)
@@ -38,14 +40,16 @@ public class MeetingScheduleService : IMeetingScheduleService
 
     public async Task<MeetingSchedule> CreateAsync(MeetingSchedule meetingSchedule)
     {
-        _context.MeetingSchedules.Add(meetingSchedule);
-        await _context.SaveChangesAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        context.MeetingSchedules.Add(meetingSchedule);
+        await context.SaveChangesAsync();
         return meetingSchedule;
     }
 
     public async Task<MeetingSchedule?> UpdateAsync(MeetingSchedule meetingSchedule)
     {
-        var existingSchedule = await _context.MeetingSchedules.FindAsync(meetingSchedule.MeetingScheduleId);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var existingSchedule = await context.MeetingSchedules.FindAsync(meetingSchedule.MeetingScheduleId);
         if (existingSchedule == null)
             return null;
 
@@ -55,24 +59,26 @@ public class MeetingScheduleService : IMeetingScheduleService
         existingSchedule.Year = meetingSchedule.Year;
         existingSchedule.WeekOfYear = meetingSchedule.WeekOfYear;
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return existingSchedule;
     }
 
     public async Task<bool> DeleteAsync(Guid id)
     {
-        var meetingSchedule = await _context.MeetingSchedules.FindAsync(id);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var meetingSchedule = await context.MeetingSchedules.FindAsync(id);
         if (meetingSchedule == null)
             return false;
 
-        _context.MeetingSchedules.Remove(meetingSchedule);
-        await _context.SaveChangesAsync();
+        context.MeetingSchedules.Remove(meetingSchedule);
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task<IEnumerable<MeetingSchedule>> GetByDateRangeAsync(DateOnly startDate, DateOnly endDate)
     {
-        return await _context.MeetingSchedules
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.MeetingSchedules
             .Where(ms => ms.Date >= startDate && ms.Date <= endDate)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
@@ -84,7 +90,8 @@ public class MeetingScheduleService : IMeetingScheduleService
 
     public async Task<IEnumerable<MeetingSchedule>> GetByMonthAsync(int month, int year)
     {
-        return await _context.MeetingSchedules
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.MeetingSchedules
             .Where(ms => ms.Month == month && ms.Year == year)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
@@ -97,7 +104,8 @@ public class MeetingScheduleService : IMeetingScheduleService
 
     public async Task<IEnumerable<MeetingSchedule>> GetByWeekAsync(int weekOfYear, int year)
     {
-        return await _context.MeetingSchedules
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.MeetingSchedules
             .Where(ms => ms.WeekOfYear == weekOfYear && ms.Year == year)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
@@ -109,7 +117,8 @@ public class MeetingScheduleService : IMeetingScheduleService
 
     public async Task<IEnumerable<MeetingSchedule>> GetByMeetingTypeAsync(MeetingType meetingType)
     {
-        return await _context.MeetingSchedules
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.MeetingSchedules
             .Where(ms => ms.MeetingType == meetingType)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
@@ -121,7 +130,8 @@ public class MeetingScheduleService : IMeetingScheduleService
 
     public async Task<MeetingSchedule?> GetByDateAndMeetingTypeAsync(DateOnly date, MeetingType meetingType)
     {
-        return await _context.MeetingSchedules
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.MeetingSchedules
             .Where(ms => ms.Date == date && ms.MeetingType == meetingType)
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
@@ -146,12 +156,13 @@ public class MeetingScheduleService : IMeetingScheduleService
 
     public async Task<MeetingSchedule> GetOrCreateMeetingScheduleAsync(int weekOfYear, int year, MeetingType meetingType, Guid? congregationId = null)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Calculate the Monday of the given week
         var mondayOfWeek = ISOWeek.ToDateTime(year, weekOfYear, DayOfWeek.Monday);
         var dateOnly = DateOnly.FromDateTime(mondayOfWeek);
 
         // Try to find existing schedule
-        var existingSchedule = await _context.MeetingSchedules
+        var existingSchedule = await context.MeetingSchedules
             .Include(ms => ms.ResponsibilityAssignments)
                 .ThenInclude(ra => ra.Publisher)
             .Include(ms => ms.ResponsibilityAssignments)
@@ -178,6 +189,7 @@ public class MeetingScheduleService : IMeetingScheduleService
 
     public async Task<bool> CopyAssignmentsToWeekAsync(int sourceWeek, int sourceYear, int targetWeek, int targetYear)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         try
         {
             var sourceSchedules = await GetByWeekAsync(sourceWeek, sourceYear);
@@ -189,11 +201,11 @@ public class MeetingScheduleService : IMeetingScheduleService
                 if (targetSchedule == null) continue;
 
                 // Clear existing assignments in target week
-                var existingAssignments = await _context.ResponsibilityAssignments
+                var existingAssignments = await context.ResponsibilityAssignments
                     .Where(ra => ra.MeetingScheduleId == targetSchedule.MeetingScheduleId)
                     .ToListAsync();
                 
-                _context.ResponsibilityAssignments.RemoveRange(existingAssignments);
+                context.ResponsibilityAssignments.RemoveRange(existingAssignments);
 
                 // Copy assignments from source
                 foreach (var sourceAssignment in sourceSchedule.ResponsibilityAssignments)
@@ -208,11 +220,11 @@ public class MeetingScheduleService : IMeetingScheduleService
                         Publisher = sourceAssignment.Publisher
                     };
 
-                    _context.ResponsibilityAssignments.Add(newAssignment);
+                    context.ResponsibilityAssignments.Add(newAssignment);
                 }
             }
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
         catch

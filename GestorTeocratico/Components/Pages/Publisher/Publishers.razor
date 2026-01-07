@@ -109,14 +109,20 @@
 
     private async Task AddButtonClick(MouseEventArgs args)
     {
-        await DialogService.OpenAsync<CreatePublisher>("Agregar Publicador", null);
-        await grid0.Reload();
+        var result = await DialogService.OpenAsync<CreatePublisher>("Agregar Publicador", null);
+        if (result != null)
+        {
+            _publishers = await PublisherService.GetAllAsync();
+        }
     }
 
     private async Task EditRow(Publisher args)
     {
-        await DialogService.OpenAsync<EditPublisher>("Editar Publicador", new Dictionary<string, object> { { "PublisherId", args.PublisherId } });
-        await grid0.Reload();
+        var result = await DialogService.OpenAsync<EditPublisher>("Editar Publicador", new Dictionary<string, object> { { "PublisherId", args.PublisherId } });
+        if (result != null)
+        {
+            _publishers = await PublisherService.GetAllAsync();
+        }
     }
 
     private async Task GridDeleteButtonClick(MouseEventArgs args, Publisher publisher)
@@ -126,7 +132,7 @@
             if (await DialogService.Confirm("¿Está seguro que desea eliminar este registro?", "Confirmar", new ConfirmOptions { OkButtonText = "Eliminar", CancelButtonText = "Cancelar" }) == true)
             {
                 var deleteResult = await PublisherService.DeleteAsync(publisher.PublisherId);
-                await grid0.Reload();
+                _publishers = await PublisherService.GetAllAsync();
             }
         }
         catch (Exception ex)

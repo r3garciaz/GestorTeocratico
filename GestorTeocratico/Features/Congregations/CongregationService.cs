@@ -6,56 +6,58 @@ namespace GestorTeocratico.Features.Congregations;
 
 public class CongregationService : ICongregationService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly ILogger<CongregationService> _logger;
 
-    public CongregationService(ApplicationDbContext context,
+    public CongregationService(IDbContextFactory<ApplicationDbContext> contextFactory,
         ILogger<CongregationService> logger)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _logger = logger;
     }
     
-    public async Task<IQueryable<Congregation>> GetAllAsync()
+    public async Task<IEnumerable<Congregation>> GetAllAsync()
     {
-        //return await _context.Congregations.AsNoTracking().ToListAsync();
-        var items = _context.Congregations.AsQueryable();
-        return await Task.FromResult(items);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Congregations.ToListAsync();
     }
 
     public async Task<Congregation?> GetByIdAsync(Guid id)
     {
-        return await _context.Congregations.FindAsync(id);
-        //return await _context.Congregations.AsNoTracking().FirstOrDefaultAsync(c => c.CongregationId == id);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Congregations.FindAsync(id);
+        //return await context.Congregations.AsNoTracking().FirstOrDefaultAsync(c => c.CongregationId == id);
     }
 
     public async Task AddAsync(Congregation congregation)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Ensure only one congregation can exist
-        if (await _context.Congregations.AnyAsync())
+        if (await context.Congregations.AnyAsync())
         {
             _logger.LogWarning("Attempted to add a second congregation: {Name}", congregation.Name);
             throw new InvalidOperationException("Ya existe una congregación. No se puede crear otra.");
         }
 
         // Optional: also avoid same-name duplicates as additional guard (defensive)
-        if (await _context.Congregations.AsNoTracking().AnyAsync(c => c.Name.ToLower() == congregation.Name.ToLower()))
+        if (await context.Congregations.AsNoTracking().AnyAsync(c => c.Name.ToLower() == congregation.Name.ToLower()))
         {
             _logger.LogWarning("Attempted to add a congregation with duplicate name: {Name}", congregation.Name);
             throw new InvalidOperationException("Ya existe una congregación con el mismo nombre.");
         }
 
         // Use a transaction and re-check to reduce race conditions
-        await using var tx = await _context.Database.BeginTransactionAsync();
-        _context.Congregations.Add(congregation);
-        await _context.SaveChangesAsync();
+        await using var tx = await context.Database.BeginTransactionAsync();
+        context.Congregations.Add(congregation);
+        await context.SaveChangesAsync();
         await tx.CommitAsync();
     }
 
     public async Task UpdateAsync(Congregation congregation)
     {
-        _context.Congregations.Update(congregation);
-        await _context.SaveChangesAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        context.Congregations.Update(congregation);
+        await context.SaveChangesAsync();
     }
 
     public Task<Congregation> DeleteAsync(Guid id)

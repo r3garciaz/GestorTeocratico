@@ -86,14 +86,20 @@
 
     private async Task CreateAsync(MouseEventArgs args)
     {
-        await DialogService.OpenAsync<CreateDepartment>("Agregar Departamento", null);
-        await grid0.Reload();
+        var result = await DialogService.OpenAsync<CreateDepartment>("Agregar Departamento", null);
+        if (result != null)
+        {
+            _departments = await DepartmentService.GetAllAsync();
+        }
     }
 
     private async Task ShowEditModal(Department args)
     {
-        await DialogService.OpenAsync<EditDepartment>("Editar Departamento", new Dictionary<string, object> { { "DepartmentId", args.DepartmentId } });
-        await grid0.Reload();
+        var result = await DialogService.OpenAsync<EditDepartment>("Editar Departamento", new Dictionary<string, object> { { "DepartmentId", args.DepartmentId } });
+        if (result != null)
+        {
+            _departments = await DepartmentService.GetAllAsync();
+        }
     }
 
     private async Task DeleteAsync(MouseEventArgs args, Department department)
@@ -103,7 +109,7 @@
             if (await DialogService.Confirm("¿Está seguro que desea eliminar este registro?", "Confirmar", new ConfirmOptions { OkButtonText = "Eliminar", CancelButtonText = "Cancelar" }) == true)
             {
                 var deleteResult = await DepartmentService.DeleteAsync(department.DepartmentId);
-                await grid0.Reload();
+                _departments = await DepartmentService.GetAllAsync();
             }
         }
         catch (Exception ex)
