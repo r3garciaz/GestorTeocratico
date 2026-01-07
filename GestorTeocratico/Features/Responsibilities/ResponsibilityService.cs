@@ -6,18 +6,19 @@ namespace GestorTeocratico.Features.Responsibilities;
 
 public class ResponsibilityService : IResponsibilityService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly ILogger<ResponsibilityService> _logger;
 
-    public ResponsibilityService(ApplicationDbContext context, ILogger<ResponsibilityService> logger)
+    public ResponsibilityService(IDbContextFactory<ApplicationDbContext> contextFactory, ILogger<ResponsibilityService> logger)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _logger = logger;
     }
 
     public async Task<IEnumerable<Responsibility>> GetAllAsync()
     {
-        return await _context.Responsibilities
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Responsibilities
             .Include(r => r.Department)
             .Include(r => r.PublisherResponsibilities)
                 .ThenInclude(pr => pr.Publisher)
@@ -26,7 +27,8 @@ public class ResponsibilityService : IResponsibilityService
 
     public async Task<Responsibility?> GetByIdAsync(Guid id)
     {
-        return await _context.Responsibilities
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Responsibilities
             .Include(r => r.Department)
             .Include(r => r.PublisherResponsibilities)
                 .ThenInclude(pr => pr.Publisher)
@@ -35,7 +37,8 @@ public class ResponsibilityService : IResponsibilityService
 
     public async Task AddAsync(Responsibility responsibility)
     {
-        var existingResponsibility = await _context.Responsibilities
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var existingResponsibility = await context.Responsibilities
             .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Name.ToLower() == responsibility.Name.ToLower() &&
                                     r.DepartmentId == responsibility.DepartmentId);
@@ -46,19 +49,21 @@ public class ResponsibilityService : IResponsibilityService
             return;
         }
 
-        _context.Responsibilities.Add(responsibility);
-        await _context.SaveChangesAsync();
+        context.Responsibilities.Add(responsibility);
+        await context.SaveChangesAsync();
     }
 
     public async Task UpdateAsync(Responsibility responsibility)
     {
-        _context.Responsibilities.Update(responsibility);
-        await _context.SaveChangesAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        context.Responsibilities.Update(responsibility);
+        await context.SaveChangesAsync();
     }
 
     public async Task<Responsibility> DeleteAsync(Guid id)
     {
-        var responsibility = await _context.Responsibilities.FindAsync(id);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var responsibility = await context.Responsibilities.FindAsync(id);
 
         if (responsibility == null)
         {
@@ -67,20 +72,22 @@ public class ResponsibilityService : IResponsibilityService
         }
 
         responsibility.IsDeleted = true;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return responsibility;
     }
 
     public async Task<IEnumerable<Department>> GetAvailableDepartmentsAsync()
     {
-        return await _context.Departments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Departments
             .OrderBy(d => d.Name)
             .ToListAsync();
     }
 
     public async Task<IEnumerable<Publisher>> GetAvailablePublishersAsync()
     {
-        return await _context.Publishers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Publishers
             .OrderBy(p => p.FirstName)
             .ThenBy(p => p.LastName)
             .ToListAsync();
@@ -88,14 +95,15 @@ public class ResponsibilityService : IResponsibilityService
 
     public async Task UpdateResponsibilityPublishersAsync(Guid responsibilityId, IEnumerable<Guid> publisherIds)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var publisherIdsList = publisherIds.ToList();
 
         // Eliminar publishers actuales de la responsibility
-        var currentPublisherResponsibilities = await _context.PublisherResponsibilities
+        var currentPublisherResponsibilities = await context.PublisherResponsibilities
             .Where(pr => pr.ResponsibilityId == responsibilityId)
             .ToListAsync();
 
-        _context.PublisherResponsibilities.RemoveRange(currentPublisherResponsibilities);
+        context.PublisherResponsibilities.RemoveRange(currentPublisherResponsibilities);
 
         // Agregar los nuevos publishers seleccionados
         foreach (var publisherId in publisherIdsList)
@@ -104,13 +112,13 @@ public class ResponsibilityService : IResponsibilityService
             {
                 ResponsibilityId = responsibilityId,
                 PublisherId = publisherId,
-                Responsibility = await _context.Responsibilities.FindAsync(responsibilityId) ?? throw new InvalidOperationException(),
-                Publisher = await _context.Publishers.FindAsync(publisherId) ?? throw new InvalidOperationException()
+                Responsibility = await context.Responsibilities.FindAsync(responsibilityId) ?? throw new InvalidOperationException(),
+                Publisher = await context.Publishers.FindAsync(publisherId) ?? throw new InvalidOperationException()
             };
 
-            _context.PublisherResponsibilities.Add(publisherResponsibility);
+            context.PublisherResponsibilities.Add(publisherResponsibility);
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }

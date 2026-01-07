@@ -4,7 +4,7 @@ namespace GestorTeocratico.Features.Departments;
 
 public interface IDepartmentService
 {
-    Task<IQueryable<Department>> GetAllAsync();
+    Task<IEnumerable<Department>> GetAllAsync();
     Task<Department?> GetByIdAsync(Guid id);
     Task AddAsync(Department department);
     Task UpdateAsync(Department department);

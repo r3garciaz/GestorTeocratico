@@ -4,7 +4,7 @@ namespace GestorTeocratico.Features.Congregations;
 
 public interface ICongregationService
 {
-    Task<IQueryable<Congregation>> GetAllAsync();
+    Task<IEnumerable<Congregation>> GetAllAsync();
     Task<Congregation?> GetByIdAsync(Guid id);
     Task AddAsync(Congregation congregation);
     Task UpdateAsync(Congregation congregation);

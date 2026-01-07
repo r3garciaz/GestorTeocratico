@@ -6,18 +6,19 @@ namespace GestorTeocratico.Features.ResponsibilityAssignments;
 
 public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly ILogger<ResponsibilityAssignmentService> _logger;
 
-    public ResponsibilityAssignmentService(ApplicationDbContext context, ILogger<ResponsibilityAssignmentService> logger)
+    public ResponsibilityAssignmentService(IDbContextFactory<ApplicationDbContext> contextFactory, ILogger<ResponsibilityAssignmentService> logger)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _logger = logger;
     }
 
     public async Task<IEnumerable<ResponsibilityAssignment>> GetAllAsync()
     {
-        return await _context.ResponsibilityAssignments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ResponsibilityAssignments
             .Include(ra => ra.MeetingSchedule)
                 .ThenInclude(ms => ms.MeetingType)
             .Include(ra => ra.Publisher)
@@ -30,7 +31,8 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
 
     public async Task<ResponsibilityAssignment?> GetByIdAsync(Guid meetingScheduleId, Guid responsibilityId, Guid publisherId)
     {
-        return await _context.ResponsibilityAssignments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ResponsibilityAssignments
             .Include(ra => ra.MeetingSchedule)
                 .ThenInclude(ms => ms.MeetingType)
             .Include(ra => ra.Publisher)
@@ -44,18 +46,19 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
 
     public async Task<ResponsibilityAssignment> CreateAsync(ResponsibilityAssignment responsibilityAssignment)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         // Verificar que el MeetingSchedule existe
-        var meetingSchedule = await _context.MeetingSchedules.FindAsync(responsibilityAssignment.MeetingScheduleId);
+        var meetingSchedule = await context.MeetingSchedules.FindAsync(responsibilityAssignment.MeetingScheduleId);
         if (meetingSchedule == null)
             throw new ArgumentException("Meeting schedule not found", nameof(responsibilityAssignment.MeetingScheduleId));
 
         // Verificar que el Publisher existe
-        var publisher = await _context.Publishers.FindAsync(responsibilityAssignment.PublisherId);
+        var publisher = await context.Publishers.FindAsync(responsibilityAssignment.PublisherId);
         if (publisher == null)
             throw new ArgumentException("Publisher not found", nameof(responsibilityAssignment.PublisherId));
 
         // Verificar que la Responsibility existe
-        var responsibility = await _context.Responsibilities.FindAsync(responsibilityAssignment.ResponsibilityId);
+        var responsibility = await context.Responsibilities.FindAsync(responsibilityAssignment.ResponsibilityId);
         if (responsibility == null)
             throw new ArgumentException("Responsibility not found", nameof(responsibilityAssignment.ResponsibilityId));
 
@@ -67,14 +70,15 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
         if (existing != null)
             throw new InvalidOperationException("Responsibility assignment already exists");
 
-        _context.ResponsibilityAssignments.Add(responsibilityAssignment);
-        await _context.SaveChangesAsync();
+        context.ResponsibilityAssignments.Add(responsibilityAssignment);
+        await context.SaveChangesAsync();
         return responsibilityAssignment;
     }
 
     public async Task<bool> DeleteAsync(Guid meetingScheduleId, Guid responsibilityId, Guid publisherId)
     {
-        var assignment = await _context.ResponsibilityAssignments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var assignment = await context.ResponsibilityAssignments
             .FirstOrDefaultAsync(ra => 
                 ra.MeetingScheduleId == meetingScheduleId && 
                 ra.ResponsibilityId == responsibilityId && 
@@ -83,14 +87,15 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
         if (assignment == null)
             return false;
 
-        _context.ResponsibilityAssignments.Remove(assignment);
-        await _context.SaveChangesAsync();
+        context.ResponsibilityAssignments.Remove(assignment);
+        await context.SaveChangesAsync();
         return true;
     }
 
     public async Task<IEnumerable<ResponsibilityAssignment>> GetByMeetingScheduleIdAsync(Guid meetingScheduleId)
     {
-        return await _context.ResponsibilityAssignments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ResponsibilityAssignments
             .Where(ra => ra.MeetingScheduleId == meetingScheduleId)
             .Include(ra => ra.Publisher)
             .Include(ra => ra.Responsibility)
@@ -102,7 +107,8 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
 
     public async Task<IEnumerable<ResponsibilityAssignment>> GetByPublisherIdAsync(Guid publisherId)
     {
-        return await _context.ResponsibilityAssignments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ResponsibilityAssignments
             .Where(ra => ra.PublisherId == publisherId)
             .Include(ra => ra.MeetingSchedule)
                 .ThenInclude(ms => ms.MeetingType)
@@ -115,7 +121,8 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
 
     public async Task<IEnumerable<ResponsibilityAssignment>> GetByResponsibilityIdAsync(Guid responsibilityId)
     {
-        return await _context.ResponsibilityAssignments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ResponsibilityAssignments
             .Where(ra => ra.ResponsibilityId == responsibilityId)
             .Include(ra => ra.MeetingSchedule)
                 .ThenInclude(ms => ms.MeetingType)
@@ -127,7 +134,8 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
 
     public async Task<IEnumerable<ResponsibilityAssignment>> GetByDateRangeAsync(DateOnly startDate, DateOnly endDate)
     {
-        return await _context.ResponsibilityAssignments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ResponsibilityAssignments
             .Where(ra => ra.MeetingSchedule.Date >= startDate && ra.MeetingSchedule.Date <= endDate)
             .Include(ra => ra.MeetingSchedule)
                 .ThenInclude(ms => ms.MeetingType)
@@ -141,23 +149,24 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
 
     public async Task<bool> AssignResponsibilityAsync(Guid meetingScheduleId, Guid responsibilityId, Guid publisherId)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         try
         {
-            var meetingSchedule = await _context.MeetingSchedules.FindAsync(meetingScheduleId);
-            var publisher = await _context.Publishers.FindAsync(publisherId);
-            var responsibility = await _context.Responsibilities.FindAsync(responsibilityId);
+            var meetingSchedule = await context.MeetingSchedules.FindAsync(meetingScheduleId);
+            var publisher = await context.Publishers.FindAsync(publisherId);
+            var responsibility = await context.Responsibilities.FindAsync(responsibilityId);
 
             if (meetingSchedule == null || publisher == null || responsibility == null)
                 return false;
 
             // Remove any existing assignment for this meeting/responsibility (ensure only one publisher per responsibility per meeting)
-            var existingAssignments = await _context.ResponsibilityAssignments
+            var existingAssignments = await context.ResponsibilityAssignments
                 .Where(ra => ra.MeetingScheduleId == meetingScheduleId && ra.ResponsibilityId == responsibilityId)
                 .ToListAsync();
 
             if (existingAssignments.Any())
             {
-                _context.ResponsibilityAssignments.RemoveRange(existingAssignments);
+                context.ResponsibilityAssignments.RemoveRange(existingAssignments);
             }
 
             var assignment = new ResponsibilityAssignment
@@ -170,8 +179,8 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
                 Responsibility = responsibility
             };
 
-            _context.ResponsibilityAssignments.Add(assignment);
-            await _context.SaveChangesAsync();
+            context.ResponsibilityAssignments.Add(assignment);
+            await context.SaveChangesAsync();
             return true;
         }
         catch
@@ -187,7 +196,8 @@ public class ResponsibilityAssignmentService : IResponsibilityAssignmentService
 
     public async Task<IEnumerable<ResponsibilityAssignment>> GetPublisherAssignmentsForMonthAsync(Guid publisherId, int month, int year)
     {
-        return await _context.ResponsibilityAssignments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.ResponsibilityAssignments
             .Where(ra => ra.PublisherId == publisherId && 
                         ra.MeetingSchedule.Month == month && 
                         ra.MeetingSchedule.Year == year)

@@ -6,28 +6,29 @@ namespace GestorTeocratico.Features.Publishers;
 
 public class PublisherService : IPublisherService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly ILogger<PublisherService> _logger;
 
-    public PublisherService(ApplicationDbContext context, ILogger<PublisherService> logger)
+    public PublisherService(IDbContextFactory<ApplicationDbContext> contextFactory, ILogger<PublisherService> logger)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _logger = logger;
     }
 
-    public async Task<IQueryable<Publisher>> GetAllAsync()
+    public async Task<IEnumerable<Publisher>> GetAllAsync()
     {
-        var items = _context.Publishers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Publishers
             .Include(p => p.ResponsibleDepartments)
             .Include(p => p.PublisherResponsibilities)
                 .ThenInclude(pr => pr.Responsibility)
-            .AsQueryable();
-        return await Task.FromResult(items);
+            .ToListAsync();
     }
 
     public async Task<Publisher?> GetByIdAsync(Guid id)
     {
-        return await _context.Publishers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Publishers
             .Include(p => p.ResponsibleDepartments)
             .Include(p => p.PublisherResponsibilities)
                 .ThenInclude(pr => pr.Responsibility)
@@ -36,7 +37,8 @@ public class PublisherService : IPublisherService
 
     public async Task AddAsync(Publisher publisher)
     {
-        var existingPublisher = await _context.Publishers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var existingPublisher = await context.Publishers
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.FirstName.ToLower() == publisher.FirstName.ToLower() && 
                                     p.LastName != null && publisher.LastName != null &&
@@ -49,19 +51,21 @@ public class PublisherService : IPublisherService
             return;
         }
 
-        _context.Publishers.Add(publisher);
-        await _context.SaveChangesAsync();
+        context.Publishers.Add(publisher);
+        await context.SaveChangesAsync();
     }
 
     public async Task UpdateAsync(Publisher publisher)
     {
-        _context.Publishers.Update(publisher);
-        await _context.SaveChangesAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        context.Publishers.Update(publisher);
+        await context.SaveChangesAsync();
     }
 
     public async Task<Publisher> DeleteAsync(Guid id)
     {
-        var publisher = await _context.Publishers.FindAsync(id);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var publisher = await context.Publishers.FindAsync(id);
 
         if (publisher == null)
         {
@@ -70,13 +74,14 @@ public class PublisherService : IPublisherService
         }
 
         publisher.IsDeleted = true;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return publisher;
     }
 
     public async Task<IEnumerable<Responsibility>> GetAvailableResponsibilitiesAsync()
     {
-        return await _context.Responsibilities
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Responsibilities
             .Include(r => r.Department)
             .OrderBy(r => r.Department.Name)
             .ThenBy(r => r.Name)
@@ -85,21 +90,23 @@ public class PublisherService : IPublisherService
 
     public async Task<IEnumerable<Department>> GetAvailableDepartmentsAsync()
     {
-        return await _context.Departments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Departments
             .OrderBy(d => d.Name)
             .ToListAsync();
     }
 
     public async Task UpdatePublisherResponsibilitiesAsync(Guid publisherId, IEnumerable<Guid> responsibilityIds)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var responsibilityIdsList = responsibilityIds.ToList();
 
         // Eliminar responsabilidades actuales del publisher
-        var currentResponsibilities = await _context.PublisherResponsibilities
+        var currentResponsibilities = await context.PublisherResponsibilities
             .Where(pr => pr.PublisherId == publisherId)
             .ToListAsync();
 
-        _context.PublisherResponsibilities.RemoveRange(currentResponsibilities);
+        context.PublisherResponsibilities.RemoveRange(currentResponsibilities);
 
         // Agregar las nuevas responsabilidades seleccionadas
         foreach (var responsibilityId in responsibilityIdsList)
@@ -108,22 +115,23 @@ public class PublisherService : IPublisherService
             {
                 PublisherId = publisherId,
                 ResponsibilityId = responsibilityId,
-                Publisher = await _context.Publishers.FindAsync(publisherId) ?? throw new InvalidOperationException(),
-                Responsibility = await _context.Responsibilities.FindAsync(responsibilityId) ?? throw new InvalidOperationException()
+                Publisher = await context.Publishers.FindAsync(publisherId) ?? throw new InvalidOperationException(),
+                Responsibility = await context.Responsibilities.FindAsync(responsibilityId) ?? throw new InvalidOperationException()
             };
 
-            _context.PublisherResponsibilities.Add(publisherResponsibility);
+            context.PublisherResponsibilities.Add(publisherResponsibility);
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 
     public async Task UpdatePublisherDepartmentsAsync(Guid publisherId, IEnumerable<Guid> departmentIds)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var departmentIdsList = departmentIds.ToList();
 
         // Primero, remover al publisher como responsable de todos los departamentos que tenía asignados
-        var currentDepartments = await _context.Departments
+        var currentDepartments = await context.Departments
             .Where(d => d.ResponsiblePublisherId == publisherId)
             .ToListAsync();
 
@@ -133,7 +141,7 @@ public class PublisherService : IPublisherService
         }
 
         // Luego, asignar al publisher como responsable de los nuevos departamentos seleccionados
-        var newDepartments = await _context.Departments
+        var newDepartments = await context.Departments
             .Where(d => departmentIdsList.Contains(d.DepartmentId))
             .ToListAsync();
 
@@ -142,6 +150,6 @@ public class PublisherService : IPublisherService
             department.ResponsiblePublisherId = publisherId;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }

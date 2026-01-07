@@ -64,25 +64,22 @@
     {
     await DialogService.OpenAsync<CreateRole>("Agregar Rol", null);
     _roles = await RoleService.GetAllAsync();
-    await grid0!.Reload();
     }
 
     private async Task ShowEditModal(IdentityRole role)
     {
     await DialogService.OpenAsync<EditRole>("Editar Rol", new Dictionary<string, object> { { "RoleId", role.Id } });
     _roles = await RoleService.GetAllAsync();
-    await grid0!.Reload();
     }
 
     private async Task DeleteAsync(MouseEventArgs args, IdentityRole role)
     {
         try
-        {
+            {
             if (await DialogService.Confirm("¿Está seguro que desea eliminar este rol?", "Confirmar", new ConfirmOptions { OkButtonText = "Eliminar", CancelButtonText = "Cancelar" }) == true)
             {
                 await RoleService.DeleteAsync(role.Id);
                 _roles = await RoleService.GetAllAsync();
-                await grid0!.Reload();
             }
         }
         catch (Exception ex)

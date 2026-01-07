@@ -6,27 +6,28 @@ namespace GestorTeocratico.Features.Departments;
 
 public class DepartmentService : IDepartmentService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly ILogger<DepartmentService> _logger;
 
-    public DepartmentService(ApplicationDbContext context, ILogger<DepartmentService> logger)
+    public DepartmentService(IDbContextFactory<ApplicationDbContext> contextFactory, ILogger<DepartmentService> logger)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _logger = logger;
     }
 
-    public async Task<IQueryable<Department>> GetAllAsync()
+    public async Task<IEnumerable<Department>> GetAllAsync()
     {
-        var items = _context.Departments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Departments
             .Include(d => d.ResponsiblePublisher)
             .Include(d => d.Responsibilities)
-            .AsQueryable();
-        return await Task.FromResult(items);
+            .ToListAsync();
     }
 
     public async Task<Department?> GetByIdAsync(Guid id)
     {
-        return await _context.Departments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Departments
             .Include(d => d.ResponsiblePublisher)
             .Include(d => d.Responsibilities)
             .FirstOrDefaultAsync(d => d.DepartmentId == id);
@@ -34,7 +35,8 @@ public class DepartmentService : IDepartmentService
 
     public async Task AddAsync(Department department)
     {
-        var existingDepartment = await _context.Departments
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var existingDepartment = await context.Departments
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Name.ToLower() == department.Name.ToLower());
 
@@ -44,19 +46,21 @@ public class DepartmentService : IDepartmentService
             return;
         }
 
-        _context.Departments.Add(department);
-        await _context.SaveChangesAsync();
+        context.Departments.Add(department);
+        await context.SaveChangesAsync();
     }
 
     public async Task UpdateAsync(Department department)
     {
-        _context.Departments.Update(department);
-        await _context.SaveChangesAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        context.Departments.Update(department);
+        await context.SaveChangesAsync();
     }
 
     public async Task<Department> DeleteAsync(Guid id)
     {
-        var department = await _context.Departments.FindAsync(id);
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        var department = await context.Departments.FindAsync(id);
 
         if (department == null)
         {
@@ -65,13 +69,14 @@ public class DepartmentService : IDepartmentService
         }
 
         department.IsDeleted = true;
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return department;
     }
 
     public async Task<IEnumerable<Publisher>> GetAvailablePublishersAsync()
     {
-        return await _context.Publishers
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Publishers
             .Where(p => p.Privilege.HasValue)
             .OrderBy(p => p.FirstName)
             .ThenBy(p => p.LastName)
@@ -80,17 +85,19 @@ public class DepartmentService : IDepartmentService
 
     public async Task<IEnumerable<Responsibility>> GetAvailableResponsibilitiesAsync()
     {
-        return await _context.Responsibilities
+        await using var context = await _contextFactory.CreateDbContextAsync();
+        return await context.Responsibilities
             .OrderBy(r => r.Name)
             .ToListAsync();
     }
 
     public async Task UpdateDepartmentResponsibilitiesAsync(Guid departmentId, IEnumerable<Guid> responsibilityIds)
     {
+        await using var context = await _contextFactory.CreateDbContextAsync();
         var responsibilityIdsList = responsibilityIds.ToList();
 
         // Obtener todas las responsabilidades que actualmente pertenecen a este departamento
-        var currentResponsibilities = await _context.Responsibilities
+        var currentResponsibilities = await context.Responsibilities
             .Where(r => r.DepartmentId == departmentId)
             .ToListAsync();
 
@@ -104,7 +111,7 @@ public class DepartmentService : IDepartmentService
         }
 
         // Obtener las responsabilidades que se quieren asignar a este departamento
-        var newResponsibilities = await _context.Responsibilities
+        var newResponsibilities = await context.Responsibilities
             .Where(r => responsibilityIdsList.Contains(r.ResponsibilityId))
             .ToListAsync();
 
@@ -114,6 +121,6 @@ public class DepartmentService : IDepartmentService
             responsibility.DepartmentId = departmentId;
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
     }
 }

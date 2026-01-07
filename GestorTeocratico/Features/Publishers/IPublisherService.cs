@@ -4,7 +4,7 @@ namespace GestorTeocratico.Features.Publishers;
 
 public interface IPublisherService
 {
-    Task<IQueryable<Publisher>> GetAllAsync();
+    Task<IEnumerable<Publisher>> GetAllAsync();
     Task<Publisher?> GetByIdAsync(Guid id);
     Task AddAsync(Publisher publisher);
     Task UpdateAsync(Publisher publisher);
