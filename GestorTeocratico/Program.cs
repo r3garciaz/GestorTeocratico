@@ -204,6 +204,7 @@ else
 }
 
 app.UseForwardedHeaders();
+app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
 
