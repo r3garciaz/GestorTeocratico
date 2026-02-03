@@ -135,7 +135,7 @@ public class PdfExportService : IPdfExportService
                 {
                     Date = date,
                     MeetingType = schedule.MeetingType,
-                    DateDisplay = date.ToString("dd/MM"),
+                    DateDisplay = date.ToString("dd/MMM", culture),
                     MeetingTypeDisplay = GetMeetingTypeDisplay(schedule.MeetingType),
                     Assignments = assignments
                 };
@@ -229,10 +229,10 @@ public class MonthlyScheduleDocument(MonthlySchedulePdfModel model) : IDocument
             row.RelativeItem().Column(column =>
             {
                 column.Item().AlignCenter().Text($"PROGRAMACIÓN DE RESPONSABILIDADES")
-                    .FontSize(16).Bold().FontColor(Colors.Grey.Darken2);
+                    .FontSize(16).Bold().FontColor(Colors.Black);
                 
                 column.Item().AlignCenter().Text($"{model.MonthName.ToUpper()}")
-                    .FontSize(14).Bold().FontColor(Colors.Blue.Darken2);
+                    .FontSize(14).Bold().FontColor(Colors.Grey.Darken2);
                 
                 column.Item().AlignCenter().Text($"Generado el {model.GeneratedAt:dd/MM/yyyy HH:mm}")
                     .FontSize(8).FontColor(Colors.Grey.Medium);
@@ -264,10 +264,10 @@ public class MonthlyScheduleDocument(MonthlySchedulePdfModel model) : IDocument
             table.Header(header =>
             {
                 header.Cell().Element(CellStyle).AlignCenter().AlignMiddle()
-                    .Text("FECHA").Bold().FontSize(8).FontColor(Colors.White);
+                    .Text("FECHA").Bold().FontSize(8).FontColor(Colors.Black);
             
                 header.Cell().Element(CellStyle).AlignCenter().AlignMiddle()
-                    .Text("REUNIÓN").Bold().FontSize(8).FontColor(Colors.White);
+                    .Text("REUNIÓN").Bold().FontSize(8).FontColor(Colors.Black);
             
                 foreach (var responsibility in model.ResponsibilityColumns)
                 {
@@ -275,19 +275,19 @@ public class MonthlyScheduleDocument(MonthlySchedulePdfModel model) : IDocument
                         .Column(column =>
                         {
                             column.Item().Text(responsibility.Name.ToUpper())
-                                .Bold().FontSize(7).FontColor(Colors.White);
+                                .Bold().FontSize(7).FontColor(Colors.Black);
                             
                             if (!string.IsNullOrEmpty(responsibility.DepartmentName))
                             {
                                 column.Item().Text($"({responsibility.DepartmentName})")
-                                    .FontSize(6).FontColor(Colors.Grey.Lighten3);
+                                    .FontSize(6).FontColor(Colors.Black);
                             }
                         });
                 }
             
                 static IContainer CellStyle(IContainer container) => container
                     .Border(0.5f).BorderColor(Colors.Grey.Darken1)
-                    .Background(Colors.Blue.Darken2).Padding(4);
+                    .Background(Colors.Grey.Lighten1).Padding(4);
             });
             
             // Filas de datos
@@ -305,15 +305,16 @@ public class MonthlyScheduleDocument(MonthlySchedulePdfModel model) : IDocument
                 table.Cell().Element(container =>
                 {
                     var backgroundColor = row.MeetingType == MeetingType.Midweek 
-                        ? Colors.Blue.Lighten4 
-                        : Colors.Green.Lighten4;
+                        ? Colors.Grey.Lighten2
+                        : Colors.Grey.Lighten1;
 
                     container
                         .Border(0.5f).BorderColor(Colors.Grey.Lighten1)
                         .Background(backgroundColor).Padding(3).MinHeight(25)
                         .AlignCenter().AlignMiddle()
                         .Text(row.MeetingTypeDisplay).FontSize(8).Bold()
-                        .FontColor(row.MeetingType == MeetingType.Midweek ? Colors.Blue.Darken1 : Colors.Green.Darken1);
+                        .FontColor(Colors.Black);
+                        // .FontColor(row.MeetingType == MeetingType.Midweek ? Colors.Blue.Darken1 : Colors.Green.Darken1);
                 });
             
                 // Celdas de asignaciones
@@ -339,11 +340,11 @@ public class MonthlyScheduleDocument(MonthlySchedulePdfModel model) : IDocument
             row.RelativeItem().AlignLeft()
                 .Text("Gestor Teocrático").FontSize(8).FontColor(Colors.Grey.Darken1);
                 
-            row.RelativeItem().AlignCenter()
-                .Text($"Página ").FontSize(8).FontColor(Colors.Grey.Darken1);
+            row.RelativeItem().AlignCenter();
+            //     .Text($"Página ").FontSize(8).FontColor(Colors.Grey.Darken1);
                 
-            row.RelativeItem().AlignRight()
-                .Text($"Total de asignaciones: {GetTotalAssignments()}").FontSize(8).FontColor(Colors.Grey.Darken1);
+            row.RelativeItem().AlignRight();
+                // .Text($"Total de asignaciones: {GetTotalAssignments()}").FontSize(8).FontColor(Colors.Grey.Darken1);
         });
     }
 
