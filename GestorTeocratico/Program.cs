@@ -67,9 +67,6 @@ builder.Services.AddAuthentication(options =>
         googleOptions.ClaimActions.MapJsonKey(ClaimTypes.GivenName, "given_name");
         googleOptions.ClaimActions.MapJsonKey(ClaimTypes.Surname, "family_name");
         googleOptions.ClaimActions.MapJsonKey("picture", "picture");
-        // Google reports whether it has verified ownership of the email address.
-        // Required to auto-provision/link the local account without a confirmation email.
-        googleOptions.ClaimActions.MapJsonKey("email_verified", "email_verified");
         googleOptions.ClaimActions.MapJsonKey("locale", "locale");
 
         // Save tokens for potential API access
@@ -210,6 +207,12 @@ app.UseForwardedHeaders();
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+// Register authentication/authorization explicitly so they run after UseForwardedHeaders.
+// When not called explicitly, WebApplication auto-adds them at the start of the pipeline,
+// which makes the OAuth callback (/signin-google) see an "http" scheme behind a TLS-terminating
+// reverse proxy and produce a redirect_uri_mismatch when exchanging the token.
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.UseAntiforgery();
 

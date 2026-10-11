@@ -124,97 +124,11 @@
             RedirectManager.RedirectTo("Account/Lockout");
         }
 
-        var email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email);
-
-        // When the external provider confirmed ownership of the email, provision or link the
-        // local account automatically instead of asking the user to type their email again.
-        if (!string.IsNullOrWhiteSpace(email) && IsEmailVerified(externalLoginInfo.Principal))
+        // If the user does not have an account, then ask the user to create an account.
+        if (externalLoginInfo.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
         {
-            await ProvisionOrLinkExternalUserAsync(email);
-            return;
+            Input.Email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
         }
-
-        // Fall back to the manual flow (email confirmation required) when the provider
-        // email is missing or not verified.
-        if (!string.IsNullOrWhiteSpace(email))
-        {
-            Input.Email = email;
-        }
-    }
-
-    private async Task ProvisionOrLinkExternalUserAsync(string email)
-    {
-        var existingUser = await UserManager.FindByEmailAsync(email);
-
-        if (existingUser is null)
-        {
-            var emailStore = GetEmailStore();
-            var user = CreateUser();
-
-            await UserStore.SetUserNameAsync(user, email, CancellationToken.None);
-            await emailStore.SetEmailAsync(user, email, CancellationToken.None);
-
-            // The address is verified by the external provider, so no confirmation email is required.
-            user.EmailConfirmed = true;
-            user.PublicId = await GenerateUniquePublicIdAsync();
-
-            var createResult = await UserManager.CreateAsync(user);
-            if (!createResult.Succeeded)
-            {
-                message = $"Error: {string.Join(",", createResult.Errors.Select(error => error.Description))}";
-                return;
-            }
-
-            await CheckAddAdminRole(user);
-            await LinkAndSignInAsync(user);
-            return;
-        }
-
-        // Only auto-link when the existing local account is already confirmed. Auto-linking an
-        // unconfirmed account would let whoever registered that email with a password afterwards
-        // sign in as the provider's (verified) owner.
-        if (!existingUser.EmailConfirmed)
-        {
-            RedirectManager.RedirectToWithStatus("Account/Login",
-                "An account already exists with this email but is not confirmed. Confirm it first, or sign in and link your Google account from your profile.",
-                HttpContext);
-            return;
-        }
-
-        await LinkAndSignInAsync(existingUser);
-    }
-
-    private async Task LinkAndSignInAsync(ApplicationUser user)
-    {
-        var addLoginResult = await UserManager.AddLoginAsync(user, externalLoginInfo!);
-        if (!addLoginResult.Succeeded)
-        {
-            message = $"Error: {string.Join(",", addLoginResult.Errors.Select(error => error.Description))}";
-            return;
-        }
-
-        Logger.LogInformation("User {UserId} linked and signed in with {LoginProvider} provider.",
-            user.Id, externalLoginInfo!.LoginProvider);
-
-        await SignInManager.SignInAsync(user, isPersistent: false, externalLoginInfo.LoginProvider);
-        RedirectManager.RedirectTo(ReturnUrl);
-    }
-
-    private async Task<string> GenerateUniquePublicIdAsync()
-    {
-        string publicId;
-        do
-        {
-            publicId = PublicIdGenerator.Generate();
-        } while (await UserManager.Users.AnyAsync(u => u.PublicId == publicId));
-
-        return publicId;
-    }
-
-    private static bool IsEmailVerified(ClaimsPrincipal principal)
-    {
-        var value = principal.FindFirstValue("email_verified");
-        return bool.TryParse(value, out var verified) && verified;
     }
 
     private async Task OnValidSubmitAsync()
@@ -231,7 +145,13 @@
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
         
         // Generate a unique public ID for the user
-        user.PublicId = await GenerateUniquePublicIdAsync();
+        // Ensure that the public ID is unique by checking against existing users
+        string publicId;
+        do
+        {
+            publicId = PublicIdGenerator.Generate();
+        } while (await UserManager.Users.AnyAsync(u => u.PublicId == publicId));
+        user.PublicId = publicId;
 
         var result = await UserManager.CreateAsync(user);
         if (result.Succeeded)
