@@ -67,6 +67,9 @@ builder.Services.AddAuthentication(options =>
         googleOptions.ClaimActions.MapJsonKey(ClaimTypes.GivenName, "given_name");
         googleOptions.ClaimActions.MapJsonKey(ClaimTypes.Surname, "family_name");
         googleOptions.ClaimActions.MapJsonKey("picture", "picture");
+        // Google reports whether it has verified ownership of the email address.
+        // Required to auto-provision/link the local account without a confirmation email.
+        googleOptions.ClaimActions.MapJsonKey("email_verified", "email_verified");
         googleOptions.ClaimActions.MapJsonKey("locale", "locale");
 
         // Save tokens for potential API access
