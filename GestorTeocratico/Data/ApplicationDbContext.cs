@@ -44,6 +44,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                     .IsRequired();
             }
         }
+
+        // Apply matching query filters on join entities that have required relationships
+        // with soft-deletable entities to prevent EF Core model validation warnings (10622)
+        // and ensure consistency when soft-deleted entities are filtered out.
+        modelBuilder.Entity<PublisherResponsibility>()
+            .HasQueryFilter(pr => !pr.Publisher.IsDeleted && !pr.Responsibility.IsDeleted);
+        modelBuilder.Entity<ResponsibilityAssignment>()
+            .HasQueryFilter(ra => !ra.Publisher.IsDeleted && !ra.Responsibility.IsDeleted);
         
         modelBuilder.Entity<ApplicationUser>()
             .HasIndex(u => u.PublicId).IsUnique();
