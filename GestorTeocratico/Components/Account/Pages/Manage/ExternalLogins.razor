@@ -10,56 +10,53 @@
 @inject IUserStore<ApplicationUser> UserStore
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Administra tus inicios de sesión externos</PageTitle>
+<PageTitle>Inicios de sesión externos</PageTitle>
 
+<h2 class="mb-4 text-xl font-semibold">Inicios de sesión externos</h2>
 <StatusMessage/>
+
 @if (currentLogins?.Count > 0)
 {
-    <h3>Inicios de sesión registrados</h3>
-    <table class="table">
-        <tbody>
-        @foreach (var login in currentLogins)
-        {
-            <tr>
-                <td>@login.ProviderDisplayName</td>
-                <td>
-                    @if (showRemoveButton)
-                    {
-                        <form @formname="@($"remove-login-{login.LoginProvider}")" @onsubmit="OnSubmitAsync" method="post">
-                            <AntiforgeryToken/>
-                            <div>
+    <h3 class="mb-2 text-base font-medium">Inicios de sesión registrados</h3>
+    <div class="mb-6 overflow-hidden rounded-md border">
+        <table class="w-full text-sm">
+            <tbody>
+            @foreach (var login in currentLogins)
+            {
+                <tr class="border-b last:border-0">
+                    <td class="px-4 py-3">@login.ProviderDisplayName</td>
+                    <td class="px-4 py-3 text-right">
+                        @if (showRemoveButton)
+                        {
+                            <form @formname="@($"remove-login-{login.LoginProvider}")" @onsubmit="OnSubmitAsync" method="post">
+                                <AntiforgeryToken/>
                                 <input type="hidden" name="@nameof(LoginProvider)" value="@login.LoginProvider"/>
                                 <input type="hidden" name="@nameof(ProviderKey)" value="@login.ProviderKey"/>
-                                <button type="submit" class="btn btn-primary" title="Eliminar este inicio de sesión de @login.ProviderDisplayName de tu cuenta">Eliminar</button>
-                            </div>
-                        </form>
-                    }
-                    else
-                    {
-                        @: &nbsp;
-                    }
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
+                                <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Variant="ButtonVariant.Outline" Size="BlazorBlueprint.Components.ButtonSize.Small">
+                                    <ChildContent>Eliminar</ChildContent>
+                                </BbButton>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
 }
+
 @if (otherLogins?.Count > 0)
 {
-    <h4>Agrega otro servicio para iniciar sesión.</h4>
-    <hr/>
-    <form class="form-horizontal" action="Account/Manage/LinkExternalLogin" method="post">
+    <h3 class="mb-2 text-base font-medium">Agrega otro servicio para iniciar sesión</h3>
+    <form class="flex flex-wrap gap-2" action="Account/Manage/LinkExternalLogin" method="post">
         <AntiforgeryToken/>
-        <div>
-            <p>
-                @foreach (var provider in otherLogins)
-                {
-                    <button type="submit" class="btn btn-primary" name="Provider" value="@provider.Name" title="Iniciar sesión usando tu cuenta de @provider.DisplayName">
-                        @provider.DisplayName
-                    </button>
-                }
-            </p>
-        </div>
+        @foreach (var provider in otherLogins)
+        {
+            <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Variant="ButtonVariant.Outline"
+                      name="Provider" value="@provider.Name">
+                <ChildContent>@provider.DisplayName</ChildContent>
+            </BbButton>
+        }
     </form>
 }
 
@@ -122,16 +119,13 @@
             RedirectManager.RedirectToCurrentPageWithStatus("Error: Could not load external login info.", HttpContext);
         }
 
-        var result = await UserManager.AddLoginAsync(user, info);
+        var result = await UserManager.AddLoginAsync(user, info!);
         if (!result.Succeeded)
         {
             RedirectManager.RedirectToCurrentPageWithStatus("Error: The external login was not added. External logins can only be associated with one account.", HttpContext);
         }
 
-        // Clear the existing external cookie to ensure a clean login process
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
-
         RedirectManager.RedirectToCurrentPageWithStatus("The external login was added.", HttpContext);
     }
-
 }

@@ -11,24 +11,26 @@
 
 <PageTitle>Restablecer clave del autenticador</PageTitle>
 
+<h2 class="mb-4 text-xl font-semibold">Restablecer clave del autenticador</h2>
 <StatusMessage/>
-<h3>Restablecer clave del autenticador</h3>
-<div class="alert alert-warning" role="alert">
-    <p>
-        <span class="glyphicon glyphicon-warning-sign"></span>
-        <strong>Si restableces tu clave de autenticador, tu aplicación de autenticación no funcionará hasta que la vuelvas a configurar.</strong>
-    </p>
-    <p>
-        Este proceso desactiva la 2FA hasta que verifiques tu aplicación de autenticación.
-        Si no completas la configuración de tu aplicación de autenticación, podrías perder el acceso a tu cuenta.
-    </p>
-</div>
-<div>
-    <form @formname="reset-authenticator" @onsubmit="OnSubmitAsync" method="post">
-        <AntiforgeryToken/>
-        <button class="btn btn-danger" type="submit">Restablecer clave del autenticador</button>
-    </form>
-</div>
+
+<BbAlert Variant="AlertVariant.Warning" AccentBorder="true" Class="mb-4 max-w-xl">
+    <Icon><LucideIcon Name="triangle-alert"/></Icon>
+    <ChildContent>
+        <BbAlertTitle>Tu aplicación de autenticación dejará de funcionar</BbAlertTitle>
+        <BbAlertDescription>
+            Este proceso desactiva la 2FA hasta que vuelvas a configurar y verificar tu aplicación.
+            Si no completas la configuración, podrías perder el acceso a tu cuenta.
+        </BbAlertDescription>
+    </ChildContent>
+</BbAlert>
+
+<form @formname="reset-authenticator" @onsubmit="OnSubmitAsync" method="post">
+    <AntiforgeryToken/>
+    <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Variant="ButtonVariant.Destructive">
+        <ChildContent>Restablecer clave del autenticador</ChildContent>
+    </BbButton>
+</form>
 
 @code {
     [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
@@ -48,5 +50,4 @@
             "Your authenticator app key has been reset, you will need to configure your authenticator app using the new key.",
             HttpContext);
     }
-
 }

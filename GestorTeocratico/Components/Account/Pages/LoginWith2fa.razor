@@ -9,44 +9,48 @@
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<LoginWith2fa> Logger
 
-<PageTitle>Two-factor authentication</PageTitle>
+<PageTitle>Verificación en dos pasos</PageTitle>
 
-<div class="account-card">
-    <div class="account-card-content">
-        <h1 class="account-title">Two-factor authentication</h1>
-        <hr style="margin-bottom:24px;"/>
-        @if (!string.IsNullOrEmpty(message))
-        {
-            <div class="account-msg-error">
-                @message
-            </div>
-        }
-        <p class="account-msg-alert">Your login is protected with an authenticator app. Enter your authenticator code below.</p>
-        <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <input type="hidden" name="ReturnUrl" value="@ReturnUrl"/>
-            <input type="hidden" name="RememberMe" value="@RememberMe"/>
-            <DataAnnotationsValidator/>
-            <ValidationSummary class="text-danger" role="alert"/>
-            <div>
-                <InputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode" class="account-input" placeholder="Authenticator code" autocomplete="off" required />
-                <ValidationMessage For="() => Input.TwoFactorCode" class="text-danger" />
-            </div>
-            <div style="margin-bottom: 20px; display: flex; align-items: center;">
-                <InputCheckbox @bind-Value="Input.RememberMachine" id="remember-machine" style="margin-right:8px; accent-color:#1976d2;" />
-                <label for="remember-machine" style="margin-bottom:0;">Remember this machine</label>
-            </div>
-            <div>
-                <button type="submit" class="account-btn-primary">Log in</button>
-            </div>
-        </EditForm>
-        <p style="margin-top:24px; text-align:center; color:#1976d2; font-size:0.95rem;">
-            Don't have access to your authenticator device? You can
-            <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl" class="account-link">log in with a recovery code</a>.
-        </p>
-    </div>
-</div>
+<AuthCard Title="Verificación en dos pasos" Description="Tu cuenta está protegida con una app de autenticación." Icon="shield-check">
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            @message
+        </div>
+    }
+
+    <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post" class="space-y-4">
+        <input type="hidden" name="ReturnUrl" value="@ReturnUrl"/>
+        <input type="hidden" name="RememberMe" value="@RememberMe"/>
+        <DataAnnotationsValidator/>
+        <ValidationSummary class="text-sm text-destructive" role="alert"/>
+        <div class="space-y-2">
+            <BbLabel For="Input.TwoFactorCode">Código del autenticador</BbLabel>
+            <InputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode" class="@InputClass"
+                       placeholder="123456" autocomplete="off" required/>
+            <ValidationMessage For="() => Input.TwoFactorCode" class="text-sm text-destructive"/>
+        </div>
+        <div class="flex items-center gap-2">
+            <InputCheckbox @bind-Value="Input.RememberMachine" id="remember-machine" class="size-4"/>
+            <BbLabel For="remember-machine" Class="font-normal">Recordar este equipo</BbLabel>
+        </div>
+        <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Class="w-full">
+            <ChildContent>Iniciar sesión</ChildContent>
+        </BbButton>
+    </EditForm>
+
+    <p class="text-center text-sm text-muted-foreground">
+        ¿No tienes acceso a tu dispositivo?
+        <a href="Account/LoginWithRecoveryCode?ReturnUrl=@ReturnUrl" class="underline underline-offset-4 hover:text-foreground">
+            Inicia sesión con un código de recuperación</a>.
+    </p>
+</AuthCard>
 
 @code {
+    private const string InputClass =
+        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm " +
+        "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
     private string? message;
     private ApplicationUser user = default!;
 
@@ -58,7 +62,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Ensure the user has gone through the username & password screen first
         user = await SignInManager.GetTwoFactorAuthenticationUserAsync() ??
                throw new InvalidOperationException("Unable to load two-factor authentication user.");
     }
@@ -71,10 +74,10 @@
 
         if (result.Succeeded)
         {
-            if(ReturnUrl is null || ReturnUrl == "/")
+            if (ReturnUrl is null || ReturnUrl == "/")
             {
                 ReturnUrl = "/dashboard";
-            } 
+            }
             Logger.LogInformation("User with ID '{UserId}' logged in with 2fa.", userId);
             RedirectManager.RedirectTo(ReturnUrl);
         }
@@ -86,14 +89,14 @@
         else
         {
             Logger.LogWarning("Invalid authenticator code entered for user with ID '{UserId}'.", userId);
-            message = "Error: Invalid authenticator code.";
+            message = "Error: código de autenticación no válido.";
         }
     }
 
     private sealed class InputModel
     {
         [Required]
-        [StringLength(7, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
+        [StringLength(7, ErrorMessage = "El {0} debe tener entre {2} y {1} caracteres.", MinimumLength = 6)]
         [DataType(DataType.Text)]
         [Display(Name = "Authenticator code")]
         public string? TwoFactorCode { get; set; }
@@ -101,5 +104,4 @@
         [Display(Name = "Remember this machine")]
         public bool RememberMachine { get; set; }
     }
-
 }

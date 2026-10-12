@@ -11,29 +11,33 @@
 
 <PageTitle>Perfil</PageTitle>
 
-<h3>Perfil</h3>
+<h2 class="mb-4 text-xl font-semibold">Perfil</h2>
 <StatusMessage/>
 
-<div class="row">
-    <div class="col-xl-6">
-        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator/>
-            <ValidationSummary class="text-danger" role="alert"/>
-            <div class="form-floating mb-3">
-                <input type="text" value="@username" id="username" class="form-control" placeholder="Elige tu nombre de usuario." disabled/>
-                <label for="username" class="form-label">Nombre de usuario</label>
-            </div>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-control" placeholder="Ingresa tu número de teléfono"/>
-                <label for="Input.PhoneNumber" class="form-label">Número de teléfono</label>
-                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger"/>
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Guardar</button>
-        </EditForm>
+<EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post" class="max-w-xl space-y-4">
+    <DataAnnotationsValidator/>
+    <ValidationSummary class="text-sm text-destructive" role="alert"/>
+    <div class="space-y-2">
+        <BbLabel For="username">Nombre de usuario</BbLabel>
+        <input type="text" value="@username" id="username" class="@InputClass" disabled/>
     </div>
-</div>
+    <div class="space-y-2">
+        <BbLabel For="Input.PhoneNumber">Número de teléfono</BbLabel>
+        <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="@InputClass"
+                   placeholder="Ingresa tu número de teléfono"/>
+        <ValidationMessage For="() => Input.PhoneNumber" class="text-sm text-destructive"/>
+    </div>
+    <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit">
+        <Icon><LucideIcon Name="save"/></Icon>
+        <ChildContent>Guardar</ChildContent>
+    </BbButton>
+</EditForm>
 
 @code {
+    private const string InputClass =
+        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm " +
+        "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
     private ApplicationUser user = default!;
     private string? username;
     private string? phoneNumber;
@@ -72,5 +76,4 @@
         [Display(Name = "Phone number")]
         public string? PhoneNumber { get; set; }
     }
-
 }

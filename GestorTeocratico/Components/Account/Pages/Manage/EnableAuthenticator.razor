@@ -21,53 +21,56 @@
 }
 else
 {
+    <h2 class="mb-4 text-xl font-semibold">Configurar aplicación de autenticación</h2>
     <StatusMessage Message="@message"/>
-    <h3>Configurar aplicación de autenticación</h3>
-    <div>
-        <p>Para usar una aplicación de autenticación, sigue los siguientes pasos:</p>
-        <ol class="list">
-            <li>
-                <p>
-                    Descarga una aplicación de autenticación en dos pasos como Microsoft Authenticator para
-                    <a href="https://go.microsoft.com/fwlink/?Linkid=825072">Android</a> y
-                    <a href="https://go.microsoft.com/fwlink/?Linkid=825073">iOS</a> o
-                    Google Authenticator para
-                    <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&amp;hl=en">Android</a> y
-                    <a href="https://itunes.apple.com/us/app/google-authenticator/id388497605?mt=8">iOS</a>.
-                </p>
-            </li>
-            <li>
-                <p>Escanea el código QR o ingresa esta clave <kbd>@sharedKey</kbd> en tu aplicación de autenticación en dos pasos. Los espacios y las mayúsculas/minúsculas no importan.</p>
-                <div class="alert alert-info">Aprende cómo <a href="https://go.microsoft.com/fwlink/?Linkid=852423">habilitar la generación de códigos QR</a>.</div>
-                <div></div>
-                <div data-url="@authenticatorUri"></div>
-            </li>
-            <li>
-                <p>
-                    Una vez que hayas escaneado el código QR o ingresado la clave anterior, tu aplicación de autenticación en dos pasos te proporcionará
-                    un código único. Ingresa el código en el cuadro de confirmación de abajo.
-                </p>
-                <div class="row">
-                    <div class="col-xl-6">
-                        <EditForm Model="Input" FormName="send-code" OnValidSubmit="OnValidSubmitAsync" method="post">
-                            <DataAnnotationsValidator/>
-                            <div class="form-floating mb-3">
-                                <InputText @bind-Value="Input.Code" id="Input.Code" class="form-control" autocomplete="off" placeholder="Ingresa el código"/>
-                                <label for="Input.Code" class="control-label form-label">Código de verificación</label>
-                                <ValidationMessage For="() => Input.Code" class="text-danger"/>
-                            </div>
-                            <button type="submit" class="w-100 btn btn-lg btn-primary">Verificar</button>
-                            <ValidationSummary class="text-danger" role="alert"/>
-                        </EditForm>
+
+    <BbCard Class="max-w-2xl">
+        <BbCardContent Class="space-y-6 text-sm">
+            <ol class="list-decimal space-y-5 pl-5">
+                <li>
+                    <p>
+                        Descarga una aplicación de autenticación en dos pasos como
+                        <a href="https://go.microsoft.com/fwlink/?Linkid=825072" class="underline">Microsoft Authenticator (Android)</a>
+                        o <a href="https://go.microsoft.com/fwlink/?Linkid=825073" class="underline">iOS</a>, o
+                        <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" class="underline">Google Authenticator</a>.
+                    </p>
+                </li>
+                <li>
+                    <p>Escanea el código QR o ingresa esta clave en tu aplicación:</p>
+                    <div class="mt-3 flex justify-center">
+                        <BbQrCode Value="@authenticatorUri" ShowValue="false"/>
                     </div>
-                </div>
-            </li>
-        </ol>
-    </div>
+                    <div class="mt-3 flex justify-center">
+                        <code class="rounded-md bg-muted px-3 py-1 font-mono tracking-wider">@sharedKey</code>
+                    </div>
+                    <p class="mt-2 text-xs text-muted-foreground">Los espacios y las mayúsculas/minúsculas no importan.</p>
+                </li>
+                <li>
+                    <p>Ingresa el código que te proporcione la aplicación de autenticación:</p>
+                    <EditForm Model="Input" FormName="send-code" OnValidSubmit="OnValidSubmitAsync" method="post" class="mt-3 max-w-xs space-y-4">
+                        <DataAnnotationsValidator/>
+                        <div class="space-y-2">
+                            <BbLabel For="Input.Code">Código de verificación</BbLabel>
+                            <InputText @bind-Value="Input.Code" id="Input.Code" class="@InputClass" autocomplete="off" required/>
+                            <ValidationMessage For="() => Input.Code" class="text-sm text-destructive"/>
+                        </div>
+                        <ValidationSummary class="text-sm text-destructive" role="alert"/>
+                        <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Class="w-full">
+                            <ChildContent>Verificar</ChildContent>
+                        </BbButton>
+                    </EditForm>
+                </li>
+            </ol>
+        </BbCardContent>
+    </BbCard>
 }
 
 @code {
     private const string AuthenticatorUriFormat = "otpauth://totp/{0}:{1}?secret={2}&issuer={0}&digits=6";
+
+    private const string InputClass =
+        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm " +
+        "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
     private string? message;
     private ApplicationUser user = default!;
@@ -82,13 +85,11 @@ else
     protected override async Task OnInitializedAsync()
     {
         user = await UserAccessor.GetRequiredUserAsync(HttpContext);
-
         await LoadSharedKeyAndQrCodeUriAsync(user);
     }
 
     private async Task OnValidSubmitAsync()
     {
-        // Strip spaces and hyphens
         var verificationCode = Input.Code.Replace(" ", string.Empty).Replace("-", string.Empty);
 
         var is2faTokenValid = await UserManager.VerifyTwoFactorTokenAsync(
@@ -118,7 +119,6 @@ else
 
     private async ValueTask LoadSharedKeyAndQrCodeUriAsync(ApplicationUser user)
     {
-        // Load the authenticator key & QR code URI to display on the form
         var unformattedKey = await UserManager.GetAuthenticatorKeyAsync(user);
         if (string.IsNullOrEmpty(unformattedKey))
         {
@@ -168,5 +168,4 @@ else
         [Display(Name = "Código de verificación")]
         public string Code { get; set; } = "";
     }
-
 }

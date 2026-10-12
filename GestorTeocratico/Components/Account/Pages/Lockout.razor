@@ -1,11 +1,14 @@
 ﻿@page "/Account/Lockout"
 
-<PageTitle>Locked out</PageTitle>
+<PageTitle>Cuenta bloqueada</PageTitle>
 
-<div class="account-card">
-    <div class="account-card-content">
-        <h1 class="account-title account-msg-error">Locked out</h1>
-        <p class="account-msg-error" role="alert">This account has been locked out, please try again later.</p>
-        <p class="account-msg-alert">If you believe this is an error, please contact your administrator.</p>
+<AuthCard Title="Cuenta bloqueada" Description="Esta cuenta ha sido bloqueada. Inténtalo de nuevo más tarde." Icon="lock">
+    <p class="text-sm text-muted-foreground">
+        Si crees que es un error, contacta con tu administrador.
+    </p>
+    <div class="text-center">
+        <BbButton Href="/Account/Login" Variant="ButtonVariant.Outline" Class="w-full">
+            <ChildContent>Volver al inicio de sesión</ChildContent>
+        </BbButton>
     </div>
-</div>
+</AuthCard>

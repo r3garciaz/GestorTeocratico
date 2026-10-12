@@ -9,34 +9,41 @@
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<LoginWithRecoveryCode> Logger
 
-<PageTitle>Recovery code verification</PageTitle>
+<PageTitle>Verificación con código de recuperación</PageTitle>
 
-<div class="account-card">
-    <div class="account-card-content">
-        <h1 class="account-title">Recovery code verification</h1>
-        <hr style="margin-bottom:24px;"/>
-        @if (!string.IsNullOrEmpty(message))
-        {
-            <div class="account-msg-error">
-                @message
-            </div>
-        }
-        <p class="account-msg-alert">You have requested to log in with a recovery code. This login will not be remembered until you provide an authenticator app code at log in or disable 2FA and log in again.</p>
-        <EditForm Model="Input" FormName="login-with-recovery-code" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator/>
-            <ValidationSummary class="text-danger" role="alert"/>
-            <div>
-                <InputText @bind-Value="Input.RecoveryCode" id="Input.RecoveryCode" class="account-input" placeholder="Recovery Code" autocomplete="off" required />
-                <ValidationMessage For="() => Input.RecoveryCode" class="text-danger" />
-            </div>
-            <div>
-                <button type="submit" class="account-btn-primary">Log in</button>
-            </div>
-        </EditForm>
-    </div>
-</div>
+<AuthCard Title="Código de recuperación" Description="Has solicitado iniciar sesión con un código de recuperación." Icon="key-round">
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            @message
+        </div>
+    }
+
+    <p class="text-sm text-muted-foreground">
+        Este inicio de sesión no se recordará hasta que proporciones un código del autenticador
+        o desactives la verificación en dos pasos.
+    </p>
+
+    <EditForm Model="Input" FormName="login-with-recovery-code" OnValidSubmit="OnValidSubmitAsync" method="post" class="space-y-4">
+        <DataAnnotationsValidator/>
+        <ValidationSummary class="text-sm text-destructive" role="alert"/>
+        <div class="space-y-2">
+            <BbLabel For="Input.RecoveryCode">Código de recuperación</BbLabel>
+            <InputText @bind-Value="Input.RecoveryCode" id="Input.RecoveryCode" class="@InputClass"
+                       placeholder="Código de recuperación" autocomplete="off" required/>
+            <ValidationMessage For="() => Input.RecoveryCode" class="text-sm text-destructive"/>
+        </div>
+        <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Class="w-full">
+            <ChildContent>Iniciar sesión</ChildContent>
+        </BbButton>
+    </EditForm>
+</AuthCard>
 
 @code {
+    private const string InputClass =
+        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm " +
+        "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
     private string? message;
     private ApplicationUser user = default!;
 
@@ -46,7 +53,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Ensure the user has gone through the username & password screen first
         user = await SignInManager.GetTwoFactorAuthenticationUserAsync() ??
                throw new InvalidOperationException("Unable to load two-factor authentication user.");
     }
@@ -54,9 +60,7 @@
     private async Task OnValidSubmitAsync()
     {
         var recoveryCode = Input.RecoveryCode.Replace(" ", string.Empty);
-
         var result = await SignInManager.TwoFactorRecoveryCodeSignInAsync(recoveryCode);
-
         var userId = await UserManager.GetUserIdAsync(user);
 
         if (result.Succeeded)
@@ -72,7 +76,7 @@
         else
         {
             Logger.LogWarning("Invalid recovery code entered for user with ID '{UserId}' ", userId);
-            message = "Error: Invalid recovery code entered.";
+            message = "Error: código de recuperación no válido.";
         }
     }
 
@@ -83,5 +87,4 @@
         [Display(Name = "Recovery Code")]
         public string RecoveryCode { get; set; } = "";
     }
-
 }
