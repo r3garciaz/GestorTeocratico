@@ -1,0 +1,14 @@
+{
+  "name": "gestorteocratico",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tailwind CSS build for the Gestor Teocrático Blazor UI (Blazor Blueprint).",
+  "scripts": {
+    "build:css": "tailwindcss -i ./wwwroot/css/app-input.css -o ./wwwroot/css/app.css --minify",
+    "watch:css": "tailwindcss -i ./wwwroot/css/app-input.css -o ./wwwroot/css/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  }
+}

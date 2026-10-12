@@ -10,6 +10,8 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="BlazorBlueprint.Components" Version="4.1.0" />
+        <PackageReference Include="BlazorBlueprint.Icons.Lucide" Version="2.0.2" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.12" />
         <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.12" />
         <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.12" />
