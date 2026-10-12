@@ -3,7 +3,7 @@
 @using System.Security.Claims
 @using GestorTeocratico.Components.Account
 
-<BbSidebarProvider DefaultOpen="true" HeightClass="h-svh">
+<BbSidebarProvider DefaultOpen="true" HeightClass="h-svh overflow-hidden">
     <BbSidebar>
         <BbSidebarHeader>
             <BbSidebarHeaderContent>
@@ -77,7 +77,7 @@
             </div>
         </header>
 
-        <div class="min-w-0 flex-1 p-4 lg:p-6">
+        <div class="min-w-0 min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
             @Body
         </div>
 
