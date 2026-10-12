@@ -1,0 +1,12 @@
+@using BlazorBlueprint.Components
+
+@*
+    Isla interactiva para los controles de tema en el shell público.
+    No recibe parámetros (incl. RenderFragment), por lo que puede montarse con
+    @rendermode="InteractiveServer" dentro de un layout estático.
+*@
+
+<div class="flex items-center gap-1">
+    <BbThemeSwitcher Variant="ButtonVariant.Ghost"/>
+    <BbDarkModeToggle Variant="ButtonVariant.Ghost"/>
+</div>

@@ -1,118 +1,187 @@
 ﻿@inherits LayoutComponentBase
-@inject CookieThemeService CookieThemeService
-@inject IJSRuntime JSRuntime
-@inject NavigationManager NavigationManager
-@inject DialogService DialogService
-@inject ContextMenuService ContextMenuService
-@inject TooltipService TooltipService
-@inject NotificationService NotificationService
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@inject UserManager<ApplicationUser> UserManager
-<RadzenComponents />
+@implements IDisposable
+@using System.Security.Claims
+@using BlazorBlueprint.Components
+@using BlazorBlueprint.Primitives
+@using BlazorBlueprint.Icons.Lucide.Components
 
-@* <RadzenLayout style="grid-template-areas: 'rz-sidebar rz-header' 'rz-sidebar rz-body';"> *@
-<RadzenLayout>
-    <RadzenHeader>
-        <RadzenRow JustifyContent="JustifyContent.Start" AlignItems="AlignItems.Center" Gap="0">
-            <RadzenColumn Size="5">
-                <RadzenSidebarToggle Click="@SidebarToggleClick"></RadzenSidebarToggle>
-            </RadzenColumn>
-            <RadzenColumn Size="7">
-                <RadzenStack AlignItems="AlignItems.Center" Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" class="rz-px-2">
-                    <RadzenAppearanceToggle />
-                    <RadzenProfileMenu>
-                        <Template>
-                            <RadzenGravatar Email="@_user?.Identity?.Name" Size="32" Alt="User avatar" />
-                        </Template>
-                        <ChildContent>
-                            <RadzenProfileMenuItem Text="Mi Cuenta" Path="/Account/Manage" Icon="account_circle"></RadzenProfileMenuItem>
-                            @* <RadzenProfileMenuItem Text="Registrarse" Path="/Account/Register" Icon="line_weight"></RadzenProfileMenuItem> *@
-                            @* <RadzenProfileMenuItem Text="FileInput" Path="fileinput" Icon="attach_file"></RadzenProfileMenuItem> *@
-                            @* <RadzenProfileMenuItem Text="Dialog" Path="dialog" Icon="perm_media"></RadzenProfileMenuItem> *@
-                            @* <RadzenProfileMenuItem Text="Notification" Path="notification" Icon="announcement"></RadzenProfileMenuItem> *@
-                        </ChildContent>
-                    </RadzenProfileMenu>
-                </RadzenStack>
-            </RadzenColumn>
-        </RadzenRow>
-    </RadzenHeader>
-    <RadzenBody Expanded="@sidebarExpanded">
-        <RadzenRow class="rz-mx-auto rz-px-4 rz-pt-2 rz-pt-md-4 rz-pt-lg-6 rz-pt-xl-12 rz-pb-2 rz-pb-lg-12" Style="max-width: 1440px;">
-            <RadzenColumn Size="12">
-                @Body
-            </RadzenColumn>
-        </RadzenRow>
-    </RadzenBody>
-    <RadzenSidebar @bind-Expanded="@sidebarExpanded" Style="width: max-content">
-        <RadzenStack AlignItems="AlignItems.Center" class="rz-py-4 rz-py-lg-6" Style="padding: var(--rz-panel-menu-item-padding); border-bottom: var(--rz-panel-menu-item-border);">
-            <RadzenImage Path="images/logo.png"  style="width: 48px; height: 48px;" AlternateText="Application logo"></RadzenImage>
-            <RadzenText Text="Gestor Teocrático" TextStyle="TextStyle.Subtitle1" class="rz-mb-0" style="color: var(--rz-sidebar-color);" />
-        </RadzenStack>
-        <NavMenu />
-        <RadzenStack AlignItems="AlignItems.Center" Gap="0" class="rz-py-4 rz-py-lg-6" Style="padding: var(--rz-panel-menu-item-padding);">
-            <RadzenText Text="Gestor Teocrático v1.0.0" TextStyle="TextStyle.Caption" TagName="TagName.P" TextAlign="TextAlign.Center" />
-            <RadzenText Text=@($"Copyright Ⓒ {DateTime.Now.Year}") TextStyle="TextStyle.Caption" class="rz-mb-0" TagName="TagName.P" TextAlign="TextAlign.Center" />
-        </RadzenStack>
-    </RadzenSidebar>
-    <RadzenFooter>
-        <RadzenRow JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" class="rz-px-4 rz-py-2">
-            <RadzenColumn Size="6">
-                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
-                    <RadzenIcon Icon="verified_user" Style="color: var(--rz-primary);" />
+<BbSidebarProvider DefaultOpen="true" HeightClass="h-svh">
+    <BbSidebar>
+        <BbSidebarHeader>
+            <BbSidebarHeaderContent>
+                <div class="flex size-8 items-center justify-center overflow-hidden rounded-lg bg-sidebar-primary/10">
+                    <img src="images/logo.png" alt="Gestor Teocrático" class="size-7 object-contain"/>
+                </div>
+                <BbSidebarHeaderInfo>
+                    <span class="truncate font-semibold">Gestor Teocrático</span>
+                    <span class="truncate text-xs text-muted-foreground">Congregación</span>
+                </BbSidebarHeaderInfo>
+            </BbSidebarHeaderContent>
+        </BbSidebarHeader>
+
+        <BbSidebarContent>
+            <NavMenu/>
+        </BbSidebarContent>
+
+        <BbSidebarFooter>
+            <BbDropdownMenu>
+                <BbDropdownMenuTrigger AsChild="true">
+                    <BbButton Variant="ButtonVariant.Ghost" Class="h-12 w-full justify-start gap-2 px-2">
+                        <BbAvatar Size="AvatarSize.Small">
+                            <BbAvatarFallback>@Initials</BbAvatarFallback>
+                        </BbAvatar>
+                        <div class="flex min-w-0 flex-1 flex-col items-start text-left">
+                            <span class="truncate text-sm font-medium">@DisplayName</span>
+                            <span class="truncate text-xs text-muted-foreground">@_applicationUser?.Email</span>
+                        </div>
+                        <LucideIcon Name="chevrons-up-down" Class="size-4 text-muted-foreground"/>
+                    </BbButton>
+                </BbDropdownMenuTrigger>
+                <BbDropdownMenuContent Side="PopoverSide.Top" Align="PopoverAlign.Start" MatchTriggerWidth="true">
+                    <div class="flex items-center gap-2 p-2">
+                        <BbAvatar Size="AvatarSize.Small">
+                            <BbAvatarFallback>@Initials</BbAvatarFallback>
+                        </BbAvatar>
+                        <div class="flex min-w-0 flex-col">
+                            <span class="truncate text-sm font-medium">@DisplayName</span>
+                            <span class="truncate text-xs text-muted-foreground">@_applicationUser?.Email</span>
+                        </div>
+                    </div>
+                    <BbDropdownMenuSeparator/>
+                    <BbDropdownMenuItem Href="/Account/Manage">
+                        <LucideIcon Name="user" Class="mr-2 size-4"/>
+                        Mi cuenta
+                    </BbDropdownMenuItem>
+                    <BbDropdownMenuSeparator/>
+                    <form method="post" action="Account/Logout">
+                        <AntiforgeryToken/>
+                        <input type="hidden" name="returnUrl" value="/"/>
+                        <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Variant="ButtonVariant.Ghost"
+                                  Class="w-full justify-start text-destructive">
+                            <Icon><LucideIcon Name="log-out"/></Icon>
+                            <ChildContent>Cerrar sesión</ChildContent>
+                        </BbButton>
+                    </form>
+                </BbDropdownMenuContent>
+            </BbDropdownMenu>
+        </BbSidebarFooter>
+
+        <BbSidebarRail/>
+    </BbSidebar>
+
+    <BbSidebarInset>
+        <header class="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+            <BbSidebarTrigger/>
+            <span class="text-sm font-medium">@PageTitle</span>
+            <div class="ml-auto flex items-center gap-1">
+                <BbThemeSwitcher Variant="ButtonVariant.Ghost" ShowDesignOptions="true"/>
+                <BbDarkModeToggle Variant="ButtonVariant.Ghost"/>
+            </div>
+        </header>
+
+        <div class="flex-1 p-4 lg:p-6">
+            @Body
+        </div>
+
+        <footer class="border-t px-4 py-3 text-xs text-muted-foreground">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <span class="inline-flex items-center gap-1.5">
+                    <LucideIcon Name="shield-check" Class="size-3.5 text-primary"/>
                     @if (!string.IsNullOrEmpty(_applicationUser?.PublicId))
                     {
-                        <RadzenText Text=@($"ID Público: {_applicationUser.PublicId}") TextStyle="TextStyle.Caption" class="rz-mb-0" />
+                        <span>ID público: @_applicationUser.PublicId</span>
                     }
                     else if (_user?.Identity?.IsAuthenticated == true)
                     {
-                        <RadzenText Text="Cargando ID..." TextStyle="TextStyle.Caption" class="rz-mb-0" />
+                        <span>Cargando ID…</span>
                     }
                     else
                     {
-                        <RadzenText Text="Usuario no autenticado" TextStyle="TextStyle.Caption" class="rz-mb-0" />
+                        <span>Usuario no autenticado</span>
                     }
-                </RadzenStack>
-            </RadzenColumn>
-            <RadzenColumn Size="6">
-                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="1rem">
-                    <RadzenText Text="@($"Powered by Gestor Teocrático {DateTime.Now.Year}")" TextStyle="TextStyle.Caption" class="rz-mb-0" />
-                </RadzenStack>
-            </RadzenColumn>
-        </RadzenRow>
-    </RadzenFooter>
-</RadzenLayout>
+                </span>
+                <span>Gestor Teocrático © @DateTime.Now.Year</span>
+            </div>
+        </footer>
+    </BbSidebarInset>
+</BbSidebarProvider>
 
-@* Blazor Blueprint: providers de overlays. El layout puede renderizarse estático
-   (p. ej. páginas de cuenta con [ExcludeFromInteractiveRouting]), por lo que se
-   montan como islas interactivas para compartir el scope de PortalService con el
-   contenido y que los diálogos/popovers/toasts funcionen. *@
-<BlazorBlueprint.Primitives.BbPortalHost @rendermode="InteractiveServer"/>
-<BlazorBlueprint.Components.BbToastProvider @rendermode="InteractiveServer"/>
-<BlazorBlueprint.Components.BbDialogProvider @rendermode="InteractiveServer"/>
+@* Providers de Blazor Blueprint. Se renderizan en el mismo scope interactivo que
+   el contenido (la interactividad se aplica en <Routes>), para que los overlays
+   compartan el PortalService. En páginas estáticas quedan inertes (no se usan). *@
+<BbPortalHost/>
+<BbToastProvider/>
+<BbDialogProvider/>
 
 @code {
-    bool sidebarExpanded = true;
-    private System.Security.Claims.ClaimsPrincipal? _user;
+    [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
+    [Inject] private UserManager<ApplicationUser> UserManager { get; set; } = default!;
+    [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+
+    private ClaimsPrincipal? _user;
     private ApplicationUser? _applicationUser;
+    private string _pageTitle = "Gestor Teocrático";
 
-   protected override async Task OnInitializedAsync()
-   {
-       var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-       _user = authState.User.Identity?.IsAuthenticated == true
-           ? authState.User
-           : null;
+    private string PageTitle => _pageTitle;
 
-       // Fetch the ApplicationUser to get the PublicId
-       if (_user?.Identity?.IsAuthenticated == true)
-       {
-           _applicationUser = await UserManager.GetUserAsync(_user);
-       }
+    private string DisplayName =>
+        _applicationUser?.UserName ?? _user?.Identity?.Name ?? "Usuario";
 
-        await base.OnInitializedAsync();
-   }
+    private string Initials
+    {
+        get
+        {
+            var source = _applicationUser?.UserName ?? _user?.Identity?.Name;
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                return "?";
+            }
 
-   void SidebarToggleClick()
-   {
-       sidebarExpanded = !sidebarExpanded;
-   }
+            source = source.Trim();
+            return source.Length >= 2 ? source[..2].ToUpperInvariant() : source.ToUpperInvariant();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _user = authState.User.Identity?.IsAuthenticated == true ? authState.User : null;
+
+        if (_user is not null)
+        {
+            _applicationUser = await UserManager.GetUserAsync(_user);
+        }
+
+        UpdateTitle(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        UpdateTitle(e.Location);
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateTitle(string uri)
+    {
+        var relative = NavigationManager.ToBaseRelativePath(uri).Split('?')[0].TrimEnd('/');
+
+        _pageTitle = relative switch
+        {
+            "" or "dashboard" => "Inicio",
+            "congregations" => "Congregaciones",
+            "departments" => "Departamentos",
+            "responsibilities" => "Responsabilidades",
+            "publishers" => "Publicadores",
+            "meeting-schedules" => "Programación de reuniones",
+            _ when relative.StartsWith("administration") => "Administración",
+            _ when relative.StartsWith("Account") => "Mi cuenta",
+            _ => "Gestor Teocrático"
+        };
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
 }
