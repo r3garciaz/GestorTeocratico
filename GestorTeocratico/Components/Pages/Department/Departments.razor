@@ -160,7 +160,7 @@
                     }
                 </dd>
                 <dt class="text-muted-foreground">Responsabilidades</dt>
-                <dd><EntityChips Items="@(_detailsTarget.Responsibilities?.Select(r => r.Name).ToList() ?? [])"/></dd>
+                <dd><EntityChips Items="@(_detailsTarget.Responsibilities?.Select(r => r.Name).ToList() ?? [])" Max="int.MaxValue"/></dd>
             </dl>
         }
         <BbDialogFooter>

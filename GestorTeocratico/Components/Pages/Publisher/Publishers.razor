@@ -191,9 +191,9 @@
                 <dt class="text-muted-foreground">Correo</dt>
                 <dd>@(_detailsTarget.Email ?? "—")</dd>
                 <dt class="text-muted-foreground">Departamentos</dt>
-                <dd><EntityChips Items="@(_detailsTarget.ResponsibleDepartments?.Select(d => d.Name).ToList() ?? [])"/></dd>
+                <dd><EntityChips Items="@(_detailsTarget.ResponsibleDepartments?.Select(d => d.Name).ToList() ?? [])" Max="int.MaxValue"/></dd>
                 <dt class="text-muted-foreground">Responsabilidades</dt>
-                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.Select(pr => pr.Responsibility?.Name ?? string.Empty).ToList() ?? [])"/></dd>
+                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.Select(pr => pr.Responsibility?.Name ?? string.Empty).ToList() ?? [])" Max="int.MaxValue"/></dd>
             </dl>
         }
         <BbDialogFooter>
