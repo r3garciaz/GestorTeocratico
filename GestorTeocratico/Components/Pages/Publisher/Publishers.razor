@@ -1,175 +1,377 @@
 @page "/publishers"
+@attribute [Authorize(Roles = "Admin, Manager")]
 @using GestorTeocratico.Entities
 @using GestorTeocratico.Features.Publishers
 @using GestorTeocratico.Shared.Enums
+@using BlazorBlueprint.Components
+@using BlazorBlueprint.Primitives
+@using BlazorBlueprint.Icons.Lucide.Components
+@using ButtonSize = BlazorBlueprint.Components.ButtonSize
+
 @inject IPublisherService PublisherService
-@inject DialogService DialogService
-@inject NotificationService NotificationService
-@attribute [Authorize(Roles = "Admin, Manager")]
 
 <PageTitle>Publicadores</PageTitle>
-<RadzenStack>
-    <RadzenRow AlignItems="AlignItems.Center">
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenText Text="Publicadores" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
-        </RadzenColumn>
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
-                         JustifyContent="JustifyContent.End" Gap="0.5rem">
-                <RadzenButton Icon="add_circle_outline" Text="Agregar Publicador" Click="@AddButtonClick" Variant="Variant.Flat"/>
-            </RadzenStack>
-        </RadzenColumn>
-    </RadzenRow>
-    <RadzenRow>
-        <RadzenColumn SizeMD="12">
-            <RadzenDataGrid @ref="grid0" ColumnWidth="200px" AllowFiltering="true" FilterMode="FilterMode.Advanced"
-                            AllowPaging="true" AllowSorting="true" ShowPagingSummary="true"
-                            PageSizeOptions=@(new int[] { 5, 10, 20, 30 })
-                            Data="@(_publishers)" >
-                <Columns>
-                    <RadzenDataGridColumn Property="@nameof(Publisher.FirstName)" Title="Nombre"/>
-                    <RadzenDataGridColumn Property="@nameof(Publisher.LastName)" Title="Apellido"/>
-                    <RadzenDataGridColumn Property="@nameof(Publisher.Gender)" Title="Género">
-                        <Template Context="publisher">
-                            <span>@GetGenderDisplayName(publisher.Gender)</span>
-                        </Template>
-                    </RadzenDataGridColumn>
-                    <RadzenDataGridColumn Property="@nameof(Publisher.Privilege)" Title="Privilegio">
-                        <Template Context="publisher">
-                            @if (publisher.Privilege.HasValue)
-                            {
-                                <span>@GetPrivilegeDisplayName(publisher.Privilege.Value)</span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">Sin privilegio</span>
-                            }
-                        </Template>
-                    </RadzenDataGridColumn>
-                    <RadzenDataGridColumn Property="@nameof(Publisher.ResponsibleDepartments)" Title="Departamentos Responsables">
-                        <Template Context="publisher">
-                            @if (publisher.ResponsibleDepartments?.Any() == true)
-                            {
-                                <span>@string.Join(", ", publisher.ResponsibleDepartments.Take(2).Select(d => d.Name))</span>
-                                @if (publisher.ResponsibleDepartments.Count > 2)
-                                {
-                                    <span class="text-muted"> y @(publisher.ResponsibleDepartments.Count - 2) más...</span>
-                                }
-                            }
-                            else
-                            {
-                                <span class="text-muted">Sin departamentos</span>
-                            }
-                        </Template>
-                    </RadzenDataGridColumn>
-                    <RadzenDataGridColumn Property="@nameof(Publisher.PublisherResponsibilities)" Title="Responsabilidades">
-                        <Template Context="publisher">
-                            @if (publisher.PublisherResponsibilities?.Any() == true)
-                            {
-                                <span>@string.Join(", ", publisher.PublisherResponsibilities.Take(2).Select(pr => pr.Responsibility.Name))</span>
-                                @if (publisher.PublisherResponsibilities.Count > 2)
-                                {
-                                    <span class="text-muted"> y @(publisher.PublisherResponsibilities.Count - 2) más...</span>
-                                }
-                            }
-                            else
-                            {
-                                <span class="text-muted">Sin responsabilidades</span>
-                            }
-                        </Template>
-                    </RadzenDataGridColumn>
-                    <RadzenDataGridColumn Filterable="false" Sortable="false" Width="150px" Title="Acciones"
-                                          TextAlign="TextAlign.Center">
-                        <Template Context="publisher">
-                            <RadzenButton Icon="article" ButtonStyle="ButtonStyle.Success" Variant="Variant.Outlined" Size="ButtonSize.Medium"
-                                          Click="@(() => ShowDetailsModal(publisher))" @onabort:stopPropagation="true" />
-                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat"
-                                          Size="ButtonSize.Medium"
-                                          Click="@(() => EditRow(publisher))" @onclick:stopPropagation="true"/>
-                            <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"
-                                          Shade="Shade.Lighter" Variant="Variant.Flat"
-                                          Click="@(args => GridDeleteButtonClick(args, publisher))"
-                                          @onclick:stopPropagation="true"/>
-                        </Template>
-                    </RadzenDataGridColumn>
-                </Columns>
-            </RadzenDataGrid>
-        </RadzenColumn>
-    </RadzenRow>
-</RadzenStack>
+
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold tracking-tight">Publicadores</h1>
+        <p class="text-sm text-muted-foreground">Directorio de publicadores de la congregación.</p>
+    </div>
+
+    <BbDataTable TData="Publisher" Data="@_publishers" InitialPageSize="10" AriaLabel="Publicadores">
+        <ToolbarActions>
+            <BbButton OnClick="OpenCreate">
+                <Icon><LucideIcon Name="plus"/></Icon>
+                <ChildContent>Agregar publicador</ChildContent>
+            </BbButton>
+        </ToolbarActions>
+        <Columns>
+            <BbDataTableColumn TData="Publisher" TValue="string" Property="@(p => p.FirstName)"
+                               Header="Nombre" Sortable="true" Filterable="true"/>
+            <BbDataTableColumn TData="Publisher" TValue="string" Property="@(p => p.LastName)"
+                               Header="Apellido" Sortable="true" Filterable="true"/>
+            <BbDataTableColumn TData="Publisher" TValue="Gender" Property="@(p => p.Gender)"
+                               Header="Género" Sortable="true" Width="130px">
+                <CellTemplate Context="p">
+                    <span>@GenderName(p.Gender)</span>
+                </CellTemplate>
+            </BbDataTableColumn>
+            <BbDataTableColumn TData="Publisher" TValue="Privilege?" Property="@(p => p.Privilege)"
+                               Header="Privilegio" Sortable="true" Width="170px">
+                <CellTemplate Context="p">
+                    @if (p.Privilege.HasValue)
+                    {
+                        <BbBadge Variant="BadgeVariant.Secondary">@PrivilegeName(p.Privilege.Value)</BbBadge>
+                    }
+                    else
+                    {
+                        <span class="text-muted-foreground">—</span>
+                    }
+                </CellTemplate>
+            </BbDataTableColumn>
+            <BbDataTableColumn TData="Publisher" TValue="string" Header="Departamentos">
+                <CellTemplate Context="p">
+                    @if (p.ResponsibleDepartments?.Any() == true)
+                    {
+                        <span>@string.Join(", ", p.ResponsibleDepartments.Select(d => d.Name))</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted-foreground">—</span>
+                    }
+                </CellTemplate>
+            </BbDataTableColumn>
+            <BbDataTableColumn TData="Publisher" TValue="string" Header="Responsabilidades">
+                <CellTemplate Context="p">
+                    @if (p.PublisherResponsibilities?.Any() == true)
+                    {
+                        <span>@string.Join(", ", p.PublisherResponsibilities.Select(pr => pr.Responsibility.Name))</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted-foreground">—</span>
+                    }
+                </CellTemplate>
+            </BbDataTableColumn>
+            <BbDataTableColumn TData="Publisher" TValue="string" Header="Acciones" Width="150px">
+                <CellTemplate Context="p">
+                    <div class="flex items-center gap-1">
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Ver"
+                                  OnClick="@(() => OpenDetails(p))">
+                            <LucideIcon Name="eye" Class="size-4"/>
+                        </BbButton>
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Editar"
+                                  OnClick="@(() => OpenEdit(p))">
+                            <LucideIcon Name="pencil" Class="size-4"/>
+                        </BbButton>
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Eliminar"
+                                  OnClick="@(() => OpenDelete(p))">
+                            <LucideIcon Name="trash-2" Class="size-4 text-destructive"/>
+                        </BbButton>
+                    </div>
+                </CellTemplate>
+            </BbDataTableColumn>
+        </Columns>
+    </BbDataTable>
+</div>
+
+@* ===== Formulario crear/editar ===== *@
+<BbDialog @bind-Open="_formOpen">
+    <BbDialogContent Class="sm:max-w-lg">
+        <BbDialogHeader>
+            <BbDialogTitle>@(_isNew ? "Agregar publicador" : "Editar publicador")</BbDialogTitle>
+            <BbDialogDescription>Completa los datos del publicador.</BbDialogDescription>
+        </BbDialogHeader>
+
+        @if (!string.IsNullOrEmpty(_formError))
+        {
+            <div class="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                @_formError
+            </div>
+        }
+
+        <EditForm Model="_editing" OnValidSubmit="SaveAsync" class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="space-y-2">
+                    <BbLabel For="FirstName">Nombre *</BbLabel>
+                    <BbInput Id="FirstName" @bind-Value="_editing.FirstName" Placeholder="Nombre"/>
+                </div>
+                <div class="space-y-2">
+                    <BbLabel For="LastName">Apellido</BbLabel>
+                    <BbInput Id="LastName" @bind-Value="_editing.LastName" Placeholder="Apellido"/>
+                </div>
+                <div class="space-y-2">
+                    <BbLabel For="MotherLastName">Apellido materno</BbLabel>
+                    <BbInput Id="MotherLastName" @bind-Value="_editing.MotherLastName" Placeholder="Apellido materno"/>
+                </div>
+                <div class="space-y-2">
+                    <BbLabel For="Phone">Teléfono</BbLabel>
+                    <BbInput Id="Phone" @bind-Value="_editing.Phone" Placeholder="Teléfono"/>
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                    <BbLabel For="Email">Correo electrónico</BbLabel>
+                    <BbInput Id="Email" @bind-Value="_editing.Email" Placeholder="name@example.com"/>
+                </div>
+                <div class="space-y-2">
+                    <BbLabel>Género *</BbLabel>
+                    <BbSelect TValue="Gender" Options="_genderOptions" @bind-Value="_editing.Gender"
+                              Placeholder="Selecciona género"/>
+                </div>
+                <div class="space-y-2">
+                    <BbLabel>Privilegio</BbLabel>
+                    <BbSelect TValue="Privilege?" Options="_privilegeOptions" @bind-Value="_editing.Privilege"
+                              Placeholder="Sin privilegio"/>
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                    <BbLabel>Responsabilidades</BbLabel>
+                    <BbMultiSelect TValue="Guid" Options="_responsibilityOptions"
+                                   @bind-Values="_selectedResponsibilities" Placeholder="Selecciona responsabilidades"/>
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                    <BbLabel>Departamentos</BbLabel>
+                    <BbMultiSelect TValue="Guid" Options="_departmentOptions"
+                                   @bind-Values="_selectedDepartments" Placeholder="Selecciona departamentos"/>
+                </div>
+            </div>
+            <BbDialogFooter>
+                <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _formOpen = false)">
+                    <ChildContent>Cancelar</ChildContent>
+                </BbButton>
+                <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit">
+                    <ChildContent>Guardar</ChildContent>
+                </BbButton>
+            </BbDialogFooter>
+        </EditForm>
+    </BbDialogContent>
+</BbDialog>
+
+@* ===== Confirmar eliminación ===== *@
+<BbDialog @bind-Open="_deleteOpen">
+    <BbDialogContent Class="sm:max-w-md">
+        <BbDialogHeader>
+            <BbDialogTitle>Eliminar publicador</BbDialogTitle>
+            <BbDialogDescription>
+                ¿Seguro que deseas eliminar a @_deleteTarget?.FirstName @_deleteTarget?.LastName?
+                Esta acción no se puede deshacer.
+            </BbDialogDescription>
+        </BbDialogHeader>
+        <BbDialogFooter>
+            <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _deleteOpen = false)">
+                <ChildContent>Cancelar</ChildContent>
+            </BbButton>
+            <BbButton Variant="ButtonVariant.Destructive" OnClick="ConfirmDeleteAsync">
+                <ChildContent>Eliminar</ChildContent>
+            </BbButton>
+        </BbDialogFooter>
+    </BbDialogContent>
+</BbDialog>
+
+@* ===== Detalles ===== *@
+<BbDialog @bind-Open="_detailsOpen">
+    <BbDialogContent Class="sm:max-w-md">
+        <BbDialogHeader>
+            <BbDialogTitle>@_detailsTarget?.FirstName @_detailsTarget?.LastName</BbDialogTitle>
+            <BbDialogDescription>Detalles del publicador.</BbDialogDescription>
+        </BbDialogHeader>
+        @if (_detailsTarget is not null)
+        {
+            <dl class="grid grid-cols-[140px_1fr] gap-x-4 gap-y-2 text-sm">
+                <dt class="text-muted-foreground">Género</dt>
+                <dd>@GenderName(_detailsTarget.Gender)</dd>
+                <dt class="text-muted-foreground">Privilegio</dt>
+                <dd>@(_detailsTarget.Privilege.HasValue ? PrivilegeName(_detailsTarget.Privilege.Value) : "—")</dd>
+                <dt class="text-muted-foreground">Teléfono</dt>
+                <dd>@(_detailsTarget.Phone ?? "—")</dd>
+                <dt class="text-muted-foreground">Correo</dt>
+                <dd>@(_detailsTarget.Email ?? "—")</dd>
+                <dt class="text-muted-foreground">Departamentos</dt>
+                <dd>@DepartmentsText(_detailsTarget)</dd>
+                <dt class="text-muted-foreground">Responsabilidades</dt>
+                <dd>@ResponsibilitiesText(_detailsTarget)</dd>
+            </dl>
+        }
+        <BbDialogFooter>
+            <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _detailsOpen = false)">
+                <ChildContent>Cerrar</ChildContent>
+            </BbButton>
+        </BbDialogFooter>
+    </BbDialogContent>
+</BbDialog>
 
 @code {
-    private IEnumerable<Publisher> _publishers = [];
-    private RadzenDataGrid<Publisher> grid0;
+    private List<Publisher> _publishers = [];
+    private List<Responsibility> _responsibilities = [];
+    private List<Department> _departments = [];
+    private SelectOption<Guid>[] _responsibilityOptions = [];
+    private SelectOption<Guid>[] _departmentOptions = [];
 
-    protected override async Task OnInitializedAsync()
+    private readonly SelectOption<Gender>[] _genderOptions =
+    [
+        new(Gender.Male, "Masculino"),
+        new(Gender.Female, "Femenino")
+    ];
+
+    private readonly SelectOption<Privilege?>[] _privilegeOptions =
+    [
+        new(null, "Sin privilegio"),
+        new(Privilege.Elder, "Anciano"),
+        new(Privilege.MinisterialServant, "Siervo Ministerial"),
+        new(Privilege.Pioneer, "Precursor")
+    ];
+
+    private bool _formOpen;
+    private bool _isNew;
+    private Publisher _editing = new();
+    private IEnumerable<Guid> _selectedResponsibilities = [];
+    private IEnumerable<Guid> _selectedDepartments = [];
+    private string? _formError;
+
+    private bool _deleteOpen;
+    private Publisher? _deleteTarget;
+
+    private bool _detailsOpen;
+    private Publisher? _detailsTarget;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
     {
-        _publishers = await PublisherService.GetAllAsync();
+        _publishers = (await PublisherService.GetAllAsync()).ToList();
+        _responsibilities = (await PublisherService.GetAvailableResponsibilitiesAsync()).ToList();
+        _departments = (await PublisherService.GetAvailableDepartmentsAsync()).ToList();
+        _responsibilityOptions = _responsibilities
+            .Select(r => new SelectOption<Guid>(r.ResponsibilityId, r.Name)).ToArray();
+        _departmentOptions = _departments
+            .Select(d => new SelectOption<Guid>(d.DepartmentId, d.Name)).ToArray();
     }
 
-    private async Task AddButtonClick(MouseEventArgs args)
+    private void OpenCreate()
     {
-        var result = await DialogService.OpenAsync<CreatePublisher>("Agregar Publicador", null);
-        if (result != null)
+        _isNew = true;
+        _editing = new Publisher { Gender = Gender.Male };
+        _selectedResponsibilities = [];
+        _selectedDepartments = [];
+        _formError = null;
+        _formOpen = true;
+    }
+
+    private async Task OpenEdit(Publisher publisher)
+    {
+        _isNew = false;
+        _editing = await PublisherService.GetByIdAsync(publisher.PublisherId) ?? new Publisher();
+        _selectedResponsibilities = _editing.PublisherResponsibilities.Select(pr => pr.ResponsibilityId).ToList();
+        _selectedDepartments = _editing.ResponsibleDepartments.Select(d => d.DepartmentId).ToList();
+        _formError = null;
+        _formOpen = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _formError = null;
+
+        if (string.IsNullOrWhiteSpace(_editing.FirstName))
         {
-            _publishers = await PublisherService.GetAllAsync();
+            _formError = "El nombre es obligatorio.";
+            return;
         }
-    }
 
-    private async Task EditRow(Publisher args)
-    {
-        var result = await DialogService.OpenAsync<EditPublisher>("Editar Publicador", new Dictionary<string, object> { { "PublisherId", args.PublisherId } });
-        if (result != null)
-        {
-            _publishers = await PublisherService.GetAllAsync();
-        }
-    }
-
-    private async Task GridDeleteButtonClick(MouseEventArgs args, Publisher publisher)
-    {
         try
         {
-            if (await DialogService.Confirm("¿Está seguro que desea eliminar este registro?", "Confirmar", new ConfirmOptions { OkButtonText = "Eliminar", CancelButtonText = "Cancelar" }) == true)
+            if (_isNew)
             {
-                var deleteResult = await PublisherService.DeleteAsync(publisher.PublisherId);
-                _publishers = await PublisherService.GetAllAsync();
+                await PublisherService.AddAsync(_editing);
             }
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage
+            else
             {
-                Severity = NotificationSeverity.Error,
-                Summary = $"Error",
-                Detail = $"No se pudo eliminar el publicador"
-            });
+                await PublisherService.UpdateAsync(_editing);
+            }
+
+            await PublisherService.UpdatePublisherResponsibilitiesAsync(_editing.PublisherId, _selectedResponsibilities);
+            await PublisherService.UpdatePublisherDepartmentsAsync(_editing.PublisherId, _selectedDepartments);
+
+            _formOpen = false;
+            await LoadAsync();
+        }
+        catch
+        {
+            _formError = "No se pudo guardar el publicador.";
         }
     }
-    
-    private async Task ShowDetailsModal(Publisher publisher)
+
+    private void OpenDelete(Publisher publisher)
     {
-        var parameters = new Dictionary<string, object> { ["publisher"] = publisher };
-        await DialogService.OpenAsync<DetailsPublisher>("Detalles del Publicador", parameters);
+        _deleteTarget = publisher;
+        _deleteOpen = true;
     }
 
-    private string GetGenderDisplayName(Gender gender)
+    private async Task ConfirmDeleteAsync()
     {
-        return gender switch
+        if (_deleteTarget is null)
         {
-            Gender.Male => "Masculino",
-            Gender.Female => "Femenino",
-            _ => gender.ToString()
-        };
+            return;
+        }
+
+        try
+        {
+            await PublisherService.DeleteAsync(_deleteTarget.PublisherId);
+        }
+        catch
+        {
+            // Ignored: the row is reloaded below.
+        }
+
+        _deleteOpen = false;
+        await LoadAsync();
     }
 
-    private string GetPrivilegeDisplayName(Privilege privilege)
+    private void OpenDetails(Publisher publisher)
     {
-        return privilege switch
-        {
-            Privilege.Elder => "Anciano",
-            Privilege.MinisterialServant => "Siervo Ministerial",
-            Privilege.Pioneer => "Precursor",
-            _ => privilege.ToString()
-        };
+        _detailsTarget = publisher;
+        _detailsOpen = true;
     }
+
+    private static string DepartmentsText(Publisher p) =>
+        p.ResponsibleDepartments?.Any() == true
+            ? string.Join(", ", p.ResponsibleDepartments.Select(d => d.Name))
+            : "—";
+
+    private static string ResponsibilitiesText(Publisher p) =>
+        p.PublisherResponsibilities?.Any() == true
+            ? string.Join(", ", p.PublisherResponsibilities.Select(pr => pr.Responsibility.Name))
+            : "—";
+
+    private static string GenderName(Gender gender) => gender switch
+    {
+        Gender.Male => "Masculino",
+        Gender.Female => "Femenino",
+        _ => gender.ToString()
+    };
+
+    private static string PrivilegeName(Privilege privilege) => privilege switch
+    {
+        Privilege.Elder => "Anciano",
+        Privilege.MinisterialServant => "Siervo Ministerial",
+        Privilege.Pioneer => "Precursor",
+        _ => privilege.ToString()
+    };
 }
