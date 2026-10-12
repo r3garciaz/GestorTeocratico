@@ -28,7 +28,7 @@
         <div class="flex flex-wrap items-center gap-2">
             <BbSelect TValue="string" Options="_viewOptions" @bind-Value="_selectedViewType" @bind-Value:after="LoadDataAsync"
                       Class="w-[170px]"/>
-            @if (_selectedViewType == "month" && _weeklySchedules.Count > 0)
+            @if (_selectedViewType != "list" && _weeklySchedules.Count > 0)
             {
                 <BbButton Variant="ButtonVariant.Outline" OnClick="ExportToPdf" Disabled="_exportingPdf">
                     <Icon><LucideIcon Name="file-down"/></Icon>
@@ -51,11 +51,13 @@
         <div class="flex flex-wrap items-end gap-4">
             <div class="space-y-2">
                 <BbLabel>Año</BbLabel>
-                <input type="number" class="@InputClass" min="2020" max="2030" @bind="_selectedYear" @bind:after="LoadDataAsync"/>
+                <BbNumericInput TValue="int" Min="2020" Max="2030" Class="w-28"
+                                @bind-Value="_selectedYear" @bind-Value:after="LoadDataAsync"/>
             </div>
             <div class="space-y-2">
                 <BbLabel>Semana</BbLabel>
-                <input type="number" class="@InputClass" min="1" max="53" @bind="_selectedWeek" @bind:after="LoadDataAsync"/>
+                <BbNumericInput TValue="int" Min="1" Max="53" Class="w-28"
+                                @bind-Value="_selectedWeek" @bind-Value:after="LoadDataAsync"/>
             </div>
             <p class="pb-2 text-sm font-medium text-muted-foreground">@GetWeekDateRange()</p>
         </div>
@@ -65,11 +67,13 @@
         <div class="flex flex-wrap items-end gap-4">
             <div class="space-y-2">
                 <BbLabel>Año</BbLabel>
-                <input type="number" class="@InputClass" min="2020" max="2030" @bind="_selectedYear" @bind:after="LoadDataAsync"/>
+                <BbNumericInput TValue="int" Min="2020" Max="2030" Class="w-28"
+                                @bind-Value="_selectedYear" @bind-Value:after="LoadDataAsync"/>
             </div>
             <div class="space-y-2">
                 <BbLabel>Mes</BbLabel>
-                <input type="number" class="@InputClass" min="1" max="12" @bind="_selectedMonth" @bind:after="LoadDataAsync"/>
+                <BbNumericInput TValue="int" Min="1" Max="12" Class="w-28"
+                                @bind-Value="_selectedMonth" @bind-Value:after="LoadDataAsync"/>
             </div>
             <p class="pb-2 text-sm font-medium text-muted-foreground">@GetMonthName()</p>
         </div>
@@ -85,6 +89,7 @@
     }
     else
     {
+        <div class="min-w-0 overflow-x-auto">
         <BbDataTable TData="WeeklyScheduleDto" Data="@_weeklySchedules" InitialPageSize="10"
                      ShowPagination="false" AriaLabel="Programación">
             <Columns>
@@ -135,6 +140,7 @@
                 }
             </Columns>
         </BbDataTable>
+        </div>
     }
 </div>
 
@@ -210,19 +216,19 @@
         <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
                 <BbLabel>Semana origen</BbLabel>
-                <input type="number" class="@InputClass" min="1" max="53" @bind="_sourceWeek"/>
+                <BbNumericInput TValue="int" Min="1" Max="53" Class="w-full" @bind-Value="_sourceWeek"/>
             </div>
             <div class="space-y-2">
                 <BbLabel>Año origen</BbLabel>
-                <input type="number" class="@InputClass" min="2020" max="2030" @bind="_sourceYear"/>
+                <BbNumericInput TValue="int" Min="2020" Max="2030" Class="w-full" @bind-Value="_sourceYear"/>
             </div>
             <div class="space-y-2">
                 <BbLabel>Semana destino</BbLabel>
-                <input type="number" class="@InputClass" min="1" max="53" @bind="_targetWeek"/>
+                <BbNumericInput TValue="int" Min="1" Max="53" Class="w-full" @bind-Value="_targetWeek"/>
             </div>
             <div class="space-y-2">
                 <BbLabel>Año destino</BbLabel>
-                <input type="number" class="@InputClass" min="2020" max="2030" @bind="_targetYear"/>
+                <BbNumericInput TValue="int" Min="2020" Max="2030" Class="w-full" @bind-Value="_targetYear"/>
             </div>
         </div>
         <p class="text-xs text-muted-foreground">
@@ -241,10 +247,6 @@
 </BbDialog>
 
 @code {
-    private const string InputClass =
-        "flex h-9 w-28 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm " +
-        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
-
     private readonly SelectOption<string>[] _viewOptions =
     [
         new("week", "Por semana"),
@@ -473,7 +475,19 @@
     private void ExportToPdf()
     {
         _exportingPdf = true;
-        var url = $"/api/meeting-schedules/monthly-schedule/{_selectedYear}/{_selectedMonth}";
+
+        // The export endpoint is monthly. In week view, export the month that contains
+        // the selected week; in month view, the selected month.
+        var year = _selectedYear;
+        var month = _selectedMonth;
+        if (_selectedViewType == "week")
+        {
+            var monday = ISOWeek.ToDateTime(_selectedYear, _selectedWeek, DayOfWeek.Monday);
+            year = monday.Year;
+            month = monday.Month;
+        }
+
+        var url = $"/api/meeting-schedules/monthly-schedule/{year}/{month}";
         NavigationManager.NavigateTo(url, forceLoad: true);
     }
 

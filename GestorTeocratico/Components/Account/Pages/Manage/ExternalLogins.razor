@@ -18,30 +18,27 @@
 @if (currentLogins?.Count > 0)
 {
     <h3 class="mb-2 text-base font-medium">Inicios de sesión registrados</h3>
-    <div class="mb-6 overflow-hidden rounded-md border">
-        <table class="w-full text-sm">
-            <tbody>
-            @foreach (var login in currentLogins)
-            {
-                <tr class="border-b last:border-0">
-                    <td class="px-4 py-3">@login.ProviderDisplayName</td>
-                    <td class="px-4 py-3 text-right">
-                        @if (showRemoveButton)
-                        {
-                            <form @formname="@($"remove-login-{login.LoginProvider}")" @onsubmit="OnSubmitAsync" method="post">
-                                <AntiforgeryToken/>
-                                <input type="hidden" name="@nameof(LoginProvider)" value="@login.LoginProvider"/>
-                                <input type="hidden" name="@nameof(ProviderKey)" value="@login.ProviderKey"/>
-                                <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Variant="ButtonVariant.Outline" Size="BlazorBlueprint.Components.ButtonSize.Small">
-                                    <ChildContent>Eliminar</ChildContent>
-                                </BbButton>
-                            </form>
-                        }
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
+    <div class="mb-6 max-w-xl divide-y rounded-md border">
+        @foreach (var login in currentLogins)
+        {
+            <div class="flex items-center justify-between gap-3 px-4 py-3">
+                <span class="inline-flex items-center gap-2 text-sm">
+                    <LucideIcon Name="key-round" Class="size-4 text-muted-foreground"/>
+                    @login.ProviderDisplayName
+                </span>
+                @if (showRemoveButton)
+                {
+                    <form @formname="@($"remove-login-{login.LoginProvider}")" @onsubmit="OnSubmitAsync" method="post">
+                        <AntiforgeryToken/>
+                        <input type="hidden" name="@nameof(LoginProvider)" value="@login.LoginProvider"/>
+                        <input type="hidden" name="@nameof(ProviderKey)" value="@login.ProviderKey"/>
+                        <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Variant="ButtonVariant.Outline" Size="BlazorBlueprint.Components.ButtonSize.Small">
+                            <ChildContent>Eliminar</ChildContent>
+                        </BbButton>
+                    </form>
+                }
+            </div>
+        }
     </div>
 }
 
