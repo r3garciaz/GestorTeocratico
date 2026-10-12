@@ -9,11 +9,13 @@ namespace GestorTeocratico.Components.Account;
 /// Adds the user's public ID as a claim when the sign-in principal is created,
 /// so layouts can display it without querying the database on every request
 /// (which would compete with the page's own DbContext usage).
+/// Inherits the role-aware base factory so role claims are still generated.
 /// </summary>
 public class ApplicationUserClaimsPrincipalFactory(
     UserManager<ApplicationUser> userManager,
+    RoleManager<IdentityRole> roleManager,
     IOptions<IdentityOptions> optionsAccessor)
-    : UserClaimsPrincipalFactory<ApplicationUser>(userManager, optionsAccessor)
+    : UserClaimsPrincipalFactory<ApplicationUser, IdentityRole>(userManager, roleManager, optionsAccessor)
 {
     public const string PublicIdClaim = "public_id";
 
