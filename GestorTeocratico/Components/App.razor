@@ -14,6 +14,18 @@
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]"/>
     <link rel="stylesheet" href="@Assets["app.css"]"/>
     <link rel="stylesheet" href="@Assets["GestorTeocratico.styles.css"]"/>
+
+    <!-- Blazor Blueprint (Fase 0: convivencia temporal con Radzen). -->
+    <!-- 1. Tema (variables CSS). Debe cargar antes de blazorblueprint.css. -->
+    <link rel="stylesheet" href="styles/themes/default.css"/>
+    <!-- 2. Estilos de los componentes Blazor Blueprint. -->
+    <link rel="stylesheet" href="_content/BlazorBlueprint.Components/blazorblueprint.css"/>
+    <!-- 3. Paletas base/primary para BbThemeSwitcher. -->
+    <link rel="stylesheet" href="_content/BlazorBlueprint.Components/css/themes.css"/>
+    <!-- 4. Tailwind propio del proyecto (utilidades de página). -->
+    <link rel="stylesheet" href="css/app.css"/>
+    <!-- 5. Aplica el tema guardado antes del primer paint (script clásico, sin defer). -->
+    <script src="_content/BlazorBlueprint.Components/js/theme-init.js"></script>
     <ImportMap/>
     <link rel="icon" type="image/png" href="favicon.png"/>
     <HeadOutlet @rendermode="PageRenderMode" />

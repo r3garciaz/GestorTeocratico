@@ -14,4 +14,8 @@
 @using Microsoft.JSInterop
 @using Radzen
 @using Radzen.Blazor
+@* Blazor Blueprint no se importa globalmente para evitar colisiones de nombres
+   con Radzen (DialogService, ThemeService, etc.) durante la migración. Los
+   componentes de BB se referencian con nombre totalmente cualificado o con un
+   @using local en los archivos que los usan. *@
 @using static Microsoft.AspNetCore.Components.Web.RenderMode

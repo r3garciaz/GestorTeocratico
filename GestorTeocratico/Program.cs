@@ -1,3 +1,4 @@
+using BlazorBlueprint.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddRadzenComponents();
+// Blazor Blueprint (Fase 0: convivencia temporal con Radzen).
+builder.Services.AddBlazorBlueprintComponents();
 builder.Services.AddRadzenCookieThemeService(options =>
 {
     options.Name = "RadzenBlazorStudioTheme";

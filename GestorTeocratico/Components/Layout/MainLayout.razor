@@ -82,6 +82,14 @@
     </RadzenFooter>
 </RadzenLayout>
 
+@* Blazor Blueprint: providers de overlays. El layout puede renderizarse estático
+   (p. ej. páginas de cuenta con [ExcludeFromInteractiveRouting]), por lo que se
+   montan como islas interactivas para compartir el scope de PortalService con el
+   contenido y que los diálogos/popovers/toasts funcionen. *@
+<BlazorBlueprint.Primitives.BbPortalHost @rendermode="InteractiveServer"/>
+<BlazorBlueprint.Components.BbToastProvider @rendermode="InteractiveServer"/>
+<BlazorBlueprint.Components.BbDialogProvider @rendermode="InteractiveServer"/>
+
 @code {
     bool sidebarExpanded = true;
     private System.Security.Claims.ClaimsPrincipal? _user;
