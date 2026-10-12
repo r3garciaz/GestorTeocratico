@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Gestor Teocrático</title>
     <base href="@NavigationManager.BaseUri" />
-    <RadzenTheme @rendermode="@PageRenderMode" Theme="material" />
     <ResourcePreloader/>
     <link rel="stylesheet" href="css/account-pages.css" />
     <link rel="stylesheet" href="css/site.css" />
@@ -15,7 +14,7 @@
     <link rel="stylesheet" href="@Assets["app.css"]"/>
     <link rel="stylesheet" href="@Assets["GestorTeocratico.styles.css"]"/>
 
-    <!-- Blazor Blueprint (Fase 0: convivencia temporal con Radzen). -->
+    <!-- Blazor Blueprint -->
     <!-- 1. Tema (variables CSS). Debe cargar antes de blazorblueprint.css. -->
     <link rel="stylesheet" href="styles/themes/default.css"/>
     <!-- 2. Estilos de los componentes Blazor Blueprint. -->
@@ -35,7 +34,6 @@
     <Routes @rendermode="PageRenderMode" />
     <ReconnectModal/>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
-    <script src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Colors).Assembly.GetName().Version)"></script>
 </body>
 
 </html>
@@ -44,24 +42,6 @@
     [CascadingParameter]
     private HttpContext HttpContext { get; set; }
 
-    [Inject]
-    private ThemeService ThemeService { get; set; }
-    
     private IComponentRenderMode? PageRenderMode =>
         HttpContext.AcceptsInteractiveRouting() ? InteractiveServer : null;
-
-    protected override void OnInitialized()
-    {
-        base.OnInitialized();
-
-        if (HttpContext != null)
-        {
-            var theme = HttpContext.Request.Cookies["RadzenBlazorStudioTheme"];
-
-            if (!string.IsNullOrEmpty(theme))
-            {
-                ThemeService.SetTheme(theme, false);
-            }
-        }
-    }
 }
