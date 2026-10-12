@@ -1,95 +1,188 @@
 @page "/administration/roles"
-@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin, Manager")]
 @using Microsoft.AspNetCore.Identity
 @using GestorTeocratico.Features.Roles
-@using Microsoft.AspNetCore.Components
-@using Microsoft.AspNetCore.Components.Web
-@using Radzen
-@using Radzen.Blazor
-@inject IRoleService RoleService
-@inject DialogService DialogService
-@inject NotificationService NotificationService
+@using BlazorBlueprint.Components
+@using BlazorBlueprint.Primitives
+@using BlazorBlueprint.Icons.Lucide.Components
+@using ButtonSize = BlazorBlueprint.Components.ButtonSize
 
-@attribute [Authorize(Roles = "Admin, Manager")]
+@inject IRoleService RoleService
+@inject ToastService Toasts
 
 <PageTitle>Roles</PageTitle>
-<RadzenStack>
-    <RadzenRow AlignItems="AlignItems.Center">
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenText Text="Roles" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
-        </RadzenColumn>
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
-                         JustifyContent="JustifyContent.End" Gap="0.5rem">
-                <RadzenButton Icon="add_circle_outline" Text="Agregar Rol" Click="@CreateAsync" Variant="Variant.Flat"/>
-            </RadzenStack>
-        </RadzenColumn>
-    </RadzenRow>
-    <RadzenRow>
-        <RadzenColumn SizeMD="12">
-            <RadzenDataGrid @ref="grid0" ColumnWidth="200px" AllowFiltering="true" FilterMode="FilterMode.Advanced"
-                            AllowPaging="true" AllowSorting="true" ShowPagingSummary="true"
-                            PageSizeOptions=@(new int[] { 5, 10, 20, 30 })
-                            Data="@(_roles)" >
-                <Columns>
-                    <RadzenDataGridColumn Property="@nameof(IdentityRole.Name)" Title="Nombre"/>
-                    <RadzenDataGridColumn Filterable="false" Sortable="false" Width="150px" Title="Acciones"
-                                          TextAlign="TextAlign.Center">
-                        <Template Context="role">
-                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Variant="Variant.Outlined"
-                                          Size="ButtonSize.Medium"
-                                          Click="@(() => ShowEditModal(role))" @onclick:stopPropagation="true"/>
-                            <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"
-                                          Shade="Shade.Lighter" Variant="Variant.Outlined"
-                                          Click="@(args => DeleteAsync(args, role))"
-                                          @onclick:stopPropagation="true"/>
-                        </Template>
-                    </RadzenDataGridColumn>
-                </Columns>
-            </RadzenDataGrid>
-        </RadzenColumn>
-    </RadzenRow>
-</RadzenStack>
+
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold tracking-tight">Roles</h1>
+        <p class="text-sm text-muted-foreground">Roles disponibles para asignar a los usuarios.</p>
+    </div>
+
+    <BbDataTable TData="IdentityRole" Data="@_roles" InitialPageSize="10" AriaLabel="Roles">
+        <ToolbarActions>
+            <BbButton OnClick="OpenCreate">
+                <Icon><LucideIcon Name="plus"/></Icon>
+                <ChildContent>Agregar rol</ChildContent>
+            </BbButton>
+        </ToolbarActions>
+        <Columns>
+            <BbDataTableColumn TData="IdentityRole" TValue="string" Property="@(r => r.Name)"
+                               Header="Nombre" Sortable="true" Filterable="true"/>
+            <BbDataTableColumn TData="IdentityRole" TValue="string" Header="Acciones" Width="110px">
+                <CellTemplate Context="r">
+                    <div class="flex items-center gap-1">
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Editar"
+                                  OnClick="@(() => OpenEdit(r))">
+                            <LucideIcon Name="pencil" Class="size-4"/>
+                        </BbButton>
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Eliminar"
+                                  OnClick="@(() => OpenDelete(r))">
+                            <LucideIcon Name="trash-2" Class="size-4 text-destructive"/>
+                        </BbButton>
+                    </div>
+                </CellTemplate>
+            </BbDataTableColumn>
+        </Columns>
+    </BbDataTable>
+</div>
+
+<BbDialog @bind-Open="_formOpen">
+    <BbDialogContent Class="sm:max-w-md">
+        <BbDialogHeader>
+            <BbDialogTitle>@(_isNew ? "Agregar rol" : "Editar rol")</BbDialogTitle>
+            <BbDialogDescription>@(_isNew ? "Crea un nuevo rol." : "Cambia el nombre del rol.")</BbDialogDescription>
+        </BbDialogHeader>
+
+        @if (!string.IsNullOrEmpty(_formError))
+        {
+            <div class="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                @_formError
+            </div>
+        }
+
+        <div class="space-y-2">
+            <BbLabel For="RoleName">Nombre *</BbLabel>
+            <BbInput Id="RoleName" @bind-Value="_roleName" Placeholder="Nombre del rol"/>
+        </div>
+
+        <BbDialogFooter>
+            <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _formOpen = false)">
+                <ChildContent>Cancelar</ChildContent>
+            </BbButton>
+            <BbButton OnClick="SaveAsync">
+                <ChildContent>Guardar</ChildContent>
+            </BbButton>
+        </BbDialogFooter>
+    </BbDialogContent>
+</BbDialog>
+
+<BbDialog @bind-Open="_deleteOpen">
+    <BbDialogContent Class="sm:max-w-md">
+        <BbDialogHeader>
+            <BbDialogTitle>Eliminar rol</BbDialogTitle>
+            <BbDialogDescription>
+                ¿Seguro que deseas eliminar el rol <strong>@_deleteTarget?.Name</strong>?
+            </BbDialogDescription>
+        </BbDialogHeader>
+        <BbDialogFooter>
+            <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _deleteOpen = false)">
+                <ChildContent>Cancelar</ChildContent>
+            </BbButton>
+            <BbButton Variant="ButtonVariant.Destructive" OnClick="ConfirmDeleteAsync">
+                <ChildContent>Eliminar</ChildContent>
+            </BbButton>
+        </BbDialogFooter>
+    </BbDialogContent>
+</BbDialog>
 
 @code {
-    private IEnumerable<IdentityRole> _roles = []; 
-    private RadzenDataGrid<IdentityRole>? grid0;
+    private List<IdentityRole> _roles = [];
 
-    protected override async Task OnInitializedAsync()
+    private bool _formOpen;
+    private bool _isNew;
+    private string _roleName = "";
+    private IdentityRole? _editing;
+    private string? _formError;
+
+    private bool _deleteOpen;
+    private IdentityRole? _deleteTarget;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => _roles = (await RoleService.GetAllAsync()).ToList();
+
+    private void OpenCreate()
     {
-        _roles = await RoleService.GetAllAsync();
+        _isNew = true;
+        _editing = null;
+        _roleName = "";
+        _formError = null;
+        _formOpen = true;
     }
 
-    private async Task CreateAsync(MouseEventArgs args)
+    private void OpenEdit(IdentityRole role)
     {
-    await DialogService.OpenAsync<CreateRole>("Agregar Rol", null);
-    _roles = await RoleService.GetAllAsync();
+        _isNew = false;
+        _editing = role;
+        _roleName = role.Name ?? "";
+        _formError = null;
+        _formOpen = true;
     }
 
-    private async Task ShowEditModal(IdentityRole role)
+    private async Task SaveAsync()
     {
-    await DialogService.OpenAsync<EditRole>("Editar Rol", new Dictionary<string, object> { { "RoleId", role.Id } });
-    _roles = await RoleService.GetAllAsync();
-    }
-
-    private async Task DeleteAsync(MouseEventArgs args, IdentityRole role)
-    {
-        try
-            {
-            if (await DialogService.Confirm("¿Está seguro que desea eliminar este rol?", "Confirmar", new ConfirmOptions { OkButtonText = "Eliminar", CancelButtonText = "Cancelar" }) == true)
-            {
-                await RoleService.DeleteAsync(role.Id);
-                _roles = await RoleService.GetAllAsync();
-            }
-        }
-        catch (Exception ex)
+        _formError = null;
+        if (string.IsNullOrWhiteSpace(_roleName))
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = $"Error, {ex.Message}",
-                Detail = "No se pudo eliminar el rol"
-            });
+            _formError = "El nombre es obligatorio.";
+            return;
         }
+
+        try
+        {
+            if (_isNew)
+            {
+                await RoleService.CreateAsync(_roleName.Trim());
+                Toasts.Success("Rol creado.", "Guardado");
+            }
+            else if (_editing is not null)
+            {
+                await RoleService.UpdateAsync(_editing.Id, _roleName.Trim());
+                Toasts.Success("Rol actualizado.", "Guardado");
+            }
+
+            _formOpen = false;
+            await LoadAsync();
+        }
+        catch
+        {
+            _formError = "No se pudo guardar el rol.";
+        }
+    }
+
+    private void OpenDelete(IdentityRole role)
+    {
+        _deleteTarget = role;
+        _deleteOpen = true;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (_deleteTarget is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await RoleService.DeleteAsync(_deleteTarget.Id);
+        }
+        catch
+        {
+            // Ignored: reload shows the current state.
+        }
+
+        _deleteOpen = false;
+        await LoadAsync();
     }
 }
