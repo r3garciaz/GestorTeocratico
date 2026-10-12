@@ -197,14 +197,13 @@
         _departments = (await DepartmentService.GetAllAsync()).ToList();
         _responsibilities = (await DepartmentService.GetAvailableResponsibilitiesAsync()).ToList();
         _responsibilityOptions = _responsibilities
-            .Select(r => new SelectOption<Guid>(r.ResponsibilityId, r.Name)).ToArray();
+            .Select(r => new SelectOption<Guid>(r.ResponsibilityId, r.Name))
+            .OrderBy(o => o.Text, NameComparer).ToArray();
 
         var publishers = await DepartmentService.GetAvailablePublishersAsync();
         _publisherOptions = publishers
-            .OrderBy(p => p.LastName, NameComparer)
-            .ThenBy(p => p.MotherLastName, NameComparer)
-            .ThenBy(p => p.FirstName, NameComparer)
             .Select(p => new SelectOption<Guid?>(p.PublisherId, PublisherName(p)))
+            .OrderBy(o => o.Text, NameComparer)
             .ToArray();
     }
 

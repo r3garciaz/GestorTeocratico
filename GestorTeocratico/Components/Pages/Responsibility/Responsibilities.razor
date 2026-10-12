@@ -203,10 +203,8 @@
 
         var publishers = await ResponsibilityService.GetAvailablePublishersAsync();
         _publisherOptions = publishers
-            .OrderBy(p => p.LastName, NameComparer)
-            .ThenBy(p => p.MotherLastName, NameComparer)
-            .ThenBy(p => p.FirstName, NameComparer)
             .Select(p => new SelectOption<Guid>(p.PublisherId, PublisherName(p)))
+            .OrderBy(o => o.Text, NameComparer)
             .ToArray();
     }
 

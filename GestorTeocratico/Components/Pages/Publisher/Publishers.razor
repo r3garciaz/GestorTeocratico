@@ -247,9 +247,11 @@
         _responsibilities = (await PublisherService.GetAvailableResponsibilitiesAsync()).ToList();
         _departments = (await PublisherService.GetAvailableDepartmentsAsync()).ToList();
         _responsibilityOptions = _responsibilities
-            .Select(r => new SelectOption<Guid>(r.ResponsibilityId, r.Name)).ToArray();
+            .Select(r => new SelectOption<Guid>(r.ResponsibilityId, r.Name))
+            .OrderBy(o => o.Text, NameComparer).ToArray();
         _departmentOptions = _departments
-            .Select(d => new SelectOption<Guid>(d.DepartmentId, d.Name)).ToArray();
+            .Select(d => new SelectOption<Guid>(d.DepartmentId, d.Name))
+            .OrderBy(o => o.Text, NameComparer).ToArray();
     }
 
     private void OpenCreate()
