@@ -20,12 +20,51 @@
     <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
             <h1 class="text-2xl font-semibold tracking-tight">Usuarios</h1>
-            <p class="text-sm text-muted-foreground">Administra los usuarios y sus roles.</p>
+            <p class="text-sm text-muted-foreground">Administra los usuarios, sus roles y su estado.</p>
         </div>
         <BbButton Variant="ButtonVariant.Outline" OnClick="LoadAsync">
             <Icon><LucideIcon Name="refresh-cw"/></Icon>
             <ChildContent>Actualizar</ChildContent>
         </BbButton>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <BbCard>
+            <BbCardContent Class="pt-6">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-muted-foreground">Total usuarios</p>
+                    <LucideIcon Name="users" Class="size-4 text-muted-foreground"/>
+                </div>
+                <p class="mt-2 text-3xl font-bold tracking-tight">@_totalUsers</p>
+            </BbCardContent>
+        </BbCard>
+        <BbCard>
+            <BbCardContent Class="pt-6">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-muted-foreground">Administradores</p>
+                    <LucideIcon Name="shield" Class="size-4 text-muted-foreground"/>
+                </div>
+                <p class="mt-2 text-3xl font-bold tracking-tight">@_adminCount</p>
+            </BbCardContent>
+        </BbCard>
+        <BbCard>
+            <BbCardContent Class="pt-6">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-muted-foreground">Managers</p>
+                    <LucideIcon Name="user-cog" Class="size-4 text-muted-foreground"/>
+                </div>
+                <p class="mt-2 text-3xl font-bold tracking-tight">@_managerCount</p>
+            </BbCardContent>
+        </BbCard>
+        <BbCard>
+            <BbCardContent Class="pt-6">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-muted-foreground">Usuarios</p>
+                    <LucideIcon Name="user" Class="size-4 text-muted-foreground"/>
+                </div>
+                <p class="mt-2 text-3xl font-bold tracking-tight">@_userCount</p>
+            </BbCardContent>
+        </BbCard>
     </div>
 
     <div class="grid gap-3 sm:grid-cols-3">
@@ -64,19 +103,39 @@
                     </div>
                 </CellTemplate>
             </BbDataTableColumn>
+            <BbDataTableColumn TData="ApplicationUser" TValue="System.DateTimeOffset?" Property="@(u => u.LockoutEnd)"
+                               Header="Estado" Sortable="true" Width="120px">
+                <CellTemplate Context="u">
+                    <BbBadge Variant="@(IsLocked(u) ? BadgeVariant.Destructive : BadgeVariant.Secondary)">
+                        @(IsLocked(u) ? "Bloqueado" : "Activo")
+                    </BbBadge>
+                </CellTemplate>
+            </BbDataTableColumn>
             <BbDataTableColumn TData="ApplicationUser" TValue="string" Header="Acciones" Width="150px">
                 <CellTemplate Context="u">
-                    <BbButton Variant="ButtonVariant.Outline" Size="ButtonSize.Small"
-                              OnClick="@(() => OpenManageRoles(u))">
-                        <Icon><LucideIcon Name="shield"/></Icon>
-                        <ChildContent>Roles</ChildContent>
-                    </BbButton>
+                    <div class="flex items-center gap-1">
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Administrar roles"
+                                  OnClick="@(() => OpenManageRoles(u))">
+                            <LucideIcon Name="shield" Class="size-4"/>
+                        </BbButton>
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon"
+                                  AriaLabel="@(IsLocked(u) ? "Desbloquear usuario" : "Bloquear usuario")"
+                                  OnClick="@(() => ToggleLockoutAsync(u))">
+                            <LucideIcon Name="@(IsLocked(u) ? "lock-open" : "lock")"
+                                        Class="@(IsLocked(u) ? "size-4 text-emerald-500" : "size-4 text-amber-500")"/>
+                        </BbButton>
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Ver detalles"
+                                  OnClick="@(() => OpenDetails(u))">
+                            <LucideIcon Name="info" Class="size-4"/>
+                        </BbButton>
+                    </div>
                 </CellTemplate>
             </BbDataTableColumn>
         </Columns>
     </BbDataTable>
 </div>
 
+@* ===== Gestionar roles ===== *@
 <BbDialog @bind-Open="_rolesOpen">
     <BbDialogContent Class="sm:max-w-md">
         <BbDialogHeader>
@@ -101,9 +160,85 @@
     </BbDialogContent>
 </BbDialog>
 
+@* ===== Ver detalles ===== *@
+<BbDialog @bind-Open="_detailsOpen">
+    <BbDialogContent Class="sm:max-w-lg">
+        <BbDialogHeader>
+            <BbDialogTitle>@(_detailsUser?.UserName ?? "Usuario")</BbDialogTitle>
+            <BbDialogDescription>@_detailsUser?.Email</BbDialogDescription>
+        </BbDialogHeader>
+
+        @if (_detailsUser is not null)
+        {
+            <div class="flex flex-wrap items-center gap-2">
+                <BbBadge Variant="BadgeVariant.Secondary">ID: @_detailsUser.PublicId</BbBadge>
+                <BbBadge Variant="@(IsLocked(_detailsUser) ? BadgeVariant.Destructive : BadgeVariant.Secondary)">
+                    @(IsLocked(_detailsUser) ? "Bloqueado" : "Activo")
+                </BbBadge>
+                @foreach (var role in RolesOf(_detailsUser.Id))
+                {
+                    <BbBadge Variant="@RoleVariant(role)">@RoleDisplay(role)</BbBadge>
+                }
+            </div>
+
+            <div class="space-y-4 text-sm">
+                <section class="space-y-2">
+                    <h4 class="font-medium">Cuenta</h4>
+                    <dl class="grid grid-cols-[190px_1fr] gap-x-4 gap-y-2">
+                        <dt class="text-muted-foreground">Correo confirmado</dt>
+                        <dd>@( _detailsUser.EmailConfirmed ? "Sí" : "No")</dd>
+                        <dt class="text-muted-foreground">Teléfono</dt>
+                        <dd>@(string.IsNullOrEmpty(_detailsUser.PhoneNumber) ? "No especificado" : _detailsUser.PhoneNumber)</dd>
+                        <dt class="text-muted-foreground">Teléfono confirmado</dt>
+                        <dd>@( _detailsUser.PhoneNumberConfirmed ? "Sí" : "No")</dd>
+                        <dt class="text-muted-foreground">Autenticación 2FA</dt>
+                        <dd>@( _detailsUser.TwoFactorEnabled ? "Habilitada" : "Deshabilitada")</dd>
+                    </dl>
+                </section>
+
+                <section class="space-y-2">
+                    <h4 class="font-medium">Seguridad</h4>
+                    <dl class="grid grid-cols-[190px_1fr] gap-x-4 gap-y-2">
+                        <dt class="text-muted-foreground">Intentos fallidos</dt>
+                        <dd>@_detailsUser.AccessFailedCount</dd>
+                        <dt class="text-muted-foreground">Bloqueo habilitado</dt>
+                        <dd>@( _detailsUser.LockoutEnabled ? "Sí" : "No")</dd>
+                        @if (_detailsUser.LockoutEnd.HasValue)
+                        {
+                            <dt class="text-muted-foreground">Bloqueado hasta</dt>
+                            <dd>@_detailsUser.LockoutEnd.Value.ToString("dd/MM/yyyy HH:mm")</dd>
+                        }
+                    </dl>
+                </section>
+
+                <section class="space-y-2">
+                    <h4 class="font-medium">Técnica</h4>
+                    <dl class="grid grid-cols-[190px_1fr] gap-x-4 gap-y-2">
+                        <dt class="text-muted-foreground">ID del usuario</dt>
+                        <dd class="break-all">@_detailsUser.Id</dd>
+                        <dt class="text-muted-foreground">Sello de seguridad</dt>
+                        <dd>@(string.IsNullOrEmpty(_detailsUser.SecurityStamp) ? "No especificado" : _detailsUser.SecurityStamp[..Math.Min(8, _detailsUser.SecurityStamp.Length)] + "…")</dd>
+                    </dl>
+                </section>
+            </div>
+        }
+
+        <BbDialogFooter>
+            <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _detailsOpen = false)">
+                <ChildContent>Cerrar</ChildContent>
+            </BbButton>
+        </BbDialogFooter>
+    </BbDialogContent>
+</BbDialog>
+
 @code {
     private List<ApplicationUser> _users = [];
     private readonly Dictionary<string, List<string>> _userRoles = new();
+
+    private int _totalUsers;
+    private int _adminCount;
+    private int _managerCount;
+    private int _userCount;
 
     private string? _searchEmail;
     private string? _searchPublicId;
@@ -115,6 +250,9 @@
     private bool _rolesOpen;
     private ApplicationUser? _rolesUser;
     private IEnumerable<string> _selectedRoles = [];
+
+    private bool _detailsOpen;
+    private ApplicationUser? _detailsUser;
 
     private IEnumerable<ApplicationUser> FilteredUsers => _users.Where(u =>
         (string.IsNullOrWhiteSpace(_searchEmail)
@@ -136,6 +274,11 @@
             _userRoles[user.Id] = (await UserManager.GetRolesAsync(user)).ToList();
         }
 
+        _totalUsers = _users.Count;
+        _adminCount = _userRoles.Values.Count(r => r.Contains(Shared.Roles.Admin));
+        _managerCount = _userRoles.Values.Count(r => r.Contains(Shared.Roles.Manager));
+        _userCount = _userRoles.Values.Count(r => r.Contains(Shared.Roles.User));
+
         var roles = (await RoleService.GetAllAsync()).ToList();
         _roleFilterOptions =
         [
@@ -146,6 +289,9 @@
             .Select(r => new SelectOption<string>(r.Name ?? "", RoleDisplay(r.Name ?? "")))
             .ToArray();
     }
+
+    private static bool IsLocked(ApplicationUser user) =>
+        user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow;
 
     private List<string> RolesOf(string userId) =>
         _userRoles.TryGetValue(userId, out var roles) ? roles : [];
@@ -188,6 +334,35 @@
         {
             Toasts.Error("No se pudieron actualizar los roles.", "Error");
         }
+    }
+
+    private async Task ToggleLockoutAsync(ApplicationUser user)
+    {
+        try
+        {
+            if (IsLocked(user))
+            {
+                await UserManager.SetLockoutEndDateAsync(user, null);
+                Toasts.Success($"El usuario {user.Email} ha sido desbloqueado.", "Usuario desbloqueado");
+            }
+            else
+            {
+                await UserManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddDays(30));
+                Toasts.Warning($"El usuario {user.Email} ha sido bloqueado.", "Usuario bloqueado");
+            }
+
+            await LoadAsync();
+        }
+        catch
+        {
+            Toasts.Error("No se pudo cambiar el estado del usuario.", "Error");
+        }
+    }
+
+    private void OpenDetails(ApplicationUser user)
+    {
+        _detailsUser = user;
+        _detailsOpen = true;
     }
 
     private static string RoleDisplay(string role) => role switch
