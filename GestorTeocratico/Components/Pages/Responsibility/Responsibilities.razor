@@ -52,21 +52,18 @@
                     }
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Responsibility" TValue="string" Header="Publicadores asignados">
+            <BbDataTableColumn TData="Responsibility" TValue="string" Header="Publicadores asignados" Width="240px">
                 <CellTemplate Context="r">
-                    @if (r.PublisherResponsibilities?.Any() == true)
-                    {
-                        <span>@string.Join(", ", r.PublisherResponsibilities.Select(pr => PublisherName(pr.Publisher)))</span>
-                    }
-                    else
-                    {
-                        <span class="text-muted-foreground">Sin asignar</span>
-                    }
+                    <EntityChips Items="@(r.PublisherResponsibilities?.Select(pr => PublisherName(pr.Publisher)).ToList() ?? [])"/>
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Responsibility" TValue="string" Header="Acciones" Width="110px">
+            <BbDataTableColumn TData="Responsibility" TValue="string" Header="Acciones" Width="150px">
                 <CellTemplate Context="r">
                     <div class="flex items-center gap-1">
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Ver"
+                                  OnClick="@(() => OpenDetails(r))">
+                            <LucideIcon Name="eye" Class="size-4"/>
+                        </BbButton>
                         <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Editar"
                                   OnClick="@(() => OpenEdit(r))">
                             <LucideIcon Name="pencil" Class="size-4"/>
@@ -113,7 +110,7 @@
             </div>
             <div class="space-y-2">
                 <BbLabel>Publicadores asignados</BbLabel>
-                <BbMultiSelect TValue="Guid" Options="_publisherOptions"
+                <BbMultiSelect TValue="Guid" Options="_publisherOptions" MaxDisplayTags="5" SingleLine="true"
                                @bind-Values="_selectedPublishers" Placeholder="Selecciona publicadores"/>
             </div>
             <BbDialogFooter>
@@ -148,6 +145,32 @@
     </BbDialogContent>
 </BbDialog>
 
+@* ===== Detalles ===== *@
+<BbDialog @bind-Open="_detailsOpen">
+    <BbDialogContent Class="sm:max-w-md">
+        <BbDialogHeader>
+            <BbDialogTitle>@_detailsTarget?.Name</BbDialogTitle>
+            <BbDialogDescription>Detalles de la responsabilidad.</BbDialogDescription>
+        </BbDialogHeader>
+        @if (_detailsTarget is not null)
+        {
+            <dl class="grid grid-cols-[150px_1fr] gap-x-4 gap-y-3 text-sm">
+                <dt class="text-muted-foreground">Descripción</dt>
+                <dd>@(string.IsNullOrEmpty(_detailsTarget.Description) ? "—" : _detailsTarget.Description)</dd>
+                <dt class="text-muted-foreground">Departamento</dt>
+                <dd>@(_detailsTarget.Department?.Name ?? "Sin departamento")</dd>
+                <dt class="text-muted-foreground">Publicadores</dt>
+                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.Select(pr => PublisherName(pr.Publisher)).ToList() ?? [])"/></dd>
+            </dl>
+        }
+        <BbDialogFooter>
+            <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _detailsOpen = false)">
+                <ChildContent>Cerrar</ChildContent>
+            </BbButton>
+        </BbDialogFooter>
+    </BbDialogContent>
+</BbDialog>
+
 @code {
     private List<Responsibility> _responsibilities = [];
     private SelectOption<Guid?>[] _departmentOptions = [];
@@ -161,6 +184,9 @@
 
     private bool _deleteOpen;
     private Responsibility? _deleteTarget;
+
+    private bool _detailsOpen;
+    private Responsibility? _detailsTarget;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
@@ -255,6 +281,12 @@
 
         _deleteOpen = false;
         await LoadAsync();
+    }
+
+    private void OpenDetails(Responsibility responsibility)
+    {
+        _detailsTarget = responsibility;
+        _detailsOpen = true;
     }
 
     private static string PublisherName(Publisher publisher)

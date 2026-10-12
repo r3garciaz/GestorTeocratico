@@ -27,11 +27,16 @@
         <Columns>
             <BbDataTableColumn TData="Department" TValue="string" Property="@(d => d.Name)"
                                Header="Nombre" Sortable="true" Filterable="true"/>
-            <BbDataTableColumn TData="Department" TValue="string" Header="Publicador responsable">
+            <BbDataTableColumn TData="Department" TValue="string" Header="Publicador responsable" Width="240px">
                 <CellTemplate Context="d">
                     @if (d.ResponsiblePublisher is not null)
                     {
-                        <span>@PublisherName(d.ResponsiblePublisher)</span>
+                        <span class="inline-flex items-center gap-2">
+                            <BbAvatar Size="AvatarSize.Small">
+                                <BbAvatarFallback>@Initials(PublisherName(d.ResponsiblePublisher))</BbAvatarFallback>
+                            </BbAvatar>
+                            <span class="truncate">@PublisherName(d.ResponsiblePublisher)</span>
+                        </span>
                     }
                     else
                     {
@@ -39,16 +44,9 @@
                     }
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Department" TValue="string" Header="Responsabilidades">
+            <BbDataTableColumn TData="Department" TValue="string" Header="Responsabilidades" Width="240px">
                 <CellTemplate Context="d">
-                    @if (d.Responsibilities?.Any() == true)
-                    {
-                        <span>@string.Join(", ", d.Responsibilities.Select(r => r.Name))</span>
-                    }
-                    else
-                    {
-                        <span class="text-muted-foreground">—</span>
-                    }
+                    <EntityChips Items="@(d.Responsibilities?.Select(r => r.Name).ToList() ?? [])"/>
                 </CellTemplate>
             </BbDataTableColumn>
             <BbDataTableColumn TData="Department" TValue="string" Header="Acciones" Width="150px">
@@ -95,12 +93,12 @@
             </div>
             <div class="space-y-2">
                 <BbLabel>Publicador responsable</BbLabel>
-                <BbSelect TValue="Guid?" Options="_publisherOptions"
-                          @bind-Value="_editing.ResponsiblePublisherId" Placeholder="Sin asignar"/>
+                <BbCombobox TValue="Guid?" Options="_publisherOptions" SearchPlaceholder="Buscar publicador..."
+                            @bind-Value="_editing.ResponsiblePublisherId" Placeholder="Sin asignar"/>
             </div>
             <div class="space-y-2">
                 <BbLabel>Responsabilidades</BbLabel>
-                <BbMultiSelect TValue="Guid" Options="_responsibilityOptions"
+                <BbMultiSelect TValue="Guid" Options="_responsibilityOptions" MaxDisplayTags="5" SingleLine="true"
                                @bind-Values="_selectedResponsibilities" Placeholder="Selecciona responsabilidades"/>
             </div>
             <BbDialogFooter>
@@ -146,9 +144,23 @@
         {
             <dl class="grid grid-cols-[170px_1fr] gap-x-4 gap-y-2 text-sm">
                 <dt class="text-muted-foreground">Publicador responsable</dt>
-                <dd>@(_detailsTarget.ResponsiblePublisher is not null ? PublisherName(_detailsTarget.ResponsiblePublisher) : "—")</dd>
+                <dd>
+                    @if (_detailsTarget.ResponsiblePublisher is not null)
+                    {
+                        <span class="inline-flex items-center gap-2">
+                            <BbAvatar Size="AvatarSize.Small">
+                                <BbAvatarFallback>@Initials(PublisherName(_detailsTarget.ResponsiblePublisher))</BbAvatarFallback>
+                            </BbAvatar>
+                            <span>@PublisherName(_detailsTarget.ResponsiblePublisher)</span>
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="text-muted-foreground">—</span>
+                    }
+                </dd>
                 <dt class="text-muted-foreground">Responsabilidades</dt>
-                <dd>@(_detailsTarget.Responsibilities?.Any() == true ? string.Join(", ", _detailsTarget.Responsibilities.Select(r => r.Name)) : "—")</dd>
+                <dd><EntityChips Items="@(_detailsTarget.Responsibilities?.Select(r => r.Name).ToList() ?? [])"/></dd>
             </dl>
         }
         <BbDialogFooter>
@@ -281,5 +293,11 @@
         if (!string.IsNullOrEmpty(publisher.LastName)) name += $" {publisher.LastName}";
         if (!string.IsNullOrEmpty(publisher.MotherLastName)) name += $" {publisher.MotherLastName}";
         return name;
+    }
+
+    private static string Initials(string name)
+    {
+        name = name.Trim();
+        return string.IsNullOrEmpty(name) ? "?" : (name.Length >= 2 ? name[..2].ToUpperInvariant() : name.ToUpperInvariant());
     }
 }

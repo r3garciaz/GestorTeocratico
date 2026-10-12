@@ -49,28 +49,14 @@
                     }
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Publisher" TValue="string" Header="Departamentos">
+            <BbDataTableColumn TData="Publisher" TValue="string" Header="Departamentos" Width="220px">
                 <CellTemplate Context="p">
-                    @if (p.ResponsibleDepartments?.Any() == true)
-                    {
-                        <span>@string.Join(", ", p.ResponsibleDepartments.Select(d => d.Name))</span>
-                    }
-                    else
-                    {
-                        <span class="text-muted-foreground">—</span>
-                    }
+                    <EntityChips Items="@(p.ResponsibleDepartments?.Select(d => d.Name).ToList() ?? [])"/>
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Publisher" TValue="string" Header="Responsabilidades">
+            <BbDataTableColumn TData="Publisher" TValue="string" Header="Responsabilidades" Width="240px">
                 <CellTemplate Context="p">
-                    @if (p.PublisherResponsibilities?.Any() == true)
-                    {
-                        <span>@string.Join(", ", p.PublisherResponsibilities.Select(pr => pr.Responsibility.Name))</span>
-                    }
-                    else
-                    {
-                        <span class="text-muted-foreground">—</span>
-                    }
+                    <EntityChips Items="@(p.PublisherResponsibilities?.Select(pr => pr.Responsibility?.Name ?? string.Empty).ToList() ?? [])"/>
                 </CellTemplate>
             </BbDataTableColumn>
             <BbDataTableColumn TData="Publisher" TValue="string" Header="Acciones" Width="150px">
@@ -144,12 +130,12 @@
                 </div>
                 <div class="space-y-2 sm:col-span-2">
                     <BbLabel>Responsabilidades</BbLabel>
-                    <BbMultiSelect TValue="Guid" Options="_responsibilityOptions"
+                    <BbMultiSelect TValue="Guid" Options="_responsibilityOptions" MaxDisplayTags="5" SingleLine="true"
                                    @bind-Values="_selectedResponsibilities" Placeholder="Selecciona responsabilidades"/>
                 </div>
                 <div class="space-y-2 sm:col-span-2">
                     <BbLabel>Departamentos</BbLabel>
-                    <BbMultiSelect TValue="Guid" Options="_departmentOptions"
+                    <BbMultiSelect TValue="Guid" Options="_departmentOptions" MaxDisplayTags="5" SingleLine="true"
                                    @bind-Values="_selectedDepartments" Placeholder="Selecciona departamentos"/>
                 </div>
             </div>
@@ -205,9 +191,9 @@
                 <dt class="text-muted-foreground">Correo</dt>
                 <dd>@(_detailsTarget.Email ?? "—")</dd>
                 <dt class="text-muted-foreground">Departamentos</dt>
-                <dd>@DepartmentsText(_detailsTarget)</dd>
+                <dd><EntityChips Items="@(_detailsTarget.ResponsibleDepartments?.Select(d => d.Name).ToList() ?? [])"/></dd>
                 <dt class="text-muted-foreground">Responsabilidades</dt>
-                <dd>@ResponsibilitiesText(_detailsTarget)</dd>
+                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.Select(pr => pr.Responsibility?.Name ?? string.Empty).ToList() ?? [])"/></dd>
             </dl>
         }
         <BbDialogFooter>
