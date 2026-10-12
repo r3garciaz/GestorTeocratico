@@ -1,0 +1,32 @@
+@using BlazorBlueprint.Components
+@using BlazorBlueprint.Icons.Lucide.Components
+
+@*
+    Tarjeta reutilizable para las páginas de autenticación (estáticas).
+    Solo usa componentes de BB que renderizan en SSR.
+*@
+
+<div class="container flex min-h-[calc(100svh-9rem)] items-center justify-center py-10">
+    <BbCard Class="w-full max-w-md">
+        <BbCardHeader Class="items-center space-y-3 text-center">
+            <div class="mx-auto flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <LucideIcon Name="@Icon" Class="size-6"/>
+            </div>
+            <BbCardTitle Class="text-2xl">@Title</BbCardTitle>
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <BbCardDescription>@Description</BbCardDescription>
+            }
+        </BbCardHeader>
+        <BbCardContent Class="space-y-4">
+            @ChildContent
+        </BbCardContent>
+    </BbCard>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string Icon { get; set; } = "shield-check";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

@@ -3,29 +3,41 @@
 
 @inject SignInManager<ApplicationUser> SignInManager
 
-<ul class="nav nav-pills flex-column">
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage" Match="NavLinkMatch.All">Perfil</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/Email">Email</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/ChangePassword">Contraseña</NavLink>
-    </li>
+<nav class="flex flex-col gap-1 text-sm">
+    <NavLink href="Account/Manage" Match="NavLinkMatch.All"
+             class="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+             ActiveClass="bg-accent text-foreground font-medium">
+        Perfil
+    </NavLink>
+    <NavLink href="Account/Manage/Email"
+             class="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+             ActiveClass="bg-accent text-foreground font-medium">
+        Correo
+    </NavLink>
+    <NavLink href="Account/Manage/ChangePassword"
+             class="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+             ActiveClass="bg-accent text-foreground font-medium">
+        Contraseña
+    </NavLink>
     @if (hasExternalLogins)
     {
-        <li class="nav-item">
-            <NavLink class="nav-link" href="Account/Manage/ExternalLogins">Inicios de sesión externos</NavLink>
-        </li>
+        <NavLink href="Account/Manage/ExternalLogins"
+                 class="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                 ActiveClass="bg-accent text-foreground font-medium">
+            Inicios de sesión externos
+        </NavLink>
     }
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/TwoFactorAuthentication">Autenticación de dos factores</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/PersonalData">Datos personales</NavLink>
-    </li>
-</ul>
+    <NavLink href="Account/Manage/TwoFactorAuthentication"
+             class="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+             ActiveClass="bg-accent text-foreground font-medium">
+        Autenticación de dos factores
+    </NavLink>
+    <NavLink href="Account/Manage/PersonalData"
+             class="rounded-md px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+             ActiveClass="bg-accent text-foreground font-medium">
+        Datos personales
+    </NavLink>
+</nav>
 
 @code {
     private bool hasExternalLogins;
@@ -34,5 +46,4 @@
     {
         hasExternalLogins = (await SignInManager.GetExternalAuthenticationSchemesAsync()).Any();
     }
-
 }

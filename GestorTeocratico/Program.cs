@@ -209,6 +209,9 @@ else
     }
 }
 
+// Break-glass local administrator (configured via EmergencyAdmin:Email / EmergencyAdmin:Password).
+await DataSeeder.SeedEmergencyAdminAsync(scope.ServiceProvider);
+
 app.UseForwardedHeaders();
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
