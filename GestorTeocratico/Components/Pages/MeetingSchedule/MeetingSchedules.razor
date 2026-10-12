@@ -1,389 +1,508 @@
 @page "/meeting-schedules"
-
+@attribute [Authorize(Roles = "Admin, Manager")]
+@using System.Globalization
 @using GestorTeocratico.Entities
 @using GestorTeocratico.Features.MeetingSchedules
 @using GestorTeocratico.Features.Responsibilities
-@using GestorTeocratico.Features.PdfExport
+@using GestorTeocratico.Features.ResponsibilityAssignments
 @using GestorTeocratico.Shared.Enums
-@using System.Globalization
+@using BlazorBlueprint.Components
+@using BlazorBlueprint.Primitives
+@using BlazorBlueprint.Icons.Lucide.Components
+@using ButtonSize = BlazorBlueprint.Components.ButtonSize
 
 @inject NavigationManager NavigationManager
 @inject IMeetingScheduleService MeetingScheduleService
 @inject IResponsibilityService ResponsibilityService
-@inject IPdfExportService PdfExportService
-@inject DialogService DialogService
-@inject NotificationService NotificationService
-@attribute [Authorize(Roles = "Admin, Manager")]
+@inject IResponsibilityAssignmentService ResponsibilityAssignmentService
+@inject ToastService Toasts
 
 <PageTitle>Programación de Responsabilidades</PageTitle>
 
-<RadzenStack>
-    <RadzenRow AlignItems="AlignItems.Center">
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenText Text="Programación de Responsabilidades" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
-        </RadzenColumn>
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.End" Gap="0.5rem">
-                <RadzenDropDown @bind-Value="@_selectedViewType" Data="@_viewTypes" TextProperty="Text" ValueProperty="Value" 
-                               Change="@(args => OnViewTypeChanged())" Style="width: 150px;"/>
-                @if (_selectedViewType == "month" && _meetingSchedules?.Any() == true)
-                {
-                    <RadzenButton Icon="picture_as_pdf" Text="Exportar PDF" Click="@ExportToPdf" ButtonStyle="ButtonStyle.Info" Variant="Variant.Flat" Disabled="@_exportingPdf"/>
-                }
-                <RadzenButton Icon="content_copy" Text="Copiar Semana" Click="@ShowCopyWeekDialog" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Flat"/>
-                <RadzenButton Icon="refresh" Text="Actualizar" Click="@LoadDataAsync" ButtonStyle="ButtonStyle.Primary" Variant="Variant.Flat"/>
-            </RadzenStack>
-        </RadzenColumn>
-    </RadzenRow>
+<div class="space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-semibold tracking-tight">Programación de responsabilidades</h1>
+            <p class="text-sm text-muted-foreground">Asigna publicadores a cada responsabilidad por semana.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <BbSelect TValue="string" Options="_viewOptions" @bind-Value="_selectedViewType" @bind-Value:after="LoadDataAsync"
+                      Class="w-[170px]"/>
+            @if (_selectedViewType == "month" && _weeklySchedules.Count > 0)
+            {
+                <BbButton Variant="ButtonVariant.Outline" OnClick="ExportToPdf" Disabled="_exportingPdf">
+                    <Icon><LucideIcon Name="file-down"/></Icon>
+                    <ChildContent>Exportar PDF</ChildContent>
+                </BbButton>
+            }
+            <BbButton Variant="ButtonVariant.Outline" OnClick="OpenCopyWeek">
+                <Icon><LucideIcon Name="copy"/></Icon>
+                <ChildContent>Copiar semana</ChildContent>
+            </BbButton>
+            <BbButton OnClick="LoadDataAsync">
+                <Icon><LucideIcon Name="refresh-cw"/></Icon>
+                <ChildContent>Actualizar</ChildContent>
+            </BbButton>
+        </div>
+    </div>
 
     @if (_selectedViewType == "week")
     {
-        <RadzenRow AlignItems="AlignItems.Center" style="margin-bottom: 1rem;">
-            <RadzenColumn Size="12" SizeMD="4">
-                <RadzenLabel Text="Año:" />
-                <RadzenNumeric @bind-Value="@_selectedYear" Min="2020" Max="2030" Change="@((int args) => LoadDataAsync())" Style="width: 100px;"/>
-            </RadzenColumn>
-            <RadzenColumn Size="12" SizeMD="4">
-                <RadzenLabel Text="Semana:" />
-                <RadzenNumeric @bind-Value="@_selectedWeek" Min="1" Max="53" Change="@((int args) => LoadDataAsync())" Style="width: 100px;"/>
-            </RadzenColumn>
-            <RadzenColumn Size="12" SizeMD="4">
-                <RadzenText Text="@GetWeekDateRange()" TextStyle="TextStyle.Body1" style="font-weight: 500;"/>
-            </RadzenColumn>
-        </RadzenRow>
+        <div class="flex flex-wrap items-end gap-4">
+            <div class="space-y-2">
+                <BbLabel>Año</BbLabel>
+                <input type="number" class="@InputClass" min="2020" max="2030" @bind="_selectedYear" @bind:after="LoadDataAsync"/>
+            </div>
+            <div class="space-y-2">
+                <BbLabel>Semana</BbLabel>
+                <input type="number" class="@InputClass" min="1" max="53" @bind="_selectedWeek" @bind:after="LoadDataAsync"/>
+            </div>
+            <p class="pb-2 text-sm font-medium text-muted-foreground">@GetWeekDateRange()</p>
+        </div>
     }
     else if (_selectedViewType == "month")
     {
-        <RadzenRow AlignItems="AlignItems.Center" style="margin-bottom: 1rem;">
-            <RadzenColumn Size="12" SizeMD="3">
-                <RadzenLabel Text="Año:" />
-                <RadzenNumeric @bind-Value="@_selectedYear" Min="2020" Max="2030" Change="@((int args) => LoadDataAsync())" Style="width: 100px;"/>
-            </RadzenColumn>
-            <RadzenColumn Size="12" SizeMD="3">
-                <RadzenLabel Text="Mes:" />
-                <RadzenNumeric @bind-Value="@_selectedMonth" Min="1" Max="12" Change="@((int args) => LoadDataAsync())" Style="width: 100px;"/>
-            </RadzenColumn>
-            <RadzenColumn Size="12" SizeMD="6">
-                <RadzenText Text="@GetMonthName()" TextStyle="TextStyle.Body1" style="font-weight: 500;"/>
-            </RadzenColumn>
-        </RadzenRow>
+        <div class="flex flex-wrap items-end gap-4">
+            <div class="space-y-2">
+                <BbLabel>Año</BbLabel>
+                <input type="number" class="@InputClass" min="2020" max="2030" @bind="_selectedYear" @bind:after="LoadDataAsync"/>
+            </div>
+            <div class="space-y-2">
+                <BbLabel>Mes</BbLabel>
+                <input type="number" class="@InputClass" min="1" max="12" @bind="_selectedMonth" @bind:after="LoadDataAsync"/>
+            </div>
+            <p class="pb-2 text-sm font-medium text-muted-foreground">@GetMonthName()</p>
+        </div>
     }
 
-    @if (_meetingSchedules?.Any() == true)
+    @if (_weeklySchedules.Count == 0)
     {
-        <RadzenCard>
-            <RadzenDataGrid @ref="@_grid" Data="@_weeklySchedules" TItem="WeeklyScheduleDto" AllowFiltering="false" AllowPaging="false" 
-                           AllowSorting="false" AllowColumnResize="true">
-                
-                <Columns>
-                    <RadzenDataGridColumn TItem="WeeklyScheduleDto" Property="WeekDisplay" Title="Semana" Width="100px" Frozen="true">
-                        <Template Context="week">
-                            <div style="text-align: center; font-weight: bold;">
-                                <div>Sem @week.WeekOfYear</div>
-                                <div style="font-size: 0.8em; color: #666;">@week.DateRange</div>
-                            </div>
-                        </Template>
-                    </RadzenDataGridColumn>
-                    
-                    <RadzenDataGridColumn TItem="WeeklyScheduleDto" Property="MeetingType" Title="Reunión" Width="80px" Frozen="true">
-                        <Template Context="week">
-                            <RadzenBadge Text="@(week.MeetingType == MeetingType.Midweek ? "Midweek" : "Weekend")" 
-                                       BadgeStyle="@(week.MeetingType == MeetingType.Midweek ? BadgeStyle.Primary : BadgeStyle.Success)" />
-                        </Template>
-                    </RadzenDataGridColumn>
-
-                    @foreach (var responsibility in _responsibilities)
-                    {
-                        <RadzenDataGridColumn TItem="WeeklyScheduleDto" Property="@responsibility.ResponsibilityId.ToString()" 
-                                            Title="@responsibility.Name" Width="150px">
-                            <Template Context="week">
-                                @{
-                                    var assignment = week.Assignments.FirstOrDefault(a => a.ResponsibilityId == responsibility.ResponsibilityId);
-                                }
-                                <div style="min-height: 40px; cursor: pointer;" @onclick="@(() => ShowAssignmentDialog(week, responsibility))">
-                                    @if (assignment?.Publisher != null)
-                                    {
-                                        <RadzenBadge Text="@GetPublisherFullName(assignment.Publisher)" 
-                                                   BadgeStyle="BadgeStyle.Light" 
-                                                   Style="margin: 2px; font-size: 0.75em; width: 100%; text-align: center;"/>
-                                    }
-                                    else
-                                    {
-                                        <div style="color: #ccc; text-align: center; padding: 8px;">
-                                            <RadzenIcon Icon="add" Style="font-size: 16px;"/>
-                                            <div style="font-size: 0.7em; margin-top: 2px;">Asignar</div>
-                                        </div>
-                                    }
-                                </div>
-                            </Template>
-                        </RadzenDataGridColumn>
-                    }
-                </Columns>
-            </RadzenDataGrid>
-        </RadzenCard>
+        <BbCard>
+            <BbCardContent Class="py-10 text-center text-sm text-muted-foreground">
+                No hay programaciones para el período seleccionado.
+            </BbCardContent>
+        </BbCard>
     }
     else
     {
-        <RadzenCard>
-            <div style="text-align: center; padding: 40px;">
-                <RadzenIcon Icon="event_note" Style="font-size: 48px; color: #ccc; margin-bottom: 16px;"/>
-                <RadzenText Text="No hay horarios disponibles para el período seleccionado" TextStyle="TextStyle.Body1"/>
-                <RadzenButton Text="Crear Horarios" Icon="add" Click="@CreateSchedulesForPeriod" ButtonStyle="ButtonStyle.Primary" 
-                             Variant="Variant.Flat" Style="margin-top: 16px;"/>
-            </div>
-        </RadzenCard>
+        <BbDataTable TData="WeeklyScheduleDto" Data="@_weeklySchedules" InitialPageSize="10"
+                     ShowPagination="false" AriaLabel="Programación">
+            <Columns>
+                <BbDataTableColumn TData="WeeklyScheduleDto" TValue="string" Id="week" Property="@(w => w.WeekDisplay)"
+                                   Header="Semana" Width="130px">
+                    <CellTemplate Context="w">
+                        <div class="text-center font-medium">
+                            <div>Sem. @w.WeekOfYear</div>
+                            <div class="text-xs text-muted-foreground">@w.DateRange</div>
+                        </div>
+                    </CellTemplate>
+                </BbDataTableColumn>
+                <BbDataTableColumn TData="WeeklyScheduleDto" TValue="MeetingType" Id="type" Property="@(w => w.MeetingType)"
+                                   Header="Reunión" Width="120px">
+                    <CellTemplate Context="w">
+                        <BbBadge Variant="@(w.MeetingType == MeetingType.Midweek ? BadgeVariant.Default : BadgeVariant.Secondary)">
+                            @(w.MeetingType == MeetingType.Midweek ? "Entre semana" : "Fin de semana")
+                        </BbBadge>
+                    </CellTemplate>
+                </BbDataTableColumn>
+                @foreach (var responsibility in _responsibilities)
+                {
+                    <BbDataTableColumn TData="WeeklyScheduleDto" TValue="string"
+                                       Id="@responsibility.ResponsibilityId.ToString()"
+                                       Header="@responsibility.Name" Width="170px">
+                        <CellTemplate Context="w">
+                            @{
+                                var assignment = w.Assignments.FirstOrDefault(a => a.ResponsibilityId == responsibility.ResponsibilityId);
+                            }
+                            @if (assignment?.Publisher is not null)
+                            {
+                                <BbButton Variant="ButtonVariant.Secondary" Size="ButtonSize.Small" Class="w-full"
+                                          OnClick="@(() => OpenAssignmentAsync(w, responsibility))">
+                                    <ChildContent>@PublisherName(assignment.Publisher)</ChildContent>
+                                </BbButton>
+                            }
+                            else
+                            {
+                                <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Small"
+                                          Class="w-full text-muted-foreground"
+                                          OnClick="@(() => OpenAssignmentAsync(w, responsibility))">
+                                    <Icon><LucideIcon Name="plus"/></Icon>
+                                    <ChildContent>Asignar</ChildContent>
+                                </BbButton>
+                            }
+                        </CellTemplate>
+                    </BbDataTableColumn>
+                }
+            </Columns>
+        </BbDataTable>
     }
-</RadzenStack>
+</div>
+
+@* ===== Asignar responsabilidad ===== *@
+<BbDialog @bind-Open="_assignOpen">
+    <BbDialogContent Class="sm:max-w-md">
+        <BbDialogHeader>
+            <BbDialogTitle>@_assignResponsibility?.Name</BbDialogTitle>
+            <BbDialogDescription>@_assignSubtitle</BbDialogDescription>
+        </BbDialogHeader>
+
+        @if (_assignLoading)
+        {
+            <p class="py-4 text-center text-sm text-muted-foreground">Cargando…</p>
+        }
+        else
+        {
+            @if (_currentAssignment?.Publisher is not null)
+            {
+                <div class="flex items-center justify-between rounded-md bg-muted px-3 py-2">
+                    <span class="text-sm">@PublisherName(_currentAssignment.Publisher)</span>
+                    <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Quitar asignación"
+                              OnClick="RemoveAssignmentAsync">
+                        <LucideIcon Name="x" Class="size-4 text-destructive"/>
+                    </BbButton>
+                </div>
+            }
+            else
+            {
+                <p class="text-sm text-muted-foreground">No hay publicador asignado.</p>
+            }
+
+            <div class="space-y-2">
+                <BbLabel>@(_currentAssignment is null ? "Asignar publicador" : "Cambiar publicador")</BbLabel>
+                @if (_publisherOptions.Length == 0)
+                {
+                    <p class="text-xs text-muted-foreground">No hay publicadores habilitados para esta responsabilidad.</p>
+                }
+                else
+                {
+                    <BbSelect TValue="Guid?" Options="_publisherOptions"
+                              @bind-Value="_selectedPublisherId" Placeholder="Selecciona un publicador"/>
+                }
+            </div>
+        }
+
+        <BbDialogFooter>
+            <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _assignOpen = false)">
+                <ChildContent>Cancelar</ChildContent>
+            </BbButton>
+            <BbButton OnClick="SaveAssignmentAsync" Disabled="@_assignLoading">
+                <ChildContent>Guardar</ChildContent>
+            </BbButton>
+        </BbDialogFooter>
+    </BbDialogContent>
+</BbDialog>
+
+@* ===== Copiar semana ===== *@
+<BbDialog @bind-Open="_copyOpen">
+    <BbDialogContent Class="sm:max-w-md">
+        <BbDialogHeader>
+            <BbDialogTitle>Copiar asignaciones de semana</BbDialogTitle>
+            <BbDialogDescription>Copia las asignaciones de una semana a otra.</BbDialogDescription>
+        </BbDialogHeader>
+
+        @if (!string.IsNullOrEmpty(_copyError))
+        {
+            <div class="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                @_copyError
+            </div>
+        }
+
+        <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+                <BbLabel>Semana origen</BbLabel>
+                <input type="number" class="@InputClass" min="1" max="53" @bind="_sourceWeek"/>
+            </div>
+            <div class="space-y-2">
+                <BbLabel>Año origen</BbLabel>
+                <input type="number" class="@InputClass" min="2020" max="2030" @bind="_sourceYear"/>
+            </div>
+            <div class="space-y-2">
+                <BbLabel>Semana destino</BbLabel>
+                <input type="number" class="@InputClass" min="1" max="53" @bind="_targetWeek"/>
+            </div>
+            <div class="space-y-2">
+                <BbLabel>Año destino</BbLabel>
+                <input type="number" class="@InputClass" min="2020" max="2030" @bind="_targetYear"/>
+            </div>
+        </div>
+        <p class="text-xs text-muted-foreground">
+            Origen: @GetWeekDateRange(_sourceWeek, _sourceYear) · Destino: @GetWeekDateRange(_targetWeek, _targetYear)
+        </p>
+
+        <BbDialogFooter>
+            <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _copyOpen = false)">
+                <ChildContent>Cancelar</ChildContent>
+            </BbButton>
+            <BbButton OnClick="CopyWeekAsync">
+                <ChildContent>Copiar</ChildContent>
+            </BbButton>
+        </BbDialogFooter>
+    </BbDialogContent>
+</BbDialog>
 
 @code {
-    private RadzenDataGrid<WeeklyScheduleDto> _grid = new();
-    private IEnumerable<MeetingSchedule> _meetingSchedules = [];
-    private IEnumerable<Responsibility> _responsibilities = [];
-    private List<WeeklyScheduleDto> _weeklySchedules = [];
-    private bool _exportingPdf;
-    
-    private string _selectedViewType = "month";
-    private int _selectedYear = DateTime.Now.Year;
-    private int _selectedMonth = DateTime.Now.Month;
-    private int _selectedWeek = ISOWeek.GetWeekOfYear(DateTime.Now);
-    
-    private readonly List<ViewTypeOption> _viewTypes =
+    private const string InputClass =
+        "flex h-9 w-28 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm " +
+        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
+    private readonly SelectOption<string>[] _viewOptions =
     [
-        new() { Text = "Por Semana", Value = "week" },
-        new() { Text = "Por Mes", Value = "month" },
-        new() { Text = "Lista Completa", Value = "list" }
+        new("week", "Por semana"),
+        new("month", "Por mes"),
+        new("list", "Lista completa")
     ];
+
+    private string _selectedViewType = "week";
+    private int _selectedYear = DateTime.Now.Year;
+    private int _selectedWeek = ISOWeek.GetWeekOfYear(DateTime.Now);
+    private int _selectedMonth = DateTime.Now.Month;
+    private bool _exportingPdf;
+
+    private List<Responsibility> _responsibilities = [];
+    private List<WeeklyScheduleDto> _weeklySchedules = [];
+
+    // Assignment dialog
+    private bool _assignOpen;
+    private bool _assignLoading;
+    private WeeklyScheduleDto? _assignWeek;
+    private Responsibility? _assignResponsibility;
+    private ResponsibilityAssignment? _currentAssignment;
+    private SelectOption<Guid?>[] _publisherOptions = [];
+    private Guid? _selectedPublisherId;
+
+    // Copy dialog
+    private bool _copyOpen;
+    private int _sourceWeek = ISOWeek.GetWeekOfYear(DateTime.Now);
+    private int _sourceYear = DateTime.Now.Year;
+    private int _targetWeek = ISOWeek.GetWeekOfYear(DateTime.Now) + 1;
+    private int _targetYear = DateTime.Now.Year;
+    private string? _copyError;
+
+    private string _assignSubtitle => _assignWeek is null
+        ? ""
+        : $"Semana {_assignWeek.WeekOfYear}, {_assignWeek.Year} · " +
+          (_assignWeek.MeetingType == MeetingType.Midweek ? "Reunión entre semana" : "Reunión de fin de semana");
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadResponsibilitiesAsync();
+        _responsibilities = (await ResponsibilityService.GetAllAsync()).ToList();
         await LoadDataAsync();
-    }
-
-    private async Task LoadResponsibilitiesAsync()
-    {
-        _responsibilities = await ResponsibilityService.GetAllAsync();
     }
 
     private async Task LoadDataAsync()
     {
         try
         {
-            switch (_selectedViewType)
+            List<MeetingSchedule> schedules = _selectedViewType switch
             {
-                case "week":
-                    await LoadWeekData();
-                    break;
-                case "month":
-                    await LoadMonthData();
-                    break;
-                default:
-                    await LoadAllData();
-                    break;
-            }
-            
-            ProcessSchedulesForDisplay();
+                "week" => (await MeetingScheduleService.GetOrCreateWeekSchedulesAsync(_selectedWeek, _selectedYear)).ToList(),
+                "month" => await LoadMonthDataAsync(),
+                _ => (await MeetingScheduleService.GetAllAsync()).ToList()
+            };
+
+            _weeklySchedules = schedules
+                .OrderBy(ms => ms.WeekOfYear)
+                .ThenBy(ms => ms.MeetingType)
+                .Select(ms => new WeeklyScheduleDto
+                {
+                    MeetingScheduleId = ms.MeetingScheduleId,
+                    WeekOfYear = ms.WeekOfYear,
+                    Year = ms.Year,
+                    MeetingType = ms.MeetingType,
+                    DateRange = GetWeekDateRange(ms.WeekOfYear, ms.Year),
+                    WeekDisplay = $"Semana {ms.WeekOfYear}",
+                    Assignments = ms.ResponsibilityAssignments.ToList()
+                })
+                .ToList();
         }
         catch
         {
-            NotificationService.Notify(NotificationSeverity.Error, "Error", "Error al cargar los datos");
+            Toasts.Error("No se pudieron cargar los datos.", "Error");
         }
     }
 
-    private async Task LoadWeekData()
+    private async Task<List<MeetingSchedule>> LoadMonthDataAsync()
     {
-        _meetingSchedules = await MeetingScheduleService.GetOrCreateWeekSchedulesAsync(_selectedWeek, _selectedYear);
-    }
+        var result = new List<MeetingSchedule>();
+        var firstDay = new DateTime(_selectedYear, _selectedMonth, 1);
+        var lastDay = firstDay.AddMonths(1).AddDays(-1);
 
-    private async Task LoadMonthData()
-    {
-        var monthSchedules = new List<MeetingSchedule>();
-        
-        // Get all weeks in the selected month
-        var firstDayOfMonth = new DateTime(_selectedYear, _selectedMonth, 1);
-        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
-        
-        var startWeek = ISOWeek.GetWeekOfYear(firstDayOfMonth);
-        var endWeek = ISOWeek.GetWeekOfYear(lastDayOfMonth);
-        
-        // Handle year boundary (December to January)
-        var currentYear = _selectedYear;
-        
-        // If we're in January and the first week belongs to previous year
-        if (_selectedMonth == 1 && startWeek > 50)
-        {
-            startWeek = 1;
-        }
-        // If we're in December and the last week belongs to next year  
-        else if (_selectedMonth == 12 && endWeek < 10)
-        {
-            endWeek = ISOWeek.GetWeeksInYear(_selectedYear);
-        }
-        
-        // Create or get schedules for each week in the month
-        for (int week = startWeek; week <= endWeek; week++)
+        var startWeek = ISOWeek.GetWeekOfYear(firstDay);
+        var endWeek = ISOWeek.GetWeekOfYear(lastDay);
+
+        if (_selectedMonth == 1 && startWeek > 50) startWeek = 1;
+        else if (_selectedMonth == 12 && endWeek < 10) endWeek = ISOWeek.GetWeeksInYear(_selectedYear);
+
+        for (var week = startWeek; week <= endWeek; week++)
         {
             try
             {
-                var weekSchedules = await MeetingScheduleService.GetOrCreateWeekSchedulesAsync(week, currentYear);
-                
-                // Filter schedules that actually belong to the selected month
-                var monthlySchedules = weekSchedules.Where(ws => ws.Month == _selectedMonth && ws.Year == _selectedYear);
-                monthSchedules.AddRange(monthlySchedules);
+                var weekSchedules = await MeetingScheduleService.GetOrCreateWeekSchedulesAsync(week, _selectedYear);
+                result.AddRange(weekSchedules.Where(ws => ws.Month == _selectedMonth && ws.Year == _selectedYear));
             }
-            catch (Exception)
+            catch
             {
-                // Continue to next week if there's an error with this week
-                continue;
+                // Skip weeks that fail.
             }
         }
-        
-        _meetingSchedules = monthSchedules.OrderBy(ms => ms.Date).ToList();
+
+        return result.OrderBy(ms => ms.Date).ToList();
     }
 
-    private async Task LoadAllData()
+    private async Task OpenAssignmentAsync(WeeklyScheduleDto week, Responsibility responsibility)
     {
-        _meetingSchedules = await MeetingScheduleService.GetAllAsync();
+        _assignWeek = week;
+        _assignResponsibility = responsibility;
+        _assignLoading = true;
+        _assignOpen = true;
+        _currentAssignment = null;
+        _selectedPublisherId = null;
+        _publisherOptions = [];
+
+        var assignments = await ResponsibilityAssignmentService.GetByMeetingScheduleIdAsync(week.MeetingScheduleId);
+        _currentAssignment = assignments.FirstOrDefault(a => a.ResponsibilityId == responsibility.ResponsibilityId);
+        _selectedPublisherId = _currentAssignment?.PublisherId;
+
+        var available = await ResponsibilityService.GetAvailablePublishersAsync();
+        var eligibleIds = responsibility.PublisherResponsibilities?.Select(pr => pr.PublisherId).ToHashSet() ?? [];
+        _publisherOptions = available
+            .Where(p => eligibleIds.Contains(p.PublisherId))
+            .Select(p => new SelectOption<Guid?>(p.PublisherId, PublisherName(p)))
+            .OrderBy(o => o.Text)
+            .ToArray();
+
+        _assignLoading = false;
     }
 
-    private void ProcessSchedulesForDisplay()
+    private async Task SaveAssignmentAsync()
     {
-        _weeklySchedules = _meetingSchedules
-            .OrderBy(ms => ms.WeekOfYear)
-            .ThenBy(ms => ms.MeetingType)
-            .Select(ms => new WeeklyScheduleDto
+        if (_assignWeek is null || _assignResponsibility is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_currentAssignment is not null)
             {
-                MeetingScheduleId = ms.MeetingScheduleId,
-                WeekOfYear = ms.WeekOfYear,
-                Year = ms.Year,
-                MeetingType = ms.MeetingType,
-                DateRange = GetWeekDateRange(ms.WeekOfYear, ms.Year),
-                WeekDisplay = $"Semana {ms.WeekOfYear}",
-                Assignments = ms.ResponsibilityAssignments.ToList()
-            })
-            .ToList();
+                await ResponsibilityAssignmentService.RemoveAssignmentAsync(
+                    _currentAssignment.MeetingScheduleId, _currentAssignment.ResponsibilityId, _currentAssignment.PublisherId);
+            }
+
+            if (_selectedPublisherId.HasValue)
+            {
+                await ResponsibilityAssignmentService.AssignResponsibilityAsync(
+                    _assignWeek.MeetingScheduleId, _assignResponsibility.ResponsibilityId, _selectedPublisherId.Value);
+            }
+
+            Toasts.Success("Asignación guardada.", "Guardado");
+            _assignOpen = false;
+            await LoadDataAsync();
+        }
+        catch
+        {
+            Toasts.Error("No se pudo guardar la asignación.", "Error");
+        }
     }
 
-    private async Task OnViewTypeChanged()
+    private async Task RemoveAssignmentAsync()
     {
-        await LoadDataAsync();
-        StateHasChanged();
+        if (_currentAssignment is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await ResponsibilityAssignmentService.RemoveAssignmentAsync(
+                _currentAssignment.MeetingScheduleId, _currentAssignment.ResponsibilityId, _currentAssignment.PublisherId);
+            Toasts.Success("Asignación eliminada.", "Guardado");
+            _assignOpen = false;
+            await LoadDataAsync();
+        }
+        catch
+        {
+            Toasts.Error("No se pudo eliminar la asignación.", "Error");
+        }
     }
 
-    private string GetWeekDateRange()
+    private void OpenCopyWeek()
     {
-        return GetWeekDateRange(_selectedWeek, _selectedYear);
+        _copyError = null;
+        _copyOpen = true;
     }
 
-    private string GetWeekDateRange(int week, int year)
+    private async Task CopyWeekAsync()
     {
-        var monday = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
-        var sunday = monday.AddDays(6);
-        return $"{monday:dd/MM} - {sunday:dd/MM/yyyy}";
+        _copyError = null;
+
+        if (_sourceYear == _targetYear && _sourceWeek == _targetWeek)
+        {
+            _copyError = "La semana origen y destino no pueden ser la misma.";
+            return;
+        }
+        if (_sourceYear is < 2020 or > 2030 || _targetYear is < 2020 or > 2030 ||
+            _sourceWeek is < 1 or > 53 || _targetWeek is < 1 or > 53)
+        {
+            _copyError = "Semana (1-53) o año (2020-2030) fuera de rango.";
+            return;
+        }
+
+        try
+        {
+            var success = await MeetingScheduleService.CopyAssignmentsToWeekAsync(
+                _sourceWeek, _sourceYear, _targetWeek, _targetYear);
+
+            if (success)
+            {
+                Toasts.Success("Asignaciones copiadas.", "Guardado");
+                _copyOpen = false;
+                await LoadDataAsync();
+            }
+            else
+            {
+                _copyError = "No se pudieron copiar las asignaciones.";
+            }
+        }
+        catch
+        {
+            _copyError = "No se pudieron copiar las asignaciones.";
+        }
+    }
+
+    private void ExportToPdf()
+    {
+        _exportingPdf = true;
+        var url = $"/api/meeting-schedules/monthly-schedule/{_selectedYear}/{_selectedMonth}";
+        NavigationManager.NavigateTo(url, forceLoad: true);
+    }
+
+    private string GetWeekDateRange() => GetWeekDateRange(_selectedWeek, _selectedYear);
+
+    private static string GetWeekDateRange(int week, int year)
+    {
+        try
+        {
+            var monday = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
+            return $"{monday:dd/MM} - {monday.AddDays(6):dd/MM/yyyy}";
+        }
+        catch
+        {
+            return "Fecha inválida";
+        }
     }
 
     private string GetMonthName()
     {
         var culture = new CultureInfo("es-ES");
-        var monthName = culture.DateTimeFormat.GetMonthName(_selectedMonth);
-        return $"{monthName} {_selectedYear}";
+        return $"{culture.DateTimeFormat.GetMonthName(_selectedMonth)} {_selectedYear}";
     }
 
-    private string GetPublisherFullName(Publisher publisher)
+    private static string PublisherName(Publisher publisher)
     {
-        var fullName = publisher.FirstName;
-        if (!string.IsNullOrEmpty(publisher.LastName))
-            fullName += $" {publisher.LastName}";
-        return fullName;
-    }
-
-    private async Task ShowAssignmentDialog(WeeklyScheduleDto week, Responsibility responsibility)
-    {
-        var parameters = new Dictionary<string, object>
-        {
-            { "MeetingScheduleId", week.MeetingScheduleId },
-            { "ResponsibilityId", responsibility.ResponsibilityId },
-            { "WeekOfYear", week.WeekOfYear },
-            { "Year", week.Year },
-            { "MeetingType", week.MeetingType },
-            { "ResponsibilityName", responsibility.Name }
-        };
-
-        await DialogService.OpenAsync<AssignResponsibilityModal>("Asignar Responsabilidad", parameters);
-        await LoadDataAsync();
-    }
-
-    private async Task ShowCopyWeekDialog()
-    {
-        var result = await DialogService.OpenAsync<CopyWeekModal>("Copiar Asignaciones de Semana");
-        if (result != null)
-        {
-            await LoadDataAsync();
-            NotificationService.Notify(NotificationSeverity.Success, "Éxito", "Asignaciones copiadas correctamente");
-        }
-    }
-
-    private async Task CreateSchedulesForPeriod()
-    {
-        try
-        {
-            switch (_selectedViewType)
-            {
-                case "week":
-                    await MeetingScheduleService.GetOrCreateWeekSchedulesAsync(_selectedWeek, _selectedYear);
-                    break;
-                case "month":
-                    // Create schedules for all weeks in the month
-                    var firstDayOfMonth = new DateTime(_selectedYear, _selectedMonth, 1);
-                    var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
-                    
-                    var firstWeek = ISOWeek.GetWeekOfYear(firstDayOfMonth);
-                    var lastWeek = ISOWeek.GetWeekOfYear(lastDayOfMonth);
-                    
-                    for (int week = firstWeek; week <= lastWeek; week++)
-                    {
-                        await MeetingScheduleService.GetOrCreateWeekSchedulesAsync(week, _selectedYear);
-                    }
-                    break;
-            }
-            
-            await LoadDataAsync();
-            NotificationService.Notify(NotificationSeverity.Success, "Éxito", "Horarios creados correctamente");
-        }
-        catch
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Error", "Error al crear los horarios");
-        }
-    }
-
-    private void ShowInCompanion()
-    {
-        NotificationService.Notify(NotificationSeverity.Info, "Companion", $"{_selectedMonth}{_selectedYear}");
-        PdfExportService.ShowInCompanionAsync(_selectedMonth, _selectedYear);
-    }
-
-    private void ExportToPdf()
-    {
-        try
-        {
-            _exportingPdf = true;
-            StateHasChanged();
-            
-            // Navegar directamente al endpoint para descargar el PDF
-            var url = $"/api/meeting-schedules/monthly-schedule/{_selectedYear}/{_selectedMonth}";
-            NavigationManager.NavigateTo(url, forceLoad: true);
-
-            NotificationService.Notify(NotificationSeverity.Success, "Éxito", "PDF generado correctamente");
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Error", $"Error al generar PDF: {ex.Message}");
-        }
-        finally
-        {
-            _exportingPdf = false;
-            StateHasChanged();
-        }
+        var name = publisher.FirstName;
+        if (!string.IsNullOrEmpty(publisher.LastName)) name += $" {publisher.LastName}";
+        return name;
     }
 
     public class WeeklyScheduleDto
@@ -395,11 +514,5 @@
         public string DateRange { get; set; } = string.Empty;
         public string WeekDisplay { get; set; } = string.Empty;
         public List<ResponsibilityAssignment> Assignments { get; set; } = [];
-    }
-
-    private class ViewTypeOption
-    {
-        public string Text { get; set; } = string.Empty;
-        public string Value { get; set; } = string.Empty;
     }
 }
