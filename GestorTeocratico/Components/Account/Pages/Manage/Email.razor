@@ -17,10 +17,6 @@
 <h2 class="mb-4 text-xl font-semibold">Administrar correo electrónico</h2>
 <StatusMessage Message="@message"/>
 
-<form @onsubmit="OnSendEmailVerificationAsync" @formname="send-verification" id="send-verification-form" method="post">
-    <AntiforgeryToken/>
-</form>
-
 <EditForm Model="Input" FormName="change-email" OnValidSubmit="OnValidSubmitAsync" method="post" class="max-w-xl space-y-4">
     <DataAnnotationsValidator/>
     <ValidationSummary class="text-sm text-destructive" role="alert"/>
@@ -36,14 +32,16 @@
                     Verificado
                 </BbBadge>
             }
-            else
-            {
-                <button type="submit" form="send-verification-form"
-                        class="inline-flex h-8 items-center rounded-md border px-3 text-xs font-medium hover:bg-accent">
-                    Enviar verificación
-                </button>
-            }
         </div>
+        @if (!isEmailConfirmed)
+        {
+            <form @onsubmit="OnSendEmailVerificationAsync" @formname="send-verification" method="post">
+                <AntiforgeryToken/>
+                <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Variant="ButtonVariant.Outline" Size="BlazorBlueprint.Components.ButtonSize.Small">
+                    <ChildContent>Enviar correo de verificación</ChildContent>
+                </BbButton>
+            </form>
+        }
     </div>
 
     <div class="space-y-2">

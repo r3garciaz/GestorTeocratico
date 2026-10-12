@@ -1,13 +1,10 @@
 ﻿@if (!string.IsNullOrEmpty(DisplayMessage))
 {
-    var statusMessageClass = DisplayMessage.StartsWith("Error") ? "danger" : "success";
-    <div class="alert alert-@statusMessageClass" role="alert"
-         style="padding: 1rem; border-radius: 0.25rem; margin-bottom: 1rem;
-                color: @(statusMessageClass == "danger" ? "#842029" : "#0f5132");
-                background-color: @(statusMessageClass == "danger" ? "#f8d7da" : "#d1e7dd");
-                border: 1px solid @(statusMessageClass == "danger" ? "#f5c2c7" : "#badbcc");">
-        @DisplayMessage
-    </div>
+    var isError = DisplayMessage.StartsWith("Error");
+    <BbAlert Variant="@(isError ? AlertVariant.Danger : AlertVariant.Success)" AccentBorder="true" Class="mb-4">
+        <Icon><LucideIcon Name="@(isError ? "circle-alert" : "circle-check")"/></Icon>
+        <ChildContent>@DisplayMessage</ChildContent>
+    </BbAlert>
 }
 
 @code {
@@ -28,5 +25,4 @@
             HttpContext.Response.Cookies.Delete(IdentityRedirectManager.StatusCookieName);
         }
     }
-
 }
