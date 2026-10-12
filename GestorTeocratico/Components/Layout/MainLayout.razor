@@ -1,9 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
 @using System.Security.Claims
-@using BlazorBlueprint.Components
-@using BlazorBlueprint.Primitives
-@using BlazorBlueprint.Icons.Lucide.Components
+@using GestorTeocratico.Components.Account
 
 <BbSidebarProvider DefaultOpen="true" HeightClass="h-svh">
     <BbSidebar>
@@ -32,7 +30,7 @@
                         </BbAvatar>
                         <div class="flex min-w-0 flex-1 flex-col items-start text-left">
                             <span class="truncate text-sm font-medium">@DisplayName</span>
-                            <span class="truncate text-xs text-muted-foreground">@_applicationUser?.Email</span>
+                            <span class="truncate text-xs text-muted-foreground">@Email</span>
                         </div>
                         <LucideIcon Name="chevrons-up-down" Class="size-4 text-muted-foreground"/>
                     </BbButton>
@@ -44,7 +42,7 @@
                         </BbAvatar>
                         <div class="flex min-w-0 flex-col">
                             <span class="truncate text-sm font-medium">@DisplayName</span>
-                            <span class="truncate text-xs text-muted-foreground">@_applicationUser?.Email</span>
+                            <span class="truncate text-xs text-muted-foreground">@Email</span>
                         </div>
                     </div>
                     <BbDropdownMenuSeparator/>
@@ -87,13 +85,13 @@
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <span class="inline-flex items-center gap-1.5">
                     <LucideIcon Name="shield-check" Class="size-3.5 text-primary"/>
-                    @if (!string.IsNullOrEmpty(_applicationUser?.PublicId))
+                    @if (!string.IsNullOrEmpty(PublicId))
                     {
-                        <span>ID público: @_applicationUser.PublicId</span>
+                        <span>ID público: @PublicId</span>
                     }
-                    else if (_user?.Identity?.IsAuthenticated == true)
+                    else if (_user is not null)
                     {
-                        <span>Cargando ID…</span>
+                        <span>ID público no disponible</span>
                     }
                     else
                     {
@@ -107,37 +105,37 @@
 </BbSidebarProvider>
 
 @* Providers de Blazor Blueprint. Se renderizan en el mismo scope interactivo que
-   el contenido (la interactividad se aplica en <Routes>), para que los overlays
-   compartan el PortalService. En páginas estáticas quedan inertes (no se usan). *@
+   el contenido (la interactividad se aplica en <Routes>). *@
 <BbPortalHost/>
 <BbToastProvider/>
 <BbDialogProvider/>
 
 @code {
     [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
-    [Inject] private UserManager<ApplicationUser> UserManager { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
 
     private ClaimsPrincipal? _user;
-    private ApplicationUser? _applicationUser;
     private string _pageTitle = "Gestor Teocrático";
 
     private string PageTitle => _pageTitle;
 
-    private string DisplayName =>
-        _applicationUser?.UserName ?? _user?.Identity?.Name ?? "Usuario";
+    private string DisplayName => _user?.Identity?.Name ?? "Usuario";
+
+    private string? Email => _user?.FindFirst(ClaimTypes.Email)?.Value;
+
+    private string PublicId =>
+        _user?.FindFirst(ApplicationUserClaimsPrincipalFactory.PublicIdClaim)?.Value ?? "";
 
     private string Initials
     {
         get
         {
-            var source = _applicationUser?.UserName ?? _user?.Identity?.Name;
-            if (string.IsNullOrWhiteSpace(source))
+            var source = DisplayName.Trim();
+            if (string.IsNullOrEmpty(source))
             {
                 return "?";
             }
 
-            source = source.Trim();
             return source.Length >= 2 ? source[..2].ToUpperInvariant() : source.ToUpperInvariant();
         }
     }
@@ -146,11 +144,6 @@
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         _user = authState.User.Identity?.IsAuthenticated == true ? authState.User : null;
-
-        if (_user is not null)
-        {
-            _applicationUser = await UserManager.GetUserAsync(_user);
-        }
 
         UpdateTitle(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;

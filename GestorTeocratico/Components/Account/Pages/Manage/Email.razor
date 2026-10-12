@@ -14,46 +14,54 @@
 
 <PageTitle>Administrar correo electrónico</PageTitle>
 
-<h3>Administrar correo electrónico</h3>
-
+<h2 class="mb-4 text-xl font-semibold">Administrar correo electrónico</h2>
 <StatusMessage Message="@message"/>
-<div class="row">
-    <div class="col-xl-6">
-        <form @onsubmit="OnSendEmailVerificationAsync" @formname="send-verification" id="send-verification-form" method="post">
-            <AntiforgeryToken/>
-        </form>
-        <EditForm Model="Input" FormName="change-email" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator/>
-            <ValidationSummary class="text-danger" role="alert"/>
+
+<form @onsubmit="OnSendEmailVerificationAsync" @formname="send-verification" id="send-verification-form" method="post">
+    <AntiforgeryToken/>
+</form>
+
+<EditForm Model="Input" FormName="change-email" OnValidSubmit="OnValidSubmitAsync" method="post" class="max-w-xl space-y-4">
+    <DataAnnotationsValidator/>
+    <ValidationSummary class="text-sm text-destructive" role="alert"/>
+
+    <div class="space-y-2">
+        <BbLabel For="email">Correo electrónico actual</BbLabel>
+        <div class="flex items-center gap-2">
+            <input type="text" value="@email" id="email" class="@InputClass" disabled/>
             @if (isEmailConfirmed)
             {
-                <div class="form-floating mb-3 input-group">
-                    <input type="text" value="@email" id="email" class="form-control" placeholder="Ingresa tu correo electrónico" disabled/>
-                    <div class="input-group-append">
-                        <span class="h-100 input-group-text text-success font-weight-bold">✓</span>
-                    </div>
-                    <label for="email" class="form-label">Correo electrónico</label>
-                </div>
+                <BbBadge Variant="BadgeVariant.Secondary">
+                    <LucideIcon Name="badge-check" Class="mr-1 size-3.5 text-emerald-500"/>
+                    Verificado
+                </BbBadge>
             }
             else
             {
-                <div class="form-floating mb-3">
-                    <input type="text" value="@email" id="email" class="form-control" placeholder="Ingresa tu correo electrónico" disabled/>
-                    <label for="email" class="form-label">Correo electrónico</label>
-                    <button type="submit" class="btn btn-link" form="send-verification-form">Enviar correo de verificación</button>
-                </div>
+                <button type="submit" form="send-verification-form"
+                        class="inline-flex h-8 items-center rounded-md border px-3 text-xs font-medium hover:bg-accent">
+                    Enviar verificación
+                </button>
             }
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.NewEmail" id="Input.NewEmail" class="form-control" autocomplete="email" aria-required="true" placeholder="Ingresa un nuevo correo electrónico"/>
-                <label for="Input.NewEmail" class="form-label">Nuevo correo electrónico</label>
-                <ValidationMessage For="() => Input.NewEmail" class="text-danger"/>
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Cambiar correo electrónico</button>
-        </EditForm>
+        </div>
     </div>
-</div>
+
+    <div class="space-y-2">
+        <BbLabel For="Input.NewEmail">Nuevo correo electrónico</BbLabel>
+        <InputText @bind-Value="Input.NewEmail" id="Input.NewEmail" class="@InputClass" autocomplete="email" required/>
+        <ValidationMessage For="() => Input.NewEmail" class="text-sm text-destructive"/>
+    </div>
+
+    <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit">
+        <ChildContent>Cambiar correo electrónico</ChildContent>
+    </BbButton>
+</EditForm>
 
 @code {
+    private const string InputClass =
+        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm " +
+        "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
     private string? message;
     private ApplicationUser user = default!;
     private string? email;
@@ -89,7 +97,6 @@
             new Dictionary<string, object?> { ["userId"] = userId, ["email"] = Input.NewEmail, ["code"] = code });
 
         await EmailSender.SendConfirmationLinkAsync(user, Input.NewEmail, HtmlEncoder.Default.Encode(callbackUrl));
-
         message = "Confirmation link to change email sent. Please check your email.";
     }
 
@@ -108,7 +115,6 @@
             new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code });
 
         await EmailSender.SendConfirmationLinkAsync(user, email, HtmlEncoder.Default.Encode(callbackUrl));
-
         message = "Verification email sent. Please check your email.";
     }
 
@@ -119,5 +125,4 @@
         [Display(Name = "New email")]
         public string? NewEmail { get; set; }
     }
-
 }

@@ -12,32 +12,36 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Resend email confirmation</PageTitle>
+<PageTitle>Reenviar confirmación</PageTitle>
 
-<div class="account-card">
-    <div class="account-card-content">
-        <h1 class="account-title">Resend email confirmation</h1>
-        @if (!string.IsNullOrEmpty(message))
-        {
-            <div class="account-msg-info">
-                @message
-            </div>
-        }
-        <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator/>
-            <ValidationSummary class="text-danger" role="alert"/>
-            <div>
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="account-input" placeholder="Email" autocomplete="username" required />
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
-            </div>
-            <div>
-                <button type="submit" class="account-btn-primary">Resend confirmation email</button>
-            </div>
-        </EditForm>
-    </div>
-</div>
+<AuthCard Title="Reenviar confirmación" Description="Te enviaremos de nuevo el enlace de confirmación." Icon="mail">
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="rounded-md border border-primary/30 bg-primary/10 p-3 text-sm text-foreground">
+            @message
+        </div>
+    }
+
+    <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post" class="space-y-4">
+        <DataAnnotationsValidator/>
+        <ValidationSummary class="text-sm text-destructive" role="alert"/>
+        <div class="space-y-2">
+            <BbLabel For="Input.Email">Correo electrónico</BbLabel>
+            <InputText @bind-Value="Input.Email" id="Input.Email" class="@InputClass"
+                       placeholder="name@example.com" autocomplete="username" required/>
+            <ValidationMessage For="() => Input.Email" class="text-sm text-destructive"/>
+        </div>
+        <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Class="w-full">
+            <ChildContent>Reenviar correo</ChildContent>
+        </BbButton>
+    </EditForm>
+</AuthCard>
 
 @code {
+    private const string InputClass =
+        "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm " +
+        "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
     private string? message;
 
     [SupplyParameterFromForm] private InputModel Input { get; set; } = new();
@@ -66,5 +70,4 @@
     {
         [Required] [EmailAddress] public string Email { get; set; } = "";
     }
-
 }

@@ -1,10 +1,11 @@
 ﻿@page "/Account/InvalidUser"
 
-<PageTitle>Invalid user</PageTitle>
+<PageTitle>Usuario no válido</PageTitle>
 
-<div class="account-card">
-    <div class="account-card-content">
-        <h1 class="account-title">Invalid user</h1>
-        <div class="account-msg-error">The user account is invalid or does not exist.</div>
+<AuthCard Title="Usuario no válido" Description="La cuenta de usuario no es válida o no existe." Icon="user-x">
+    <div class="text-center">
+        <BbButton Href="/Account/Login" Variant="ButtonVariant.Outline" Class="w-full">
+            <ChildContent>Ir al inicio de sesión</ChildContent>
+        </BbButton>
     </div>
-</div>
+</AuthCard>

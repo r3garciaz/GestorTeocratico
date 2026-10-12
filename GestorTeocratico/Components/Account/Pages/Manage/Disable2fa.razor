@@ -8,27 +8,29 @@
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<Disable2fa> Logger
 
-<PageTitle>Desactivar la autenticación en dos pasos (2FA)</PageTitle>
+<PageTitle>Desactivar la autenticación en dos pasos</PageTitle>
 
+<h2 class="mb-4 text-xl font-semibold">Desactivar la autenticación en dos pasos (2FA)</h2>
 <StatusMessage/>
-<h3>Desactivar la autenticación en dos pasos (2FA)</h3>
 
-<div class="alert alert-warning" role="alert">
-    <p>
-        <strong>Esta acción solo desactiva la 2FA.</strong>
-    </p>
-    <p>
-        Desactivar la 2FA no cambia las claves usadas en las aplicaciones de autenticación. Si deseas cambiar la clave
-        utilizada en una aplicación de autenticación, debes <a href="Account/Manage/ResetAuthenticator">restablecer tus claves de autenticador.</a>
-    </p>
-</div>
+<BbAlert Variant="AlertVariant.Warning" AccentBorder="true" Class="mb-4 max-w-xl">
+    <Icon><LucideIcon Name="triangle-alert"/></Icon>
+    <ChildContent>
+        <BbAlertTitle>Esta acción solo desactiva la 2FA</BbAlertTitle>
+        <BbAlertDescription>
+            No cambia las claves usadas en las aplicaciones de autenticación. Si deseas cambiar la clave,
+            <a href="Account/Manage/ResetAuthenticator" class="underline">restablece tus claves de autenticador</a>.
+        </BbAlertDescription>
+    </ChildContent>
+</BbAlert>
 
-<div>
-    <form @formname="disable-2fa" @onsubmit="OnSubmitAsync" method="post">
-        <AntiforgeryToken/>
-        <button class="btn btn-danger" type="submit">Desactivar 2FA</button>
-    </form>
-</div>
+<form @formname="disable-2fa" @onsubmit="OnSubmitAsync" method="post">
+    <AntiforgeryToken/>
+    <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Variant="ButtonVariant.Destructive">
+        <Icon><LucideIcon Name="shield-off"/></Icon>
+        <ChildContent>Desactivar 2FA</ChildContent>
+    </BbButton>
+</form>
 
 @code {
     private ApplicationUser user = default!;
@@ -60,5 +62,4 @@
             "2fa has been disabled. You can reenable 2fa when you setup an authenticator app",
             HttpContext);
     }
-
 }

@@ -9,64 +9,81 @@
 @inject IdentityUserAccessor UserAccessor
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Autenticación en dos pasos (2FA)</PageTitle>
+<PageTitle>Autenticación en dos pasos</PageTitle>
 
+<h2 class="mb-4 text-xl font-semibold">Autenticación en dos pasos (2FA)</h2>
 <StatusMessage/>
-<h3>Autenticación en dos pasos (2FA)</h3>
-@if (canTrack)
+
+@if (!canTrack)
 {
-    if (is2faEnabled)
-    {
-        if (recoveryCodesLeft == 0)
-        {
-            <div class="alert alert-danger">
-                <strong>No te quedan códigos de recuperación.</strong>
-                <p>Debes <a href="Account/Manage/GenerateRecoveryCodes">generar un nuevo conjunto de códigos de recuperación</a> antes de poder iniciar sesión con un código de recuperación.</p>
-            </div>
-        }
-        else if (recoveryCodesLeft == 1)
-        {
-            <div class="alert alert-danger">
-                <strong>Te queda 1 código de recuperación.</strong>
-                <p>Puedes <a href="Account/Manage/GenerateRecoveryCodes">generar un nuevo conjunto de códigos de recuperación</a>.</p>
-            </div>
-        }
-        else if (recoveryCodesLeft <= 3)
-        {
-            <div class="alert alert-warning">
-                <strong>Te quedan @recoveryCodesLeft códigos de recuperación.</strong>
-                <p>Deberías <a href="Account/Manage/GenerateRecoveryCodes">generar un nuevo conjunto de códigos de recuperación</a>.</p>
-            </div>
-        }
-
-        if (isMachineRemembered)
-        {
-            <form style="display: inline-block" @formname="forget-browser" @onsubmit="OnSubmitForgetBrowserAsync" method="post">
-                <AntiforgeryToken/>
-                <button type="submit" class="btn btn-primary">Olvidar este navegador</button>
-            </form>
-        }
-
-        <a href="Account/Manage/Disable2fa" class="btn btn-primary">Desactivar 2FA</a>
-        <a href="Account/Manage/GenerateRecoveryCodes" class="btn btn-primary">Restablecer códigos de recuperación</a>
-    }
-
-    <h4>Aplicación de autenticación</h4>
-    @if (!hasAuthenticator)
-    {
-        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Agregar aplicación de autenticación</a>
-    }
-    else
-    {
-        <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Configurar aplicación de autenticación</a>
-        <a href="Account/Manage/ResetAuthenticator" class="btn btn-primary">Restablecer aplicación de autenticación</a>
-    }
+    <BbAlert Variant="AlertVariant.Danger" AccentBorder="true" Class="max-w-xl">
+        <Icon><LucideIcon Name="triangle-alert"/></Icon>
+        <ChildContent>
+            <BbAlertTitle>Debes aceptar la política de cookies</BbAlertTitle>
+            <BbAlertDescription>
+                Necesitas aceptarla antes de poder habilitar la autenticación en dos pasos.
+            </BbAlertDescription>
+        </ChildContent>
+    </BbAlert>
 }
 else
 {
-    <div class="alert alert-danger">
-        <strong>La política de privacidad y cookies no ha sido aceptada.</strong>
-        <p>Debes aceptar la política antes de poder habilitar la autenticación en dos pasos.</p>
+    @if (is2faEnabled)
+    {
+        @if (recoveryCodesLeft == 0)
+        {
+            <BbAlert Variant="AlertVariant.Danger" AccentBorder="true" Class="mb-4 max-w-xl">
+                <ChildContent>
+                    <BbAlertTitle>No te quedan códigos de recuperación</BbAlertTitle>
+                    <BbAlertDescription>
+                        Debes <a href="Account/Manage/GenerateRecoveryCodes" class="underline">generar nuevos códigos</a> antes de poder usarlos.
+                    </BbAlertDescription>
+                </ChildContent>
+            </BbAlert>
+        }
+        else if (recoveryCodesLeft <= 3)
+        {
+            <BbAlert Variant="AlertVariant.Warning" AccentBorder="true" Class="mb-4 max-w-xl">
+                <ChildContent>
+                    <BbAlertTitle>Te quedan @recoveryCodesLeft códigos de recuperación</BbAlertTitle>
+                    <BbAlertDescription>
+                        Deberías <a href="Account/Manage/GenerateRecoveryCodes" class="underline">generar nuevos códigos</a>.
+                    </BbAlertDescription>
+                </ChildContent>
+            </BbAlert>
+        }
+
+        <div class="flex flex-wrap gap-2">
+            @if (isMachineRemembered)
+            {
+                <form @formname="forget-browser" @onsubmit="OnSubmitForgetBrowserAsync" method="post">
+                    <AntiforgeryToken/>
+                    <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Variant="ButtonVariant.Outline">
+                        <ChildContent>Olvidar este navegador</ChildContent>
+                    </BbButton>
+                </form>
+            }
+            <BbButton Href="Account/Manage/Disable2fa" Variant="ButtonVariant.Destructive">
+                <ChildContent>Desactivar 2FA</ChildContent>
+            </BbButton>
+            <BbButton Href="Account/Manage/GenerateRecoveryCodes" Variant="ButtonVariant.Outline">
+                <ChildContent>Restablecer códigos</ChildContent>
+            </BbButton>
+        </div>
+    }
+
+    <h3 class="mb-2 mt-6 text-base font-medium">Aplicación de autenticación</h3>
+    <div class="flex flex-wrap gap-2">
+        <BbButton Href="Account/Manage/EnableAuthenticator" Variant="ButtonVariant.Outline">
+            <Icon><LucideIcon Name="smartphone"/></Icon>
+            <ChildContent>@(hasAuthenticator ? "Configurar aplicación" : "Agregar aplicación")</ChildContent>
+        </BbButton>
+        @if (hasAuthenticator)
+        {
+            <BbButton Href="Account/Manage/ResetAuthenticator" Variant="ButtonVariant.Outline">
+                <ChildContent>Restablecer aplicación</ChildContent>
+            </BbButton>
+        }
     </div>
 }
 
@@ -92,10 +109,8 @@ else
     private async Task OnSubmitForgetBrowserAsync()
     {
         await SignInManager.ForgetTwoFactorClientAsync();
-
         RedirectManager.RedirectToCurrentPageWithStatus(
-            "El navegador actual ha sido olvidado. Cuando inicies sesión nuevamente desde este navegador, se te pedirá el código 2fa.",
+            "El navegador actual ha sido olvidado. Cuando inicies sesión nuevamente desde este navegador, se te pedirá el código 2FA.",
             HttpContext);
     }
-
 }

@@ -8,7 +8,7 @@
 @inject IdentityRedirectManager RedirectManager
 @inject ILogger<GenerateRecoveryCodes> Logger
 
-<PageTitle>Generar códigos de recuperación para la autenticación en dos pasos (2FA)</PageTitle>
+<PageTitle>Generar códigos de recuperación</PageTitle>
 
 @if (recoveryCodes is not null)
 {
@@ -16,26 +16,26 @@
 }
 else
 {
-    <h3>Generar códigos de recuperación para la autenticación en dos pasos (2FA)</h3>
-    <div class="alert alert-warning" role="alert">
-        <p>
-            <span class="glyphicon glyphicon-warning-sign"></span>
-            <strong>Guarda estos códigos en un lugar seguro.</strong>
-        </p>
-        <p>
-            Si pierdes tu dispositivo y no tienes los códigos de recuperación, perderás el acceso a tu cuenta.
-        </p>
-        <p>
-            Generar nuevos códigos de recuperación no cambia las claves usadas en las aplicaciones de autenticación. Si deseas cambiar la clave
-            utilizada en una aplicación de autenticación, debes <a href="Account/Manage/ResetAuthenticator">restablecer tus claves de autenticador.</a>
-        </p>
-    </div>
-    <div>
-        <form @formname="generate-recovery-codes" @onsubmit="OnSubmitAsync" method="post">
-            <AntiforgeryToken/>
-            <button class="btn btn-danger" type="submit">Generar códigos de recuperación</button>
-        </form>
-    </div>
+    <h2 class="mb-4 text-xl font-semibold">Generar códigos de recuperación</h2>
+
+    <BbAlert Variant="AlertVariant.Warning" AccentBorder="true" Class="mb-4 max-w-xl">
+        <Icon><LucideIcon Name="triangle-alert"/></Icon>
+        <ChildContent>
+            <BbAlertTitle>Guarda estos códigos en un lugar seguro</BbAlertTitle>
+            <BbAlertDescription>
+                Si pierdes tu dispositivo y no tienes los códigos de recuperación, perderás el acceso a tu cuenta.
+                Generar nuevos códigos no cambia las claves del autenticador; para eso,
+                <a href="Account/Manage/ResetAuthenticator" class="underline">restablece tus claves</a>.
+            </BbAlertDescription>
+        </ChildContent>
+    </BbAlert>
+
+    <form @formname="generate-recovery-codes" @onsubmit="OnSubmitAsync" method="post">
+        <AntiforgeryToken/>
+        <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit">
+            <ChildContent>Generar códigos de recuperación</ChildContent>
+        </BbButton>
+    </form>
 }
 
 @code {
@@ -64,5 +64,4 @@ else
 
         Logger.LogInformation("User with ID '{UserId}' has generated new 2FA recovery codes.", userId);
     }
-
 }

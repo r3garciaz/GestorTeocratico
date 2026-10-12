@@ -1,11 +1,15 @@
 ﻿@page "/Account/AccessDenied"
 
-<PageTitle>Access denied</PageTitle>
+<PageTitle>Acceso denegado</PageTitle>
 
-<div class="account-card">
-    <div class="account-card-content">
-        <h1 class="account-title">Access denied</h1>
-        <p class="account-msg-error">You do not have access to this resource.</p>
-        <p class="account-msg-alert" style="margin-top:24px; font-size:0.95rem;">If you believe this is an error, please contact your administrator.</p>
+<AuthCard Title="Acceso denegado" Description="No tienes acceso a este recurso." Icon="shield-x">
+    <p class="text-sm text-muted-foreground">
+        Si crees que es un error, contacta con tu administrador.
+    </p>
+    <div class="text-center">
+        <BbButton Href="/" Variant="ButtonVariant.Outline" Class="w-full">
+            <Icon><LucideIcon Name="house"/></Icon>
+            <ChildContent>Volver al inicio</ChildContent>
+        </BbButton>
     </div>
-</div>
+</AuthCard>
