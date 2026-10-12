@@ -1,141 +1,285 @@
 @page "/departments"
+@attribute [Authorize(Roles = "Admin, Manager")]
 @using GestorTeocratico.Entities
 @using GestorTeocratico.Features.Departments
+@using BlazorBlueprint.Components
+@using BlazorBlueprint.Primitives
+@using BlazorBlueprint.Icons.Lucide.Components
+@using ButtonSize = BlazorBlueprint.Components.ButtonSize
+
 @inject IDepartmentService DepartmentService
-@inject DialogService DialogService
-@inject NotificationService NotificationService
-@attribute [Authorize(Roles = "Admin, Manager")]
 
 <PageTitle>Departamentos</PageTitle>
-<RadzenStack>
-    <RadzenRow AlignItems="AlignItems.Center">
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenText Text="Departamentos" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
-        </RadzenColumn>
-        <RadzenColumn Size="12" SizeMD="6">
-            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
-                         JustifyContent="JustifyContent.End" Gap="0.5rem">
-                <RadzenButton Icon="add_circle_outline" Text="Agregar Departamento" Click="@CreateAsync" Variant="Variant.Flat"/>
-            </RadzenStack>
-        </RadzenColumn>
-    </RadzenRow>
-    <RadzenRow>
-        <RadzenColumn SizeMD="12">
-            <RadzenDataGrid @ref="grid0" ColumnWidth="200px" AllowFiltering="true" FilterMode="FilterMode.Advanced"
-                            AllowPaging="true" AllowSorting="true" ShowPagingSummary="true"
-                            PageSizeOptions=@(new int[] { 5, 10, 20, 30 })
-                            Data="@(_departments)" >
-                <Columns>
-                    <RadzenDataGridColumn Property="@nameof(Department.Name)" Title="Nombre"/>
-                    <RadzenDataGridColumn Property="@nameof(Department.ResponsiblePublisher)" Title="Publicador Responsable">
-                        <Template Context="department">
-                            @if (department.ResponsiblePublisher != null)
-                            {
-                                <span>@GetPublisherFullName(department.ResponsiblePublisher)</span>
-                            }
-                            else
-                            {
-                                <span class="text-muted">Sin asignar</span>
-                            }
-                        </Template>
-                    </RadzenDataGridColumn>
-                    <RadzenDataGridColumn Property="@nameof(Department.Responsibilities)" Title="Responsabilidades">
-                        <Template Context="department">
-                            @if (department.Responsibilities?.Any() == true)
-                            {
-                                <span>@string.Join(", ", department.Responsibilities.Take(2).Select(r => r.Name))</span>
-                                @if (department.Responsibilities.Count > 2)
-                                {
-                                    <span class="text-muted"> y @(department.Responsibilities.Count - 2) más...</span>
-                                }
-                            }
-                            else
-                            {
-                                <span class="text-muted">Sin responsabilidades</span>
-                            }
-                        </Template>
-                    </RadzenDataGridColumn>
-                    <RadzenDataGridColumn Filterable="false" Sortable="false" Width="150px" Title="Acciones"
-                                          TextAlign="TextAlign.Center">
-                        <Template Context="department">
-                            <RadzenButton Icon="article" ButtonStyle="ButtonStyle.Success" Variant="Variant.Outlined" Size="ButtonSize.Medium"
-                                          Click="@(() => ShowDetailsModal(department))" @onabort:stopPropagation="true" />
-                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Info" Variant="Variant.Outlined"
-                                          Size="ButtonSize.Medium"
-                                          Click="@(() => ShowEditModal(department))" @onclick:stopPropagation="true"/>
-                            <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Size="ButtonSize.Medium"
-                                          Shade="Shade.Lighter" Variant="Variant.Outlined"
-                                          Click="@(args => DeleteAsync(args, department))"
-                                          @onclick:stopPropagation="true"/>
-                        </Template>
-                    </RadzenDataGridColumn>
-                </Columns>
-            </RadzenDataGrid>
-        </RadzenColumn>
-    </RadzenRow>
-</RadzenStack>
+
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold tracking-tight">Departamentos</h1>
+        <p class="text-sm text-muted-foreground">Departamentos, responsables y sus responsabilidades.</p>
+    </div>
+
+    <BbDataTable TData="Department" Data="@_departments" InitialPageSize="10" AriaLabel="Departamentos">
+        <ToolbarActions>
+            <BbButton OnClick="OpenCreate">
+                <Icon><LucideIcon Name="plus"/></Icon>
+                <ChildContent>Agregar departamento</ChildContent>
+            </BbButton>
+        </ToolbarActions>
+        <Columns>
+            <BbDataTableColumn TData="Department" TValue="string" Property="@(d => d.Name)"
+                               Header="Nombre" Sortable="true" Filterable="true"/>
+            <BbDataTableColumn TData="Department" TValue="string" Header="Publicador responsable">
+                <CellTemplate Context="d">
+                    @if (d.ResponsiblePublisher is not null)
+                    {
+                        <span>@PublisherName(d.ResponsiblePublisher)</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted-foreground">Sin asignar</span>
+                    }
+                </CellTemplate>
+            </BbDataTableColumn>
+            <BbDataTableColumn TData="Department" TValue="string" Header="Responsabilidades">
+                <CellTemplate Context="d">
+                    @if (d.Responsibilities?.Any() == true)
+                    {
+                        <span>@string.Join(", ", d.Responsibilities.Select(r => r.Name))</span>
+                    }
+                    else
+                    {
+                        <span class="text-muted-foreground">—</span>
+                    }
+                </CellTemplate>
+            </BbDataTableColumn>
+            <BbDataTableColumn TData="Department" TValue="string" Header="Acciones" Width="150px">
+                <CellTemplate Context="d">
+                    <div class="flex items-center gap-1">
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Ver"
+                                  OnClick="@(() => OpenDetails(d))">
+                            <LucideIcon Name="eye" Class="size-4"/>
+                        </BbButton>
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Editar"
+                                  OnClick="@(() => OpenEdit(d))">
+                            <LucideIcon Name="pencil" Class="size-4"/>
+                        </BbButton>
+                        <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Eliminar"
+                                  OnClick="@(() => OpenDelete(d))">
+                            <LucideIcon Name="trash-2" Class="size-4 text-destructive"/>
+                        </BbButton>
+                    </div>
+                </CellTemplate>
+            </BbDataTableColumn>
+        </Columns>
+    </BbDataTable>
+</div>
+
+@* ===== Formulario crear/editar ===== *@
+<BbDialog @bind-Open="_formOpen">
+    <BbDialogContent Class="sm:max-w-lg">
+        <BbDialogHeader>
+            <BbDialogTitle>@(_isNew ? "Agregar departamento" : "Editar departamento")</BbDialogTitle>
+            <BbDialogDescription>Define el departamento y sus responsabilidades.</BbDialogDescription>
+        </BbDialogHeader>
+
+        @if (!string.IsNullOrEmpty(_formError))
+        {
+            <div class="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                @_formError
+            </div>
+        }
+
+        <EditForm Model="_editing" OnValidSubmit="SaveAsync" class="space-y-4">
+            <div class="space-y-2">
+                <BbLabel For="Name">Nombre *</BbLabel>
+                <BbInput Id="Name" @bind-Value="_editing.Name" Placeholder="Nombre del departamento"/>
+            </div>
+            <div class="space-y-2">
+                <BbLabel>Publicador responsable</BbLabel>
+                <BbSelect TValue="Guid?" Options="_publisherOptions"
+                          @bind-Value="_editing.ResponsiblePublisherId" Placeholder="Sin asignar"/>
+            </div>
+            <div class="space-y-2">
+                <BbLabel>Responsabilidades</BbLabel>
+                <BbMultiSelect TValue="Guid" Options="_responsibilityOptions"
+                               @bind-Values="_selectedResponsibilities" Placeholder="Selecciona responsabilidades"/>
+            </div>
+            <BbDialogFooter>
+                <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _formOpen = false)">
+                    <ChildContent>Cancelar</ChildContent>
+                </BbButton>
+                <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit">
+                    <ChildContent>Guardar</ChildContent>
+                </BbButton>
+            </BbDialogFooter>
+        </EditForm>
+    </BbDialogContent>
+</BbDialog>
+
+@* ===== Confirmar eliminación ===== *@
+<BbDialog @bind-Open="_deleteOpen">
+    <BbDialogContent Class="sm:max-w-md">
+        <BbDialogHeader>
+            <BbDialogTitle>Eliminar departamento</BbDialogTitle>
+            <BbDialogDescription>
+                ¿Seguro que deseas eliminar <strong>@_deleteTarget?.Name</strong>? Esta acción no se puede deshacer.
+            </BbDialogDescription>
+        </BbDialogHeader>
+        <BbDialogFooter>
+            <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _deleteOpen = false)">
+                <ChildContent>Cancelar</ChildContent>
+            </BbButton>
+            <BbButton Variant="ButtonVariant.Destructive" OnClick="ConfirmDeleteAsync">
+                <ChildContent>Eliminar</ChildContent>
+            </BbButton>
+        </BbDialogFooter>
+    </BbDialogContent>
+</BbDialog>
+
+@* ===== Detalles ===== *@
+<BbDialog @bind-Open="_detailsOpen">
+    <BbDialogContent Class="sm:max-w-md">
+        <BbDialogHeader>
+            <BbDialogTitle>@_detailsTarget?.Name</BbDialogTitle>
+            <BbDialogDescription>Detalles del departamento.</BbDialogDescription>
+        </BbDialogHeader>
+        @if (_detailsTarget is not null)
+        {
+            <dl class="grid grid-cols-[170px_1fr] gap-x-4 gap-y-2 text-sm">
+                <dt class="text-muted-foreground">Publicador responsable</dt>
+                <dd>@(_detailsTarget.ResponsiblePublisher is not null ? PublisherName(_detailsTarget.ResponsiblePublisher) : "—")</dd>
+                <dt class="text-muted-foreground">Responsabilidades</dt>
+                <dd>@(_detailsTarget.Responsibilities?.Any() == true ? string.Join(", ", _detailsTarget.Responsibilities.Select(r => r.Name)) : "—")</dd>
+            </dl>
+        }
+        <BbDialogFooter>
+            <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _detailsOpen = false)">
+                <ChildContent>Cerrar</ChildContent>
+            </BbButton>
+        </BbDialogFooter>
+    </BbDialogContent>
+</BbDialog>
 
 @code {
-    private IEnumerable<Department> _departments = [];
-    private RadzenDataGrid<Department> grid0;
+    private List<Department> _departments = [];
+    private List<Responsibility> _responsibilities = [];
+    private SelectOption<Guid>[] _responsibilityOptions = [];
+    private SelectOption<Guid?>[] _publisherOptions = [];
 
-    protected override async Task OnInitializedAsync()
+    private bool _formOpen;
+    private bool _isNew;
+    private Department _editing = new();
+    private IEnumerable<Guid> _selectedResponsibilities = [];
+    private string? _formError;
+
+    private bool _deleteOpen;
+    private Department? _deleteTarget;
+
+    private bool _detailsOpen;
+    private Department? _detailsTarget;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
     {
-        _departments = await DepartmentService.GetAllAsync();
+        _departments = (await DepartmentService.GetAllAsync()).ToList();
+        _responsibilities = (await DepartmentService.GetAvailableResponsibilitiesAsync()).ToList();
+        _responsibilityOptions = _responsibilities
+            .Select(r => new SelectOption<Guid>(r.ResponsibilityId, r.Name)).ToArray();
+
+        var publishers = await DepartmentService.GetAvailablePublishersAsync();
+        _publisherOptions = publishers
+            .Select(p => new SelectOption<Guid?>(p.PublisherId, PublisherName(p)))
+            .OrderBy(o => o.Text)
+            .ToArray();
     }
 
-    private async Task CreateAsync(MouseEventArgs args)
+    private void OpenCreate()
     {
-        var result = await DialogService.OpenAsync<CreateDepartment>("Agregar Departamento", null);
-        if (result != null)
+        _isNew = true;
+        _editing = new Department { Name = string.Empty };
+        _selectedResponsibilities = [];
+        _formError = null;
+        _formOpen = true;
+    }
+
+    private async Task OpenEdit(Department department)
+    {
+        _isNew = false;
+        _editing = await DepartmentService.GetByIdAsync(department.DepartmentId) ?? new Department();
+        _selectedResponsibilities = _editing.Responsibilities.Select(r => r.ResponsibilityId).ToList();
+        _formError = null;
+        _formOpen = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        _formError = null;
+
+        if (string.IsNullOrWhiteSpace(_editing.Name))
         {
-            _departments = await DepartmentService.GetAllAsync();
+            _formError = "El nombre es obligatorio.";
+            return;
         }
-    }
 
-    private async Task ShowEditModal(Department args)
-    {
-        var result = await DialogService.OpenAsync<EditDepartment>("Editar Departamento", new Dictionary<string, object> { { "DepartmentId", args.DepartmentId } });
-        if (result != null)
-        {
-            _departments = await DepartmentService.GetAllAsync();
-        }
-    }
-
-    private async Task DeleteAsync(MouseEventArgs args, Department department)
-    {
         try
         {
-            if (await DialogService.Confirm("¿Está seguro que desea eliminar este registro?", "Confirmar", new ConfirmOptions { OkButtonText = "Eliminar", CancelButtonText = "Cancelar" }) == true)
+            if (_isNew)
             {
-                var deleteResult = await DepartmentService.DeleteAsync(department.DepartmentId);
-                _departments = await DepartmentService.GetAllAsync();
+                await DepartmentService.AddAsync(_editing);
             }
-        }
-        catch (Exception ex)
-        {
-            NotificationService.Notify(new NotificationMessage
+            else
             {
-                Severity = NotificationSeverity.Error,
-                Summary = $"Error, {ex.Message}",
-                Detail = "No se pudo eliminar el departamento"
-            });
+                await DepartmentService.UpdateAsync(_editing);
+            }
+
+            await DepartmentService.UpdateDepartmentResponsibilitiesAsync(_editing.DepartmentId, _selectedResponsibilities);
+
+            _formOpen = false;
+            await LoadAsync();
+        }
+        catch
+        {
+            _formError = "No se pudo guardar el departamento.";
         }
     }
 
-    private async Task ShowDetailsModal(Department department)
+    private void OpenDelete(Department department)
     {
-        var parameters = new Dictionary<string, object> { ["department"] = department };
-        await DialogService.OpenAsync<DetailsDepartment>("Detalles del Departamento", parameters);
+        _deleteTarget = department;
+        _deleteOpen = true;
     }
 
-    private string GetPublisherFullName(Publisher publisher)
+    private async Task ConfirmDeleteAsync()
     {
-        var fullName = publisher.FirstName;
-        if (!string.IsNullOrEmpty(publisher.LastName))
-            fullName += $" {publisher.LastName}";
-        if (!string.IsNullOrEmpty(publisher.MotherLastName))
-            fullName += $" {publisher.MotherLastName}";
-        return fullName;
+        if (_deleteTarget is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await DepartmentService.DeleteAsync(_deleteTarget.DepartmentId);
+        }
+        catch
+        {
+            // Ignored: reload shows the current state.
+        }
+
+        _deleteOpen = false;
+        await LoadAsync();
+    }
+
+    private void OpenDetails(Department department)
+    {
+        _detailsTarget = department;
+        _detailsOpen = true;
+    }
+
+    private static string PublisherName(Publisher publisher)
+    {
+        var name = publisher.FirstName;
+        if (!string.IsNullOrEmpty(publisher.LastName)) name += $" {publisher.LastName}";
+        if (!string.IsNullOrEmpty(publisher.MotherLastName)) name += $" {publisher.MotherLastName}";
+        return name;
     }
 }
