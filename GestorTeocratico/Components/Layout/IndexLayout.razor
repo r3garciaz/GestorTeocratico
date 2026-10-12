@@ -1,37 +1,36 @@
 ﻿@inherits LayoutComponentBase
+@using BlazorBlueprint.Components
+@using BlazorBlueprint.Icons.Lucide.Components
 
-<RadzenLayout Style="min-height: 100vh;">
-    <!-- Modern Navigation Header usando solo Radzen -->
-    <RadzenHeader class="rz-shadow-4 rz-background-color-base-50" Style="position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(10px); border-bottom: 1px solid var(--rz-base-200);">
-        <div style="max-width: 1440px; margin: 0 auto; width: 100%;">
-            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" 
-                         class="rz-px-4 rz-px-md-6 rz-px-lg-8 rz-py-3">
-                <!-- Logo y Brand - Desktop version -->
-                <RadzenLink Path="/" class="rz-text-decoration-none rz-display-flex rz-align-items-center rz-gap-2">
-                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
-                        <div class="rz-background-color-primary rz-border-radius-3" Style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
-                            <RadzenIcon Icon="account_balance" Style="color: white; font-size: 18px;" />
-                        </div>
-                        <RadzenText Text="Gestor Teocrático" TextStyle="TextStyle.H6" class="rz-mb-0" Style="font-weight: 600; color: var(--rz-primary);" />
-                    </RadzenStack>
-                </RadzenLink>
-                
-                <!-- Desktop Action Buttons -->
-                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center"
-                             class="rz-display-none rz-display-sm-flex">
-                    <RadzenLink Path="/Account/Login" class="rz-text-decoration-none">
-                        <RadzenButton ButtonStyle="ButtonStyle.Primary" Variant="Variant.Text" Text="Iniciar sesión" />
-                    </RadzenLink>
-                    <RadzenLink Path="/Account/Register" class="rz-text-decoration-none rz-display-none rz-display-sm-flex">
-                        <RadzenButton ButtonStyle="ButtonStyle.Primary" Variant="Variant.Text" Text="Registrarse" />
-                    </RadzenLink>
-                </RadzenStack>
-            </RadzenStack>
+@*
+    Shell público (landing + páginas de cuenta). Estas páginas son estáticas
+    ([ExcludeFromInteractiveRouting]), por eso el chrome interactivo de BB
+    (controles de tema) se monta como isla con @rendermode.
+*@
+
+<div class="flex min-h-svh flex-col bg-background">
+    <header class="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div class="container flex h-16 items-center justify-between gap-4">
+            <a href="/" class="flex items-center gap-2">
+                <img src="images/logo.png" alt="Gestor Teocrático" class="size-8 object-contain"/>
+                <span class="font-semibold">Gestor Teocrático</span>
+            </a>
+            <div class="flex items-center gap-2">
+                <PublicThemeControls @rendermode="InteractiveServer"/>
+                <BbButton Href="/Account/Login" Variant="ButtonVariant.Default">
+                    Iniciar sesión
+                </BbButton>
+            </div>
         </div>
-    </RadzenHeader>
-    
-    <!-- Main Content Area -->
-    <RadzenBody Style="padding: 0;">
+    </header>
+
+    <main class="flex-1">
         @Body
-    </RadzenBody>
-</RadzenLayout>
+    </main>
+
+    <footer class="border-t">
+        <div class="container flex h-14 items-center justify-center text-xs text-muted-foreground">
+            Gestor Teocrático © @DateTime.Now.Year
+        </div>
+    </footer>
+</div>

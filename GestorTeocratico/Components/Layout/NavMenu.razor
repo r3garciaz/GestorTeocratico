@@ -1,76 +1,92 @@
-﻿@implements IDisposable
-@inject NavigationManager NavigationManager
+﻿@using BlazorBlueprint.Components
+@using BlazorBlueprint.Icons.Lucide.Components
+@using Microsoft.AspNetCore.Components.Routing
 
+@*
+    Navegación del shell (Blazor Blueprint). El estado activo se deriva de la URL
+    automáticamente en BbSidebarMenuButton (Href + Match).
+*@
 
-<AuthorizeView>
+<BbSidebarGroup>
+    <BbSidebarGroupLabel>General</BbSidebarGroupLabel>
+    <BbSidebarGroupContent>
+        <BbSidebarMenu>
+            <BbSidebarMenuItem>
+                <BbSidebarMenuButton Href="/dashboard" Match="NavLinkMatch.All" Tooltip="Inicio">
+                    <LucideIcon Name="house"/>
+                    <span>Inicio</span>
+                </BbSidebarMenuButton>
+            </BbSidebarMenuItem>
+        </BbSidebarMenu>
+    </BbSidebarGroupContent>
+</BbSidebarGroup>
+
+<AuthorizeView Roles="@($"{Shared.Roles.Admin}, {Shared.Roles.Manager}")">
     <Authorized>
-        <RadzenPanelMenu>
-            <RadzenPanelMenuItem Text="Inicio" Path="/dashboard" Icon="home" />
-            <AuthorizeView Roles="@($"{Shared.Roles.Admin}, {Shared.Roles.Manager}")">
-                <Authorized Context="adminContext">
-                    <RadzenPanelMenu>
-                        <RadzenPanelMenuItem Text="Administración" Icon="security">
-                            <RadzenPanelMenuItem Text="Usuarios" Path="/administration/users" Icon="people" />
-                            <RadzenPanelMenuItem Text="Roles" Path="/administration/roles" Icon="manage_accounts" />
-                        </RadzenPanelMenuItem>
-                        <RadzenPanelMenuItem Text="Configuracion" Icon="settings">
-                            <RadzenPanelMenuItem Text="Congregación" Path="/congregations" Icon="fort" />
-                            <RadzenPanelMenuItem Text="Departamentos" Path="/departments" Icon="business" />
-                            <RadzenPanelMenuItem Text="Responsabilidades" Path="/responsibilities" Icon="assignment" />
-                            <RadzenPanelMenuItem Text="Publicadores" Path="/publishers" Icon="people" />
-                        </RadzenPanelMenuItem>
-                        <RadzenPanelMenuItem Text="Reuniones" Icon="meeting_room">
-                            <RadzenPanelMenuItem Text="Programación Reuniones" Path="/meeting-schedules" Icon="event_note" />
-                        </RadzenPanelMenuItem>
-                    </RadzenPanelMenu>
-                </Authorized>
-            </AuthorizeView>
-        </RadzenPanelMenu>
-        
-        <RadzenPanelMenu>
-            <RadzenStack class="rz-mt-4" Gap="0.5rem">
-                @* <RadzenPanelMenuItem Text="@context.User.Identity?.Name" Path="Account/Manage" Icon="person" /> *@
-                
-                <form action="Account/Logout" method="post" class="rz-w-100">
-                    <AntiforgeryToken/>
-                    <input type="hidden" name="returnUrl" value="@currentUrl"/>
-                    <RadzenButton ButtonType="ButtonType.Submit"
-                                  Text="Logout"
-                                  Icon="logout"
-                                  ButtonStyle="ButtonStyle.Light"
-                                  Size="ButtonSize.Medium"
-                                  class="rz-w-100" />
-                </form>
-            </RadzenStack>
-        </RadzenPanelMenu>
+        <BbSidebarGroup>
+            <BbSidebarGroupLabel>Configuración</BbSidebarGroupLabel>
+            <BbSidebarGroupContent>
+                <BbSidebarMenu>
+                    <BbSidebarMenuItem>
+                        <BbSidebarMenuButton Href="/congregations" Tooltip="Congregación">
+                            <LucideIcon Name="church"/>
+                            <span>Congregación</span>
+                        </BbSidebarMenuButton>
+                    </BbSidebarMenuItem>
+                    <BbSidebarMenuItem>
+                        <BbSidebarMenuButton Href="/departments" Tooltip="Departamentos">
+                            <LucideIcon Name="building-2"/>
+                            <span>Departamentos</span>
+                        </BbSidebarMenuButton>
+                    </BbSidebarMenuItem>
+                    <BbSidebarMenuItem>
+                        <BbSidebarMenuButton Href="/responsibilities" Tooltip="Responsabilidades">
+                            <LucideIcon Name="clipboard-list"/>
+                            <span>Responsabilidades</span>
+                        </BbSidebarMenuButton>
+                    </BbSidebarMenuItem>
+                    <BbSidebarMenuItem>
+                        <BbSidebarMenuButton Href="/publishers" Tooltip="Publicadores">
+                            <LucideIcon Name="users"/>
+                            <span>Publicadores</span>
+                        </BbSidebarMenuButton>
+                    </BbSidebarMenuItem>
+                </BbSidebarMenu>
+            </BbSidebarGroupContent>
+        </BbSidebarGroup>
+
+        <BbSidebarGroup>
+            <BbSidebarGroupLabel>Reuniones</BbSidebarGroupLabel>
+            <BbSidebarGroupContent>
+                <BbSidebarMenu>
+                    <BbSidebarMenuItem>
+                        <BbSidebarMenuButton Href="/meeting-schedules" Tooltip="Programación de reuniones">
+                            <LucideIcon Name="calendar-days"/>
+                            <span>Programación</span>
+                        </BbSidebarMenuButton>
+                    </BbSidebarMenuItem>
+                </BbSidebarMenu>
+            </BbSidebarGroupContent>
+        </BbSidebarGroup>
+
+        <BbSidebarGroup>
+            <BbSidebarGroupLabel>Administración</BbSidebarGroupLabel>
+            <BbSidebarGroupContent>
+                <BbSidebarMenu>
+                    <BbSidebarMenuItem>
+                        <BbSidebarMenuButton Href="/administration/users" Tooltip="Usuarios">
+                            <LucideIcon Name="user-cog"/>
+                            <span>Usuarios</span>
+                        </BbSidebarMenuButton>
+                    </BbSidebarMenuItem>
+                    <BbSidebarMenuItem>
+                        <BbSidebarMenuButton Href="/administration/roles" Tooltip="Roles">
+                            <LucideIcon Name="shield"/>
+                            <span>Roles</span>
+                        </BbSidebarMenuButton>
+                    </BbSidebarMenuItem>
+                </BbSidebarMenu>
+            </BbSidebarGroupContent>
+        </BbSidebarGroup>
     </Authorized>
-    <NotAuthorized>
-        <RadzenPanelMenu>
-            <RadzenStack class="rz-mt-4" Gap="0.5rem">
-                <RadzenPanelMenuItem Text="Login" Path="Account/Login" Icon="login" />
-                <RadzenPanelMenuItem Text="Register" Path="Account/Register" Icon="person_add" />
-            </RadzenStack>
-        </RadzenPanelMenu>
-    </NotAuthorized>
 </AuthorizeView>
-
-@code {
-    private string? currentUrl;
-    
-    protected override void OnInitialized()
-    {
-        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
-        NavigationManager.LocationChanged += OnLocationChanged;
-    }
-
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
-    {
-        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
-        StateHasChanged();
-    }
-
-    public void Dispose()
-    {
-        NavigationManager.LocationChanged -= OnLocationChanged;
-    }
-}
