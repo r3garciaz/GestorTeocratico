@@ -46,7 +46,7 @@
             </BbDataTableColumn>
             <BbDataTableColumn TData="Department" TValue="string" Header="Responsabilidades" Width="240px">
                 <CellTemplate Context="d">
-                    <EntityChips Items="@(d.Responsibilities?.Select(r => r.Name).ToList() ?? [])"/>
+                    <EntityChips Items="@(d.Responsibilities?.Select(r => r.Name).ToList() ?? [])" Max="int.MaxValue"/>
                 </CellTemplate>
             </BbDataTableColumn>
             <BbDataTableColumn TData="Department" TValue="string" Header="Acciones" Width="150px">
