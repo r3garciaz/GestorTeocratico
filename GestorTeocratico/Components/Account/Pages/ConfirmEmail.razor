@@ -4,30 +4,30 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using GestorTeocratico.Data
+@using BlazorBlueprint.Components
+@using BlazorBlueprint.Icons.Lucide.Components
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Confirm email</PageTitle>
+<PageTitle>Confirmar correo</PageTitle>
 
-<div class="account-card">
-    <div class="account-card-content">
-        <h1 class="account-title">Confirm email</h1>
-        @if (!string.IsNullOrEmpty(statusMessage))
-        {
-            <div class="@(statusMessage.Contains("Thank you") ? "account-msg-success" : "account-msg-error")">
-                @statusMessage
-            </div>
-        }
-        <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center">
-            <RadzenLink Path="/">
-                <RadzenButton Text="Volver al inicio" 
-                              ButtonStyle="ButtonStyle.Primary" 
-                              class="rz-border-radius-2" />
-            </RadzenLink>
-        </RadzenStack>
+<AuthCard Title="Confirmación de correo" Description="Estamos verificando tu correo electrónico." Icon="mail-check">
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        var ok = statusMessage.Contains("Thank you");
+        <div class="rounded-md border p-3 text-sm @(ok ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600" : "border-destructive/30 bg-destructive/10 text-destructive")">
+            @statusMessage
+        </div>
+    }
+
+    <div class="text-center">
+        <BbButton Href="/" Class="w-full">
+            <Icon><LucideIcon Name="house"/></Icon>
+            <ChildContent>Volver al inicio</ChildContent>
+        </BbButton>
     </div>
-</div>
+</AuthCard>
 
 @code {
     private string? statusMessage;
@@ -45,7 +45,7 @@
             RedirectManager.RedirectTo("");
         }
 
-        var user = await UserManager.FindByIdAsync(UserId);
+        var user = await UserManager.FindByIdAsync(UserId!);
         if (user is null)
         {
             HttpContext.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -53,10 +53,9 @@
         }
         else
         {
-            var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code));
+            var code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(Code!));
             var result = await UserManager.ConfirmEmailAsync(user, code);
             statusMessage = result.Succeeded ? "Thank you for confirming your email." : "Error confirming your email.";
         }
     }
-
 }
