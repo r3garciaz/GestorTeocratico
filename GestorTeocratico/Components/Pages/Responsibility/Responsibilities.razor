@@ -160,7 +160,7 @@
                 <dt class="text-muted-foreground">Departamento</dt>
                 <dd>@(_detailsTarget.Department?.Name ?? "Sin departamento")</dd>
                 <dt class="text-muted-foreground">Publicadores</dt>
-                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.Select(pr => PublisherName(pr.Publisher)).ToList() ?? [])"/></dd>
+                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.Select(pr => PublisherName(pr.Publisher)).ToList() ?? [])" Max="int.MaxValue"/></dd>
             </dl>
         }
         <BbDialogFooter>
