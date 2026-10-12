@@ -1,5 +1,6 @@
 @page "/responsibilities"
 @attribute [Authorize(Roles = "Admin, Manager")]
+@using System.Globalization
 @using GestorTeocratico.Entities
 @using GestorTeocratico.Features.Responsibilities
 @using BlazorBlueprint.Components
@@ -54,7 +55,7 @@
             </BbDataTableColumn>
             <BbDataTableColumn TData="Responsibility" TValue="string" Header="Publicadores asignados" Width="240px">
                 <CellTemplate Context="r">
-                    <EntityChips Items="@(r.PublisherResponsibilities?.Select(pr => PublisherName(pr.Publisher)).ToList() ?? [])"/>
+                    <EntityChips Items="@(r.PublisherResponsibilities?.OrderBy(pr => pr.Publisher?.LastName ?? string.Empty, NameComparer).ThenBy(pr => pr.Publisher?.MotherLastName ?? string.Empty, NameComparer).ThenBy(pr => pr.Publisher?.FirstName ?? string.Empty, NameComparer).Select(pr => PublisherName(pr.Publisher)).ToList() ?? [])"/>
                 </CellTemplate>
             </BbDataTableColumn>
             <BbDataTableColumn TData="Responsibility" TValue="string" Header="Acciones" Width="150px">
@@ -111,7 +112,7 @@
             <div class="space-y-2">
                 <BbLabel>Publicadores asignados</BbLabel>
                 <BbMultiSelect TValue="Guid" Options="_publisherOptions" MaxDisplayTags="5" SingleLine="true"
-                               @bind-Values="_selectedPublishers" Placeholder="Selecciona publicadores"/>
+                               Values="_selectedPublishers" ValuesChanged="OnPublishersChanged" Placeholder="Selecciona publicadores"/>
             </div>
             <BbDialogFooter>
                 <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _formOpen = false)">
@@ -160,7 +161,7 @@
                 <dt class="text-muted-foreground">Departamento</dt>
                 <dd>@(_detailsTarget.Department?.Name ?? "Sin departamento")</dd>
                 <dt class="text-muted-foreground">Publicadores</dt>
-                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.Select(pr => PublisherName(pr.Publisher)).ToList() ?? [])" Max="int.MaxValue"/></dd>
+                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.OrderBy(pr => pr.Publisher?.LastName ?? string.Empty, NameComparer).ThenBy(pr => pr.Publisher?.MotherLastName ?? string.Empty, NameComparer).ThenBy(pr => pr.Publisher?.FirstName ?? string.Empty, NameComparer).Select(pr => PublisherName(pr.Publisher)).ToList() ?? [])" Max="int.MaxValue"/></dd>
             </dl>
         }
         <BbDialogFooter>
@@ -202,8 +203,10 @@
 
         var publishers = await ResponsibilityService.GetAvailablePublishersAsync();
         _publisherOptions = publishers
+            .OrderBy(p => p.LastName, NameComparer)
+            .ThenBy(p => p.MotherLastName, NameComparer)
+            .ThenBy(p => p.FirstName, NameComparer)
             .Select(p => new SelectOption<Guid>(p.PublisherId, PublisherName(p)))
-            .OrderBy(o => o.Text)
             .ToArray();
     }
 
@@ -220,7 +223,7 @@
     {
         _isNew = false;
         _editing = await ResponsibilityService.GetByIdAsync(responsibility.ResponsibilityId) ?? new Responsibility();
-        _selectedPublishers = _editing.PublisherResponsibilities.Select(pr => pr.PublisherId).ToList();
+        _selectedPublishers = SortByPublisherOrder(_editing.PublisherResponsibilities.Select(pr => pr.PublisherId));
         _formError = null;
         _formOpen = true;
     }
@@ -288,6 +291,23 @@
         _detailsTarget = responsibility;
         _detailsOpen = true;
     }
+
+    private void OnPublishersChanged(IEnumerable<Guid>? values) =>
+        _selectedPublishers = SortByPublisherOrder(values);
+
+    private IEnumerable<Guid> SortByPublisherOrder(IEnumerable<Guid>? ids)
+    {
+        if (ids is null)
+        {
+            return [];
+        }
+
+        var rank = _publisherOptions.Select((o, i) => (o.Value, Index: i)).ToDictionary(x => x.Value, x => x.Index);
+        return ids.OrderBy(id => rank.TryGetValue(id, out var i) ? i : int.MaxValue).ToList();
+    }
+
+    private static readonly StringComparer NameComparer =
+        StringComparer.Create(CultureInfo.GetCultureInfo("es-ES"), true);
 
     private static string PublisherName(Publisher publisher)
     {

@@ -1,5 +1,6 @@
 @page "/departments"
 @attribute [Authorize(Roles = "Admin, Manager")]
+@using System.Globalization
 @using GestorTeocratico.Entities
 @using GestorTeocratico.Features.Departments
 @using BlazorBlueprint.Components
@@ -46,7 +47,7 @@
             </BbDataTableColumn>
             <BbDataTableColumn TData="Department" TValue="string" Header="Responsabilidades" Width="240px">
                 <CellTemplate Context="d">
-                    <EntityChips Items="@(d.Responsibilities?.Select(r => r.Name).ToList() ?? [])" Max="int.MaxValue"/>
+                    <EntityChips Items="@(d.Responsibilities?.OrderBy(r => r.Name, NameComparer).Select(r => r.Name).ToList() ?? [])" Max="int.MaxValue"/>
                 </CellTemplate>
             </BbDataTableColumn>
             <BbDataTableColumn TData="Department" TValue="string" Header="Acciones" Width="150px">
@@ -99,7 +100,7 @@
             <div class="space-y-2">
                 <BbLabel>Responsabilidades</BbLabel>
                 <BbMultiSelect TValue="Guid" Options="_responsibilityOptions" MaxDisplayTags="5" SingleLine="true"
-                               @bind-Values="_selectedResponsibilities" Placeholder="Selecciona responsabilidades"/>
+                               Values="_selectedResponsibilities" ValuesChanged="OnResponsibilitiesChanged" Placeholder="Selecciona responsabilidades"/>
             </div>
             <BbDialogFooter>
                 <BbButton Variant="ButtonVariant.Outline" OnClick="@(() => _formOpen = false)">
@@ -160,7 +161,7 @@
                     }
                 </dd>
                 <dt class="text-muted-foreground">Responsabilidades</dt>
-                <dd><EntityChips Items="@(_detailsTarget.Responsibilities?.Select(r => r.Name).ToList() ?? [])" Max="int.MaxValue"/></dd>
+                <dd><EntityChips Items="@(_detailsTarget.Responsibilities?.OrderBy(r => r.Name, NameComparer).Select(r => r.Name).ToList() ?? [])" Max="int.MaxValue"/></dd>
             </dl>
         }
         <BbDialogFooter>
@@ -200,8 +201,10 @@
 
         var publishers = await DepartmentService.GetAvailablePublishersAsync();
         _publisherOptions = publishers
+            .OrderBy(p => p.LastName, NameComparer)
+            .ThenBy(p => p.MotherLastName, NameComparer)
+            .ThenBy(p => p.FirstName, NameComparer)
             .Select(p => new SelectOption<Guid?>(p.PublisherId, PublisherName(p)))
-            .OrderBy(o => o.Text)
             .ToArray();
     }
 
@@ -218,7 +221,7 @@
     {
         _isNew = false;
         _editing = await DepartmentService.GetByIdAsync(department.DepartmentId) ?? new Department();
-        _selectedResponsibilities = _editing.Responsibilities.Select(r => r.ResponsibilityId).ToList();
+        _selectedResponsibilities = SortByOptionText(_editing.Responsibilities.Select(r => r.ResponsibilityId), _responsibilityOptions);
         _formError = null;
         _formOpen = true;
     }
@@ -286,6 +289,23 @@
         _detailsTarget = department;
         _detailsOpen = true;
     }
+
+    private void OnResponsibilitiesChanged(IEnumerable<Guid>? values) =>
+        _selectedResponsibilities = SortByOptionText(values, _responsibilityOptions);
+
+    private static IEnumerable<Guid> SortByOptionText(IEnumerable<Guid>? ids, IEnumerable<SelectOption<Guid>> options)
+    {
+        if (ids is null)
+        {
+            return [];
+        }
+
+        var order = options.ToDictionary(o => o.Value, o => o.Text);
+        return ids.OrderBy(id => order.TryGetValue(id, out var text) ? text : string.Empty, NameComparer).ToList();
+    }
+
+    private static readonly StringComparer NameComparer =
+        StringComparer.Create(CultureInfo.GetCultureInfo("es-ES"), true);
 
     private static string PublisherName(Publisher publisher)
     {

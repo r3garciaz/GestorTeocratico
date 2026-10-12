@@ -1,5 +1,6 @@
 @page "/publishers"
 @attribute [Authorize(Roles = "Admin, Manager")]
+@using System.Globalization
 @using GestorTeocratico.Entities
 @using GestorTeocratico.Features.Publishers
 @using GestorTeocratico.Shared.Enums
@@ -51,12 +52,12 @@
             </BbDataTableColumn>
             <BbDataTableColumn TData="Publisher" TValue="string" Header="Departamentos" Width="220px">
                 <CellTemplate Context="p">
-                    <EntityChips Items="@(p.ResponsibleDepartments?.Select(d => d.Name).ToList() ?? [])"/>
+                    <EntityChips Items="@(p.ResponsibleDepartments?.OrderBy(d => d.Name, NameComparer).Select(d => d.Name).ToList() ?? [])"/>
                 </CellTemplate>
             </BbDataTableColumn>
             <BbDataTableColumn TData="Publisher" TValue="string" Header="Responsabilidades" Width="240px">
                 <CellTemplate Context="p">
-                    <EntityChips Items="@(p.PublisherResponsibilities?.Select(pr => pr.Responsibility?.Name ?? string.Empty).ToList() ?? [])"/>
+                    <EntityChips Items="@(p.PublisherResponsibilities?.OrderBy(pr => pr.Responsibility?.Name ?? string.Empty, NameComparer).Select(pr => pr.Responsibility?.Name ?? string.Empty).ToList() ?? [])"/>
                 </CellTemplate>
             </BbDataTableColumn>
             <BbDataTableColumn TData="Publisher" TValue="string" Header="Acciones" Width="150px">
@@ -131,12 +132,12 @@
                 <div class="space-y-2 sm:col-span-2">
                     <BbLabel>Responsabilidades</BbLabel>
                     <BbMultiSelect TValue="Guid" Options="_responsibilityOptions" MaxDisplayTags="5" SingleLine="true"
-                                   @bind-Values="_selectedResponsibilities" Placeholder="Selecciona responsabilidades"/>
+                                   Values="_selectedResponsibilities" ValuesChanged="OnResponsibilitiesChanged" Placeholder="Selecciona responsabilidades"/>
                 </div>
                 <div class="space-y-2 sm:col-span-2">
                     <BbLabel>Departamentos</BbLabel>
                     <BbMultiSelect TValue="Guid" Options="_departmentOptions" MaxDisplayTags="5" SingleLine="true"
-                                   @bind-Values="_selectedDepartments" Placeholder="Selecciona departamentos"/>
+                                   Values="_selectedDepartments" ValuesChanged="OnDepartmentsChanged" Placeholder="Selecciona departamentos"/>
                 </div>
             </div>
             <BbDialogFooter>
@@ -191,9 +192,9 @@
                 <dt class="text-muted-foreground">Correo</dt>
                 <dd>@(_detailsTarget.Email ?? "—")</dd>
                 <dt class="text-muted-foreground">Departamentos</dt>
-                <dd><EntityChips Items="@(_detailsTarget.ResponsibleDepartments?.Select(d => d.Name).ToList() ?? [])" Max="int.MaxValue"/></dd>
+                <dd><EntityChips Items="@(_detailsTarget.ResponsibleDepartments?.OrderBy(d => d.Name, NameComparer).Select(d => d.Name).ToList() ?? [])" Max="int.MaxValue"/></dd>
                 <dt class="text-muted-foreground">Responsabilidades</dt>
-                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.Select(pr => pr.Responsibility?.Name ?? string.Empty).ToList() ?? [])" Max="int.MaxValue"/></dd>
+                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.OrderBy(pr => pr.Responsibility?.Name ?? string.Empty, NameComparer).Select(pr => pr.Responsibility?.Name ?? string.Empty).ToList() ?? [])" Max="int.MaxValue"/></dd>
             </dl>
         }
         <BbDialogFooter>
@@ -265,10 +266,27 @@
     {
         _isNew = false;
         _editing = await PublisherService.GetByIdAsync(publisher.PublisherId) ?? new Publisher();
-        _selectedResponsibilities = _editing.PublisherResponsibilities.Select(pr => pr.ResponsibilityId).ToList();
-        _selectedDepartments = _editing.ResponsibleDepartments.Select(d => d.DepartmentId).ToList();
+        _selectedResponsibilities = SortByOptionText(_editing.PublisherResponsibilities.Select(pr => pr.ResponsibilityId), _responsibilityOptions);
+        _selectedDepartments = SortByOptionText(_editing.ResponsibleDepartments.Select(d => d.DepartmentId), _departmentOptions);
         _formError = null;
         _formOpen = true;
+    }
+
+    private void OnResponsibilitiesChanged(IEnumerable<Guid>? values) =>
+        _selectedResponsibilities = SortByOptionText(values, _responsibilityOptions);
+
+    private void OnDepartmentsChanged(IEnumerable<Guid>? values) =>
+        _selectedDepartments = SortByOptionText(values, _departmentOptions);
+
+    private static IEnumerable<Guid> SortByOptionText(IEnumerable<Guid>? ids, IEnumerable<SelectOption<Guid>> options)
+    {
+        if (ids is null)
+        {
+            return [];
+        }
+
+        var order = options.ToDictionary(o => o.Value, o => o.Text);
+        return ids.OrderBy(id => order.TryGetValue(id, out var text) ? text : string.Empty, NameComparer).ToList();
     }
 
     private async Task SaveAsync()
@@ -335,6 +353,9 @@
         _detailsTarget = publisher;
         _detailsOpen = true;
     }
+
+    private static readonly StringComparer NameComparer =
+        StringComparer.Create(CultureInfo.GetCultureInfo("es-ES"), true);
 
     private static string DepartmentsText(Publisher p) =>
         p.ResponsibleDepartments?.Any() == true
