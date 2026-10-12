@@ -1,7 +1,10 @@
 using GestorTeocratico.Entities;
 using GestorTeocratico.Shared;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace GestorTeocratico.Data;
 
@@ -156,5 +159,67 @@ public static class DataSeeder
         }
         
         await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Seeds a local "break-glass" administrator account from configuration
+    /// (EmergencyAdmin:Email / EmergencyAdmin:Password) so the app can be accessed
+    /// with a local account when Google sign-in is unavailable. No-op when unset.
+    /// </summary>
+    public static async Task SeedEmergencyAdminAsync(IServiceProvider services)
+    {
+        var configuration = services.GetRequiredService<IConfiguration>();
+        var email = configuration["EmergencyAdmin:Email"];
+        var password = configuration["EmergencyAdmin:Password"];
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            return;
+        }
+
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
+        {
+            user = new ApplicationUser
+            {
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true,
+                PublicId = GeneratePublicId()
+            };
+
+            var createResult = await userManager.CreateAsync(user, password);
+            if (!createResult.Succeeded)
+            {
+                return;
+            }
+        }
+
+        if (!await roleManager.RoleExistsAsync(Roles.Admin))
+        {
+            await roleManager.CreateAsync(new IdentityRole(Roles.Admin));
+        }
+
+        if (!await userManager.IsInRoleAsync(user, Roles.Admin))
+        {
+            await userManager.AddToRoleAsync(user, Roles.Admin);
+        }
+    }
+
+    private static string GeneratePublicId()
+    {
+        const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        Span<byte> bytes = stackalloc byte[8];
+        RandomNumberGenerator.Fill(bytes);
+        var chars = new char[8];
+        for (var i = 0; i < chars.Length; i++)
+        {
+            chars[i] = alphabet[bytes[i] % alphabet.Length];
+        }
+
+        return new string(chars);
     }
 }
