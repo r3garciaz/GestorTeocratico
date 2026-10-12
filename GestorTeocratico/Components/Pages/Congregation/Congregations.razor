@@ -1,101 +1,96 @@
 @page "/congregations"
+@attribute [Authorize(Roles = "Admin, Manager")]
 @using GestorTeocratico.Entities
 @using GestorTeocratico.Features.Congregations
+@using BlazorBlueprint.Components
+@using BlazorBlueprint.Primitives
+@using BlazorBlueprint.Icons.Lucide.Components
+
 @inject ICongregationService CongregationService
-@inject NotificationService NotificationService
-@attribute [Authorize(Roles = "Admin, Manager")]
+@inject ToastService Toasts
 
 <PageTitle>Congregación</PageTitle>
 
-<RadzenCard Style="min-width:400px; max-width:1000px; margin:auto; box-shadow: 0 4px 24px rgba(0,0,0,0.06); border-radius: 8px; padding: 1rem;">
-     <RadzenColumn Size="12" SizeMD="6">
-            <RadzenText Text="Congregación" TextStyle="TextStyle.H3" TagName="TagName.H1" style="margin: 0"/>
-        </RadzenColumn>
-    <RadzenTemplateForm TItem="Congregation" Data="@_congregation" Submit="@HandleValidSubmit">
-        <RadzenRow Gap="2rem" class="rz-p-0 rz-p-lg-4">
-            <RadzenColumn Size="12">
-                <RadzenFieldset Text="Detalles de la Congregación">
-                    <RadzenStack  Gap="1rem">
-                    <RadzenRow>
-                        <RadzenColumn Size="12" SizeMD="4">
-                            <RadzenLabel Text="Nombre" Component="Name" style="width: 100%" />
-                        </RadzenColumn>
-                        <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_congregation.Name)" Name="Name" />
-                            <RadzenRequiredValidator Component="Name" Text="El nombre es obligatorio" />
-                        </RadzenColumn>
-                    </RadzenRow>
-                    <RadzenRow >
-                        <RadzenColumn Size="12" SizeMD="4">
-                            <RadzenLabel Text="Día Semana Año Par" Component="MidweekMeetingDayEvenYear" style="width: 100%" />
-                        </RadzenColumn>
-                        <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenDropDown @bind-Value="@_congregation.MidweekMeetingDayEvenYear" Data="@_daysOfWeek" Style="width: 100%; max-width: 400px;" Name="MidweekMeetingDayEvenYear" />
-                        </RadzenColumn>
-                    </RadzenRow>
-                    <RadzenRow >
-                        <RadzenColumn Size="12" SizeMD="4">
-                            <RadzenLabel Text="Día Semana Año Impar" Component="MidweekMeetingDayOddYear" style="width: 100%" />
-                        </RadzenColumn>
-                        <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenDropDown @bind-Value="@_congregation.MidweekMeetingDayOddYear" Data="@_daysOfWeek" Style="width: 100%; max-width: 400px;" Name="MidweekMeetingDayOddYear" />
-                        </RadzenColumn>
-                    </RadzenRow>
-                    <RadzenRow >
-                        <RadzenColumn Size="12" SizeMD="4">
-                            <RadzenLabel Text="Día Fin de Semana Año Par" Component="WeekendMeetingDayEvenYear" style="width: 100%" />
-                        </RadzenColumn>
-                        <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenDropDown @bind-Value="@_congregation.WeekendMeetingDayEvenYear" Data="@_daysOfWeek" Style="width: 100%; max-width: 400px;" Name="WeekendMeetingDayEvenYear" />
-                        </RadzenColumn>
-                    </RadzenRow>
-                    <RadzenRow >
-                        <RadzenColumn Size="12" SizeMD="4">
-                            <RadzenLabel Text="Día Fin de Semana Año Impar" Component="WeekendMeetingDayOddYear" style="width: 100%" />
-                        </RadzenColumn>
-                        <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenDropDown @bind-Value="@_congregation.WeekendMeetingDayOddYear" Data="@_daysOfWeek" Style="width: 100%; max-width: 400px;" Name="WeekendMeetingDayOddYear" />
-                        </RadzenColumn>
-                    </RadzenRow>
-                    <RadzenRow >
-                        <RadzenColumn Size="12" SizeMD="4">
-                            <RadzenLabel Text="Dirección" Component="Address" style="width: 100%" />
-                        </RadzenColumn>
-                        <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_congregation.Address)" Name="Address" />
-                        </RadzenColumn>
-                    </RadzenRow>
-                    <RadzenRow >
-                        <RadzenColumn Size="12" SizeMD="4">
-                            <RadzenLabel Text="Ciudad" Component="City" style="width: 100%" />
-                        </RadzenColumn>
-                        <RadzenColumn Size="12" SizeMD="8">
-                            <RadzenTextBox style="display: block; width: 100%" @bind-Value="@(_congregation.City)" Name="City" />
-                        </RadzenColumn>
-                    </RadzenRow>
-                    </RadzenStack>
-                </RadzenFieldset>
-            </RadzenColumn>
-        </RadzenRow>
+<div class="space-y-6">
+    <div>
+        <h1 class="text-2xl font-semibold tracking-tight">Congregación</h1>
+        <p class="text-sm text-muted-foreground">Datos y días de reunión de la congregación.</p>
+    </div>
 
-         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
-                     JustifyContent="JustifyContent.End" Gap="0.5rem">
-                <RadzenButton ButtonStyle="ButtonStyle.Primary" ButtonType="ButtonType.Submit" Icon="save" Text="Guardar" Variant="Variant.Filled" Style="min-width:120px;" />
-                @* <RadzenButton ButtonStyle="ButtonStyle.Light" Text="Cancelar" Variant="Variant.Outlined" Click="@Cancel" Style="min-width:120px;" /> *@
-        </RadzenStack>
-    </RadzenTemplateForm>
-</RadzenCard>
+    <BbCard Class="max-w-3xl">
+        <BbCardHeader>
+            <BbCardTitle>Detalles de la congregación</BbCardTitle>
+            <BbCardDescription>Configura el nombre, la dirección y los días de reunión.</BbCardDescription>
+        </BbCardHeader>
+        <BbCardContent>
+            <EditForm Model="_congregation" OnValidSubmit="SaveAsync" class="space-y-4">
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="space-y-2 sm:col-span-2">
+                        <BbLabel For="Name">Nombre *</BbLabel>
+                        <BbInput Id="Name" @bind-Value="_congregation.Name" Placeholder="Nombre de la congregación"/>
+                    </div>
+
+                    <div class="space-y-2">
+                        <BbLabel>Reunión entre semana (año par)</BbLabel>
+                        <BbSelect TValue="DayOfWeek" Options="_days"
+                                  @bind-Value="_congregation.MidweekMeetingDayEvenYear"/>
+                    </div>
+                    <div class="space-y-2">
+                        <BbLabel>Reunión entre semana (año impar)</BbLabel>
+                        <BbSelect TValue="DayOfWeek" Options="_days"
+                                  @bind-Value="_congregation.MidweekMeetingDayOddYear"/>
+                    </div>
+                    <div class="space-y-2">
+                        <BbLabel>Reunión fin de semana (año par)</BbLabel>
+                        <BbSelect TValue="DayOfWeek" Options="_days"
+                                  @bind-Value="_congregation.WeekendMeetingDayEvenYear"/>
+                    </div>
+                    <div class="space-y-2">
+                        <BbLabel>Reunión fin de semana (año impar)</BbLabel>
+                        <BbSelect TValue="DayOfWeek" Options="_days"
+                                  @bind-Value="_congregation.WeekendMeetingDayOddYear"/>
+                    </div>
+
+                    <div class="space-y-2 sm:col-span-2">
+                        <BbLabel For="Address">Dirección</BbLabel>
+                        <BbInput Id="Address" @bind-Value="_congregation.Address" Placeholder="Dirección"/>
+                    </div>
+                    <div class="space-y-2 sm:col-span-2">
+                        <BbLabel For="City">Ciudad</BbLabel>
+                        <BbInput Id="City" @bind-Value="_congregation.City" Placeholder="Ciudad"/>
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit">
+                        <Icon><LucideIcon Name="save"/></Icon>
+                        <ChildContent>Guardar</ChildContent>
+                    </BbButton>
+                </div>
+            </EditForm>
+        </BbCardContent>
+    </BbCard>
+</div>
 
 @code {
     private Congregation _congregation = new() { Name = string.Empty };
-    private readonly List<DayOfWeek> _daysOfWeek = Enum.GetValues(typeof(DayOfWeek)).Cast<DayOfWeek>().ToList();
-    private bool _isNew = false;
+    private bool _isNew;
+
+    private readonly SelectOption<DayOfWeek>[] _days =
+    [
+        new(DayOfWeek.Monday, "Lunes"),
+        new(DayOfWeek.Tuesday, "Martes"),
+        new(DayOfWeek.Wednesday, "Miércoles"),
+        new(DayOfWeek.Thursday, "Jueves"),
+        new(DayOfWeek.Friday, "Viernes"),
+        new(DayOfWeek.Saturday, "Sábado"),
+        new(DayOfWeek.Sunday, "Domingo")
+    ];
 
     protected override async Task OnInitializedAsync()
     {
-        var items = await CongregationService.GetAllAsync();
-        var first = items.FirstOrDefault();
-        if (first == null)
+        var first = (await CongregationService.GetAllAsync()).FirstOrDefault();
+        if (first is null)
         {
             _congregation = new Congregation { Name = string.Empty };
             _isNew = true;
@@ -107,47 +102,35 @@
         }
     }
 
-    private async Task HandleValidSubmit()
+    private async Task SaveAsync()
     {
+        if (string.IsNullOrWhiteSpace(_congregation.Name))
+        {
+            Toasts.Error("El nombre es obligatorio.", "Error");
+            return;
+        }
+
         try
         {
             if (_isNew)
             {
                 await CongregationService.AddAsync(_congregation);
-                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Creado", Detail = "Congregación creada." });
                 _isNew = false;
+                Toasts.Success("Congregación creada.", "Guardado");
             }
             else
             {
                 await CongregationService.UpdateAsync(_congregation);
-                NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Guardado", Detail = "Congregación actualizada." });
+                Toasts.Success("Congregación actualizada.", "Guardado");
             }
         }
         catch (InvalidOperationException ex)
         {
-            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Warning, Summary = "Atención", Detail = ex.Message });
+            Toasts.Warning(ex.Message, "Atención");
         }
-        catch (Exception)
+        catch
         {
-            NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error", Detail = "Ocurrió un error al guardar." });
+            Toasts.Error("No se pudo guardar la congregación.", "Error");
         }
-    }
-
-    private async Task Cancel(MouseEventArgs args)
-    {
-        // reload current state from DB
-        var items = await CongregationService.GetAllAsync();
-        var first = items.FirstOrDefault();
-        if (first == null)
-        {
-            _congregation = new Congregation { Name = string.Empty };
-            _isNew = true;
-        }
-        else
-        {
-            _congregation = first;
-            _isNew = false;
-        }
-        StateHasChanged();
     }
 }
