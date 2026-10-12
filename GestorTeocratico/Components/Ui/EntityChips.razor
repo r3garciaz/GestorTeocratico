@@ -1,0 +1,27 @@
+@*
+    Renders a list of related entities as badges, limited to Max items plus a "+N" badge.
+*@
+
+@if (Items.Count == 0)
+{
+    <span class="text-muted-foreground">@EmptyText</span>
+}
+else
+{
+    <div class="flex flex-wrap gap-1">
+        @foreach (var item in Items.Take(Max))
+        {
+            <BbBadge Variant="BadgeVariant.Secondary">@item</BbBadge>
+        }
+        @if (Items.Count > Max)
+        {
+            <BbBadge Variant="BadgeVariant.Outline">+@(Items.Count - Max)</BbBadge>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<string> Items { get; set; } = [];
+    [Parameter] public int Max { get; set; } = 5;
+    [Parameter] public string EmptyText { get; set; } = "—";
+}
