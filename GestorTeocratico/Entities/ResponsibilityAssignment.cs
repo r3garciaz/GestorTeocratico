@@ -9,7 +9,9 @@ public class ResponsibilityAssignment
     public required Guid ResponsibilityId { get; set; }
     public required Guid PublisherId { get; set; }
 
-    public required MeetingSchedule MeetingSchedule { get; set; }
-    public required Responsibility Responsibility { get; set; }
-    public required Publisher Publisher { get; set; }
+    // Navigation properties are non-required so the join row can be created from foreign keys
+    // alone (EF still treats the relationships as required because the FKs are non-nullable).
+    public MeetingSchedule MeetingSchedule { get; set; } = null!;
+    public Responsibility Responsibility { get; set; } = null!;
+    public Publisher Publisher { get; set; } = null!;
 }

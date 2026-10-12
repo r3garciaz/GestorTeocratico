@@ -2,6 +2,7 @@ using GestorTeocratico.Data;
 using GestorTeocratico.Entities;
 using GestorTeocratico.Shared.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Globalization;
 
 namespace GestorTeocratico.Features.MeetingSchedules;
@@ -9,10 +10,12 @@ namespace GestorTeocratico.Features.MeetingSchedules;
 public class MeetingScheduleService : IMeetingScheduleService
 {
     private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+    private readonly ILogger<MeetingScheduleService> _logger;
 
-    public MeetingScheduleService(IDbContextFactory<ApplicationDbContext> contextFactory)
+    public MeetingScheduleService(IDbContextFactory<ApplicationDbContext> contextFactory, ILogger<MeetingScheduleService> logger)
     {
         _contextFactory = contextFactory;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<MeetingSchedule>> GetAllAsync()
@@ -200,35 +203,50 @@ public class MeetingScheduleService : IMeetingScheduleService
                 var targetSchedule = targetSchedules.FirstOrDefault(ts => ts.MeetingType == sourceSchedule.MeetingType);
                 if (targetSchedule == null) continue;
 
-                // Clear existing assignments in target week
+                // Synchronize the target week's assignments with the source week.
+                // We use only the foreign keys: the source and target entities come from other
+                // DbContext instances (they are detached), and assigning their navigations here
+                // would make EF treat the whole graph as Added, re-inserting the
+                // schedules/publishers/responsibilities and causing duplicate key errors.
+                var desired = sourceSchedule.ResponsibilityAssignments
+                    .Select(a => (a.ResponsibilityId, a.PublisherId))
+                    .Distinct()
+                    .ToList();
+
                 var existingAssignments = await context.ResponsibilityAssignments
                     .Where(ra => ra.MeetingScheduleId == targetSchedule.MeetingScheduleId)
                     .ToListAsync();
-                
-                context.ResponsibilityAssignments.RemoveRange(existingAssignments);
 
-                // Copy assignments from source
-                foreach (var sourceAssignment in sourceSchedule.ResponsibilityAssignments)
+                var existingKeys = existingAssignments
+                    .Select(a => (a.ResponsibilityId, a.PublisherId))
+                    .ToHashSet();
+
+                context.ResponsibilityAssignments.RemoveRange(
+                    existingAssignments.Where(a => !desired.Contains((a.ResponsibilityId, a.PublisherId))));
+
+                foreach (var (responsibilityId, publisherId) in desired)
                 {
-                    var newAssignment = new ResponsibilityAssignment
+                    if (existingKeys.Contains((responsibilityId, publisherId)))
+                    {
+                        continue;
+                    }
+
+                    context.ResponsibilityAssignments.Add(new ResponsibilityAssignment
                     {
                         MeetingScheduleId = targetSchedule.MeetingScheduleId,
-                        ResponsibilityId = sourceAssignment.ResponsibilityId,
-                        PublisherId = sourceAssignment.PublisherId,
-                        MeetingSchedule = targetSchedule,
-                        Responsibility = sourceAssignment.Responsibility,
-                        Publisher = sourceAssignment.Publisher
-                    };
-
-                    context.ResponsibilityAssignments.Add(newAssignment);
+                        ResponsibilityId = responsibilityId,
+                        PublisherId = publisherId
+                    });
                 }
             }
 
             await context.SaveChangesAsync();
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to copy assignments from week {SourceWeek}/{SourceYear} to week {TargetWeek}/{TargetYear}.",
+                sourceWeek, sourceYear, targetWeek, targetYear);
             return false;
         }
     }
