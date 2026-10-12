@@ -1,5 +1,6 @@
 @page "/administration/users"
 @attribute [Authorize(Roles = "Admin, Manager")]
+@using System.Globalization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using GestorTeocratico.Data
@@ -146,7 +147,7 @@
         <div class="space-y-2">
             <BbLabel>Roles</BbLabel>
             <BbMultiSelect TValue="string" Options="_roleOptions"
-                           @bind-Values="_selectedRoles" Placeholder="Selecciona roles"/>
+                           Values="_selectedRoles" ValuesChanged="OnRolesChanged" Placeholder="Selecciona roles"/>
         </div>
 
         <BbDialogFooter>
@@ -287,6 +288,7 @@
         ];
         _roleOptions = roles
             .Select(r => new SelectOption<string>(r.Name ?? "", RoleDisplay(r.Name ?? "")))
+            .OrderBy(o => o.Text, NameComparer)
             .ToArray();
     }
 
@@ -299,9 +301,26 @@
     private void OpenManageRoles(ApplicationUser user)
     {
         _rolesUser = user;
-        _selectedRoles = RolesOf(user.Id).ToList();
+        _selectedRoles = SortRolesByOptionText(RolesOf(user.Id));
         _rolesOpen = true;
     }
+
+    private void OnRolesChanged(IEnumerable<string>? values) =>
+        _selectedRoles = SortRolesByOptionText(values);
+
+    private IEnumerable<string> SortRolesByOptionText(IEnumerable<string>? ids)
+    {
+        if (ids is null)
+        {
+            return [];
+        }
+
+        var order = _roleOptions.ToDictionary(o => o.Value, o => o.Text);
+        return ids.OrderBy(id => order.TryGetValue(id, out var text) ? text : string.Empty, NameComparer).ToList();
+    }
+
+    private static readonly StringComparer NameComparer =
+        StringComparer.Create(CultureInfo.GetCultureInfo("es-ES"), true);
 
     private async Task SaveRolesAsync()
     {
