@@ -15,30 +15,30 @@ namespace GestorTeocratico.Features.PdfExport;
 
 public class PdfExportService : IPdfExportService
 {
-    private readonly IMeetingScheduleService _meetingScheduleService;
-    private readonly IResponsibilityService _responsibilityService;
-    private readonly ICongregationService _congregationService;
+    private readonly GetMeetingSchedulesByMonthHandler _getSchedulesByMonth;
+    private readonly GetResponsibilitiesHandler _getResponsibilities;
+    private readonly GetCongregationsHandler _getCongregations;
     private readonly ILogger<PdfExportService> _logger;
 
     public PdfExportService(
-        IMeetingScheduleService meetingScheduleService,
-        IResponsibilityService responsibilityService,
-        ICongregationService congregationService,
+        GetMeetingSchedulesByMonthHandler getSchedulesByMonth,
+        GetResponsibilitiesHandler getResponsibilities,
+        GetCongregationsHandler getCongregations,
         ILogger<PdfExportService> logger)
     {
-        _meetingScheduleService = meetingScheduleService;
-        _responsibilityService = responsibilityService;
-        _congregationService = congregationService;
+        _getSchedulesByMonth = getSchedulesByMonth;
+        _getResponsibilities = getResponsibilities;
+        _getCongregations = getCongregations;
         _logger = logger;
     }
 
-    public async Task<byte[]> GenerateMonthlySchedulePdfAsync(int month, int year)
+    public async Task<byte[]> GenerateMonthlySchedulePdfAsync(int month, int year, CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation("Generating PDF for month {Month}, year {Year}", month, year);
             
-            var model = await GetMonthlyScheduleDataAsync(month, year);
+            var model = await GetMonthlyScheduleDataAsync(month, year, cancellationToken);
             
             _logger.LogInformation("Data retrieved: {ScheduleCount} schedules, {ResponsibilityCount} responsibilities", 
                 model.ScheduleRows.Count, model.ResponsibilityColumns.Count);
@@ -57,13 +57,13 @@ public class PdfExportService : IPdfExportService
         }
     }
     
-    public async Task ShowInCompanionAsync(int month, int year)
+    public async Task ShowInCompanionAsync(int month, int year, CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation("Generating Companion PDF for month {Month}, year {Year}", month, year);
             
-            var model = await GetMonthlyScheduleDataAsync(month, year);
+            var model = await GetMonthlyScheduleDataAsync(month, year, cancellationToken);
             
             _logger.LogInformation("Data retrieved: {ScheduleCount} schedules, {ResponsibilityCount} responsibilities", 
                 model.ScheduleRows.Count, model.ResponsibilityColumns.Count);
@@ -71,7 +71,6 @@ public class PdfExportService : IPdfExportService
             var document = new MonthlyScheduleDocument(model);
             await document.ShowInCompanionAsync();
             _logger.LogInformation("Companion PDF generated successfully");
-            await Task.CompletedTask;
         }
         catch (Exception ex)
         {
@@ -80,12 +79,13 @@ public class PdfExportService : IPdfExportService
         }
     }
 
-    private async Task<MonthlySchedulePdfModel> GetMonthlyScheduleDataAsync(int month, int year)
+    private async Task<MonthlySchedulePdfModel> GetMonthlyScheduleDataAsync(int month, int year, CancellationToken cancellationToken)
     {
         // Obtener datos del mes
-        var meetingSchedules = await _meetingScheduleService.GetByMonthAsync(month, year);
-        var responsibilities = await _responsibilityService.GetAllAsync();
-        var congregations = await _congregationService.GetAllAsync();
+        var meetingSchedules = await _getSchedulesByMonth.HandleAsync(
+            new GetMeetingSchedulesByMonthQuery(month, year), cancellationToken);
+        var responsibilities = await _getResponsibilities.HandleAsync(cancellationToken);
+        var congregations = await _getCongregations.HandleAsync(cancellationToken);
         var congregation = congregations.FirstOrDefault();
         
 
@@ -100,9 +100,9 @@ public class PdfExportService : IPdfExportService
             MonthName = $"{monthName} {year}",
             ResponsibilityColumns = responsibilities.Select(r => new ResponsibilityColumnModel
             {
-                ResponsibilityId = r.ResponsibilityId,
+                ResponsibilityId = r.Id,
                 Name = r.Name,
-                DepartmentName = r.Department?.Name
+                DepartmentName = r.DepartmentName
             }).ToList()
         };
 
@@ -123,10 +123,9 @@ public class PdfExportService : IPdfExportService
                 var assignments = new Dictionary<Guid, string>();
 
                 // Mapear asignaciones
-                foreach (var assignment in schedule.ResponsibilityAssignments)
+                foreach (var assignment in schedule.Assignments)
                 {
-                    var publisherName = GetPublisherShortName(assignment.Publisher);
-                    assignments[assignment.ResponsibilityId] = publisherName;
+                    assignments[assignment.ResponsibilityId] = assignment.PublisherShortName;
                 }
                 
                 
@@ -148,8 +147,8 @@ public class PdfExportService : IPdfExportService
     }
 
     private static DateOnly GetDayOfMeeting(
-        Congregation congregation,
-        MeetingSchedule meetingSchedule)
+        CongregationDto congregation,
+        MeetingScheduleDto meetingSchedule)
     {
         DayOfWeek meetingDay = meetingSchedule.MeetingType switch
         {
@@ -164,28 +163,6 @@ public class PdfExportService : IPdfExportService
 
         int offset = ((int)meetingDay - (int)DayOfWeek.Monday + 7) % 7;
         return meetingSchedule.Date.AddDays(offset);
-    }
-
-    private static string GetPublisherFullName(Entities.Publisher? publisher)
-    {
-        if (publisher == null) return string.Empty;
-        
-        var fullName = publisher.FirstName;
-        if (!string.IsNullOrEmpty(publisher.LastName))
-            fullName += $" {publisher.LastName}";
-        
-        return fullName;
-    }
-
-    private static string GetPublisherShortName(Entities.Publisher? publisher)
-    {
-        if (publisher == null) return string.Empty;
-        var shortName = $"{publisher.FirstName[0]}.{publisher.LastName}";
-        if (!string.IsNullOrEmpty(publisher.MotherLastName))
-        {
-            shortName += $".{publisher.MotherLastName[0]}";
-        }
-        return shortName;
     }
 
     private string GetMeetingTypeDisplay(MeetingType meetingType)

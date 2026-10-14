@@ -1,7 +1,7 @@
 @page "/publishers"
 @attribute [Authorize(Roles = "Admin, Manager")]
 @using System.Globalization
-@using GestorTeocratico.Entities
+@using GestorTeocratico.Features.Common
 @using GestorTeocratico.Features.Publishers
 @using GestorTeocratico.Shared.Enums
 @using BlazorBlueprint.Components
@@ -9,7 +9,12 @@
 @using BlazorBlueprint.Icons.Lucide.Components
 @using ButtonSize = BlazorBlueprint.Components.ButtonSize
 
-@inject IPublisherService PublisherService
+@inject GetPublishersHandler GetPublishers
+@inject GetPublisherByIdHandler GetPublisherById
+@inject GetPublisherOptionsHandler GetPublisherOptions
+@inject CreatePublisherHandler CreatePublisher
+@inject UpdatePublisherHandler UpdatePublisher
+@inject DeletePublisherHandler DeletePublisher
 
 <PageTitle>Publicadores</PageTitle>
 
@@ -19,7 +24,7 @@
         <p class="text-sm text-muted-foreground">Directorio de publicadores de la congregación.</p>
     </div>
 
-    <BbDataTable TData="Publisher" Data="@_publishers" InitialPageSize="10" AriaLabel="Publicadores">
+    <BbDataTable TData="PublisherDto" Data="@_publishers" InitialPageSize="10" AriaLabel="Publicadores">
         <ToolbarActions>
             <BbButton OnClick="OpenCreate">
                 <Icon><LucideIcon Name="plus"/></Icon>
@@ -27,17 +32,17 @@
             </BbButton>
         </ToolbarActions>
         <Columns>
-            <BbDataTableColumn TData="Publisher" TValue="string" Property="@(p => p.FirstName)"
+            <BbDataTableColumn TData="PublisherDto" TValue="string" Property="@(p => p.FirstName)"
                                Header="Nombre" Sortable="true" Filterable="true"/>
-            <BbDataTableColumn TData="Publisher" TValue="string" Property="@(p => p.LastName)"
+            <BbDataTableColumn TData="PublisherDto" TValue="string" Property="@(p => p.LastName)"
                                Header="Apellido" Sortable="true" Filterable="true"/>
-            <BbDataTableColumn TData="Publisher" TValue="Gender" Property="@(p => p.Gender)"
+            <BbDataTableColumn TData="PublisherDto" TValue="Gender" Property="@(p => p.Gender)"
                                Header="Género" Sortable="true" Width="130px">
                 <CellTemplate Context="p">
                     <span>@GenderName(p.Gender)</span>
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Publisher" TValue="Privilege?" Property="@(p => p.Privilege)"
+            <BbDataTableColumn TData="PublisherDto" TValue="Privilege?" Property="@(p => p.Privilege)"
                                Header="Privilegio" Sortable="true" Width="170px">
                 <CellTemplate Context="p">
                     @if (p.Privilege.HasValue)
@@ -50,17 +55,17 @@
                     }
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Publisher" TValue="string" Header="Departamentos" Width="220px">
+            <BbDataTableColumn TData="PublisherDto" TValue="string" Header="Departamentos" Width="220px">
                 <CellTemplate Context="p">
-                    <EntityChips Items="@(p.ResponsibleDepartments?.OrderBy(d => d.Name, NameComparer).Select(d => d.Name).ToList() ?? [])"/>
+                    <EntityChips Items="@p.DepartmentNames"/>
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Publisher" TValue="string" Header="Responsabilidades" Width="240px">
+            <BbDataTableColumn TData="PublisherDto" TValue="string" Header="Responsabilidades" Width="240px">
                 <CellTemplate Context="p">
-                    <EntityChips Items="@(p.PublisherResponsibilities?.OrderBy(pr => pr.Responsibility?.Name ?? string.Empty, NameComparer).Select(pr => pr.Responsibility?.Name ?? string.Empty).ToList() ?? [])"/>
+                    <EntityChips Items="@p.ResponsibilityNames"/>
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Publisher" TValue="string" Header="Acciones" Width="150px">
+            <BbDataTableColumn TData="PublisherDto" TValue="string" Header="Acciones" Width="150px">
                 <CellTemplate Context="p">
                     <div class="flex items-center gap-1">
                         <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Ver"
@@ -192,9 +197,9 @@
                 <dt class="text-muted-foreground">Correo</dt>
                 <dd>@(_detailsTarget.Email ?? "—")</dd>
                 <dt class="text-muted-foreground">Departamentos</dt>
-                <dd><EntityChips Items="@(_detailsTarget.ResponsibleDepartments?.OrderBy(d => d.Name, NameComparer).Select(d => d.Name).ToList() ?? [])" Max="int.MaxValue"/></dd>
+                <dd><EntityChips Items="@_detailsTarget.DepartmentNames" Max="int.MaxValue"/></dd>
                 <dt class="text-muted-foreground">Responsabilidades</dt>
-                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.OrderBy(pr => pr.Responsibility?.Name ?? string.Empty, NameComparer).Select(pr => pr.Responsibility?.Name ?? string.Empty).ToList() ?? [])" Max="int.MaxValue"/></dd>
+                <dd><EntityChips Items="@_detailsTarget.ResponsibilityNames" Max="int.MaxValue"/></dd>
             </dl>
         }
         <BbDialogFooter>
@@ -206,9 +211,7 @@
 </BbDialog>
 
 @code {
-    private List<Publisher> _publishers = [];
-    private List<Responsibility> _responsibilities = [];
-    private List<Department> _departments = [];
+    private List<PublisherDto> _publishers = [];
     private SelectOption<Guid>[] _responsibilityOptions = [];
     private SelectOption<Guid>[] _departmentOptions = [];
 
@@ -228,51 +231,66 @@
 
     private bool _formOpen;
     private bool _isNew;
-    private Publisher _editing = new();
+    private PublisherFormModel _editing = new();
     private IEnumerable<Guid> _selectedResponsibilities = [];
     private IEnumerable<Guid> _selectedDepartments = [];
     private string? _formError;
 
     private bool _deleteOpen;
-    private Publisher? _deleteTarget;
+    private PublisherDto? _deleteTarget;
 
     private bool _detailsOpen;
-    private Publisher? _detailsTarget;
+    private PublisherDto? _detailsTarget;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
     private async Task LoadAsync()
     {
-        _publishers = (await PublisherService.GetAllAsync()).ToList();
-        _responsibilities = (await PublisherService.GetAvailableResponsibilitiesAsync()).ToList();
-        _departments = (await PublisherService.GetAvailableDepartmentsAsync()).ToList();
-        _responsibilityOptions = _responsibilities
-            .Select(r => new SelectOption<Guid>(r.ResponsibilityId, r.Name))
+        _publishers = (await GetPublishers.HandleAsync()).ToList();
+
+        var options = await GetPublisherOptions.HandleAsync();
+        _responsibilityOptions = options.Responsibilities
+            .Select(r => new SelectOption<Guid>(r.Id, r.Name))
             .OrderBy(o => o.Text, NameComparer).ToArray();
-        _departmentOptions = _departments
-            .Select(d => new SelectOption<Guid>(d.DepartmentId, d.Name))
+        _departmentOptions = options.Departments
+            .Select(d => new SelectOption<Guid>(d.Id, d.Name))
             .OrderBy(o => o.Text, NameComparer).ToArray();
     }
 
     private void OpenCreate()
     {
         _isNew = true;
-        _editing = new Publisher { Gender = Gender.Male };
+        _editing = new PublisherFormModel { Gender = Gender.Male };
         _selectedResponsibilities = [];
         _selectedDepartments = [];
         _formError = null;
         _formOpen = true;
     }
 
-    private async Task OpenEdit(Publisher publisher)
+    private async Task OpenEdit(PublisherDto publisher)
     {
         _isNew = false;
-        _editing = await PublisherService.GetByIdAsync(publisher.PublisherId) ?? new Publisher();
-        _selectedResponsibilities = SortByOptionText(_editing.PublisherResponsibilities.Select(pr => pr.ResponsibilityId), _responsibilityOptions);
-        _selectedDepartments = SortByOptionText(_editing.ResponsibleDepartments.Select(d => d.DepartmentId), _departmentOptions);
+        var dto = await GetPublisherById.HandleAsync(publisher.Id);
+        _editing = MapToForm(dto);
+        _selectedResponsibilities = SortByOptionText(dto?.ResponsibilityIds ?? [], _responsibilityOptions);
+        _selectedDepartments = SortByOptionText(dto?.DepartmentIds ?? [], _departmentOptions);
         _formError = null;
         _formOpen = true;
     }
+
+    private static PublisherFormModel MapToForm(PublisherDto? dto) => dto is null
+        ? new PublisherFormModel { Gender = Gender.Male }
+        : new PublisherFormModel
+        {
+            Id = dto.Id,
+            FirstName = dto.FirstName,
+            LastName = dto.LastName,
+            MotherLastName = dto.MotherLastName,
+            Phone = dto.Phone,
+            Email = dto.Email,
+            Gender = dto.Gender,
+            Privilege = dto.Privilege
+        };
 
     private void OnResponsibilitiesChanged(IEnumerable<Guid>? values) =>
         _selectedResponsibilities = SortByOptionText(values, _responsibilityOptions);
@@ -301,22 +319,45 @@
             return;
         }
 
+        var responsibilityIds = _selectedResponsibilities.ToArray();
+        var departmentIds = _selectedDepartments.ToArray();
+
         try
         {
             if (_isNew)
             {
-                await PublisherService.AddAsync(_editing);
+                await CreatePublisher.HandleAsync(new CreatePublisherCommand(
+                    _editing.FirstName,
+                    _editing.LastName,
+                    _editing.MotherLastName,
+                    _editing.Phone,
+                    _editing.Email,
+                    _editing.Gender,
+                    _editing.Privilege,
+                    responsibilityIds,
+                    departmentIds));
             }
             else
             {
-                await PublisherService.UpdateAsync(_editing);
+                await UpdatePublisher.HandleAsync(new UpdatePublisherCommand(
+                    _editing.Id,
+                    _editing.FirstName,
+                    _editing.LastName,
+                    _editing.MotherLastName,
+                    _editing.Phone,
+                    _editing.Email,
+                    _editing.Gender,
+                    _editing.Privilege,
+                    responsibilityIds,
+                    departmentIds));
             }
-
-            await PublisherService.UpdatePublisherResponsibilitiesAsync(_editing.PublisherId, _selectedResponsibilities);
-            await PublisherService.UpdatePublisherDepartmentsAsync(_editing.PublisherId, _selectedDepartments);
 
             _formOpen = false;
             await LoadAsync();
+        }
+        catch (DuplicateEntityException ex)
+        {
+            _formError = ex.Message;
         }
         catch
         {
@@ -324,7 +365,7 @@
         }
     }
 
-    private void OpenDelete(Publisher publisher)
+    private void OpenDelete(PublisherDto publisher)
     {
         _deleteTarget = publisher;
         _deleteOpen = true;
@@ -339,7 +380,7 @@
 
         try
         {
-            await PublisherService.DeleteAsync(_deleteTarget.PublisherId);
+            await DeletePublisher.HandleAsync(_deleteTarget.Id);
         }
         catch
         {
@@ -350,7 +391,7 @@
         await LoadAsync();
     }
 
-    private void OpenDetails(Publisher publisher)
+    private void OpenDetails(PublisherDto publisher)
     {
         _detailsTarget = publisher;
         _detailsOpen = true;
@@ -358,16 +399,6 @@
 
     private static readonly StringComparer NameComparer =
         StringComparer.Create(CultureInfo.GetCultureInfo("es-ES"), true);
-
-    private static string DepartmentsText(Publisher p) =>
-        p.ResponsibleDepartments?.Any() == true
-            ? string.Join(", ", p.ResponsibleDepartments.Select(d => d.Name))
-            : "—";
-
-    private static string ResponsibilitiesText(Publisher p) =>
-        p.PublisherResponsibilities?.Any() == true
-            ? string.Join(", ", p.PublisherResponsibilities.Select(pr => pr.Responsibility.Name))
-            : "—";
 
     private static string GenderName(Gender gender) => gender switch
     {

@@ -1,10 +1,8 @@
 @page "/meeting-schedules"
 @attribute [Authorize(Roles = "Admin, Manager")]
 @using System.Globalization
-@using GestorTeocratico.Entities
 @using GestorTeocratico.Features.MeetingSchedules
 @using GestorTeocratico.Features.Responsibilities
-@using GestorTeocratico.Features.ResponsibilityAssignments
 @using GestorTeocratico.Shared.Enums
 @using BlazorBlueprint.Components
 @using BlazorBlueprint.Primitives
@@ -12,9 +10,14 @@
 @using ButtonSize = BlazorBlueprint.Components.ButtonSize
 
 @inject NavigationManager NavigationManager
-@inject IMeetingScheduleService MeetingScheduleService
-@inject IResponsibilityService ResponsibilityService
-@inject IResponsibilityAssignmentService ResponsibilityAssignmentService
+@inject GetAllMeetingSchedulesHandler GetAllSchedules
+@inject GetOrCreateWeekSchedulesHandler GetOrCreateWeek
+@inject CopyWeekAssignmentsHandler CopyWeek
+@inject GetAssignmentsByMeetingScheduleHandler GetAssignments
+@inject AssignResponsibilityHandler AssignResponsibility
+@inject UnassignResponsibilityHandler UnassignResponsibility
+@inject GetResponsibilitiesHandler GetResponsibilities
+@inject GetResponsibilityOptionsHandler GetResponsibilityOptions
 @inject ToastService Toasts
 
 <PageTitle>Programación de Responsabilidades</PageTitle>
@@ -113,17 +116,17 @@
                 @foreach (var responsibility in _responsibilities)
                 {
                     <BbDataTableColumn TData="WeeklyScheduleDto" TValue="string"
-                                       Id="@responsibility.ResponsibilityId.ToString()"
+                                       Id="@responsibility.Id.ToString()"
                                        Header="@responsibility.Name" Width="170px">
                         <CellTemplate Context="w">
                             @{
-                                var assignment = w.Assignments.FirstOrDefault(a => a.ResponsibilityId == responsibility.ResponsibilityId);
+                                var assignment = w.Assignments.FirstOrDefault(a => a.ResponsibilityId == responsibility.Id);
                             }
-                            @if (assignment?.Publisher is not null)
+                            @if (assignment is not null)
                             {
                                 <BbButton Variant="ButtonVariant.Secondary" Size="ButtonSize.Small" Class="w-full"
                                           OnClick="@(() => OpenAssignmentAsync(w, responsibility))">
-                                    <ChildContent>@PublisherName(assignment.Publisher)</ChildContent>
+                                    <ChildContent>@assignment.PublisherName</ChildContent>
                                 </BbButton>
                             }
                             else
@@ -158,10 +161,10 @@
         }
         else
         {
-            @if (_currentAssignment?.Publisher is not null)
+            @if (_currentAssignment is not null)
             {
                 <div class="flex items-center justify-between rounded-md bg-muted px-3 py-2">
-                    <span class="text-sm">@PublisherName(_currentAssignment.Publisher)</span>
+                    <span class="text-sm">@_currentAssignment.PublisherName</span>
                     <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Quitar asignación"
                               OnClick="RemoveAssignmentAsync">
                         <LucideIcon Name="x" Class="size-4 text-destructive"/>
@@ -260,15 +263,15 @@
     private int _selectedMonth = DateTime.Now.Month;
     private bool _exportingPdf;
 
-    private List<Responsibility> _responsibilities = [];
+    private List<ResponsibilityDto> _responsibilities = [];
     private List<WeeklyScheduleDto> _weeklySchedules = [];
 
     // Assignment dialog
     private bool _assignOpen;
     private bool _assignLoading;
     private WeeklyScheduleDto? _assignWeek;
-    private Responsibility? _assignResponsibility;
-    private ResponsibilityAssignment? _currentAssignment;
+    private ResponsibilityDto? _assignResponsibility;
+    private AssignmentDto? _currentAssignment;
     private SelectOption<Guid?>[] _publisherOptions = [];
     private Guid? _selectedPublisherId;
 
@@ -287,7 +290,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _responsibilities = (await ResponsibilityService.GetAllAsync()).ToList();
+        _responsibilities = (await GetResponsibilities.HandleAsync()).ToList();
         await LoadDataAsync();
     }
 
@@ -295,11 +298,12 @@
     {
         try
         {
-            List<MeetingSchedule> schedules = _selectedViewType switch
+            List<MeetingScheduleDto> schedules = _selectedViewType switch
             {
-                "week" => (await MeetingScheduleService.GetOrCreateWeekSchedulesAsync(_selectedWeek, _selectedYear)).ToList(),
+                "week" => (await GetOrCreateWeek.HandleAsync(
+                    new GetOrCreateWeekSchedulesQuery(_selectedWeek, _selectedYear))).ToList(),
                 "month" => await LoadMonthDataAsync(),
-                _ => (await MeetingScheduleService.GetAllAsync()).ToList()
+                _ => (await GetAllSchedules.HandleAsync()).ToList()
             };
 
             _weeklySchedules = schedules
@@ -307,13 +311,13 @@
                 .ThenBy(ms => ms.MeetingType)
                 .Select(ms => new WeeklyScheduleDto
                 {
-                    MeetingScheduleId = ms.MeetingScheduleId,
+                    MeetingScheduleId = ms.Id,
                     WeekOfYear = ms.WeekOfYear,
                     Year = ms.Year,
                     MeetingType = ms.MeetingType,
                     DateRange = GetWeekDateRange(ms.WeekOfYear, ms.Year),
                     WeekDisplay = $"Semana {ms.WeekOfYear}",
-                    Assignments = ms.ResponsibilityAssignments.ToList()
+                    Assignments = ms.Assignments.ToList()
                 })
                 .ToList();
         }
@@ -323,9 +327,9 @@
         }
     }
 
-    private async Task<List<MeetingSchedule>> LoadMonthDataAsync()
+    private async Task<List<MeetingScheduleDto>> LoadMonthDataAsync()
     {
-        var result = new List<MeetingSchedule>();
+        var result = new List<MeetingScheduleDto>();
         var firstDay = new DateTime(_selectedYear, _selectedMonth, 1);
         var lastDay = firstDay.AddMonths(1).AddDays(-1);
 
@@ -339,7 +343,8 @@
         {
             try
             {
-                var weekSchedules = await MeetingScheduleService.GetOrCreateWeekSchedulesAsync(week, _selectedYear);
+                var weekSchedules = await GetOrCreateWeek.HandleAsync(
+                    new GetOrCreateWeekSchedulesQuery(week, _selectedYear));
                 result.AddRange(weekSchedules.Where(ws => ws.Month == _selectedMonth && ws.Year == _selectedYear));
             }
             catch
@@ -351,7 +356,7 @@
         return result.OrderBy(ms => ms.Date).ToList();
     }
 
-    private async Task OpenAssignmentAsync(WeeklyScheduleDto week, Responsibility responsibility)
+    private async Task OpenAssignmentAsync(WeeklyScheduleDto week, ResponsibilityDto responsibility)
     {
         _assignWeek = week;
         _assignResponsibility = responsibility;
@@ -361,15 +366,15 @@
         _selectedPublisherId = null;
         _publisherOptions = [];
 
-        var assignments = await ResponsibilityAssignmentService.GetByMeetingScheduleIdAsync(week.MeetingScheduleId);
-        _currentAssignment = assignments.FirstOrDefault(a => a.ResponsibilityId == responsibility.ResponsibilityId);
+        var assignments = await GetAssignments.HandleAsync(new GetAssignmentsByMeetingScheduleQuery(week.MeetingScheduleId));
+        _currentAssignment = assignments.FirstOrDefault(a => a.ResponsibilityId == responsibility.Id);
         _selectedPublisherId = _currentAssignment?.PublisherId;
 
-        var available = await ResponsibilityService.GetAvailablePublishersAsync();
-        var eligibleIds = responsibility.PublisherResponsibilities?.Select(pr => pr.PublisherId).ToHashSet() ?? [];
-        _publisherOptions = available
-            .Where(p => eligibleIds.Contains(p.PublisherId))
-            .Select(p => new SelectOption<Guid?>(p.PublisherId, PublisherName(p)))
+        var eligibleIds = responsibility.PublisherIds.ToHashSet();
+        var options = await GetResponsibilityOptions.HandleAsync();
+        _publisherOptions = options.Publishers
+            .Where(p => eligibleIds.Contains(p.Id))
+            .Select(p => new SelectOption<Guid?>(p.Id, p.Name))
             .OrderBy(o => o.Text)
             .ToArray();
 
@@ -387,14 +392,14 @@
         {
             if (_currentAssignment is not null)
             {
-                await ResponsibilityAssignmentService.RemoveAssignmentAsync(
-                    _currentAssignment.MeetingScheduleId, _currentAssignment.ResponsibilityId, _currentAssignment.PublisherId);
+                await UnassignResponsibility.HandleAsync(new UnassignResponsibilityCommand(
+                    _currentAssignment.MeetingScheduleId, _currentAssignment.ResponsibilityId, _currentAssignment.PublisherId));
             }
 
             if (_selectedPublisherId.HasValue)
             {
-                await ResponsibilityAssignmentService.AssignResponsibilityAsync(
-                    _assignWeek.MeetingScheduleId, _assignResponsibility.ResponsibilityId, _selectedPublisherId.Value);
+                await AssignResponsibility.HandleAsync(new AssignResponsibilityCommand(
+                    _assignWeek.MeetingScheduleId, _assignResponsibility.Id, _selectedPublisherId.Value));
             }
 
             Toasts.Success("Asignación guardada.", "Guardado");
@@ -416,8 +421,8 @@
 
         try
         {
-            await ResponsibilityAssignmentService.RemoveAssignmentAsync(
-                _currentAssignment.MeetingScheduleId, _currentAssignment.ResponsibilityId, _currentAssignment.PublisherId);
+            await UnassignResponsibility.HandleAsync(new UnassignResponsibilityCommand(
+                _currentAssignment.MeetingScheduleId, _currentAssignment.ResponsibilityId, _currentAssignment.PublisherId));
             Toasts.Success("Asignación eliminada.", "Guardado");
             _assignOpen = false;
             await LoadDataAsync();
@@ -452,19 +457,12 @@
 
         try
         {
-            var success = await MeetingScheduleService.CopyAssignmentsToWeekAsync(
-                _sourceWeek, _sourceYear, _targetWeek, _targetYear);
+            await CopyWeek.HandleAsync(new CopyWeekAssignmentsCommand(
+                _sourceWeek, _sourceYear, _targetWeek, _targetYear));
 
-            if (success)
-            {
-                Toasts.Success("Asignaciones copiadas.", "Guardado");
-                _copyOpen = false;
-                await LoadDataAsync();
-            }
-            else
-            {
-                _copyError = "No se pudieron copiar las asignaciones.";
-            }
+            Toasts.Success("Asignaciones copiadas.", "Guardado");
+            _copyOpen = false;
+            await LoadDataAsync();
         }
         catch
         {
@@ -512,13 +510,6 @@
         return $"{culture.DateTimeFormat.GetMonthName(_selectedMonth)} {_selectedYear}";
     }
 
-    private static string PublisherName(Publisher publisher)
-    {
-        var name = publisher.FirstName;
-        if (!string.IsNullOrEmpty(publisher.LastName)) name += $" {publisher.LastName}";
-        return name;
-    }
-
     public class WeeklyScheduleDto
     {
         public Guid MeetingScheduleId { get; set; }
@@ -527,6 +518,6 @@
         public MeetingType MeetingType { get; set; }
         public string DateRange { get; set; } = string.Empty;
         public string WeekDisplay { get; set; } = string.Empty;
-        public List<ResponsibilityAssignment> Assignments { get; set; } = [];
+        public List<AssignmentDto> Assignments { get; set; } = [];
     }
 }

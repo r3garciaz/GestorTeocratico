@@ -1,12 +1,14 @@
 @page "/congregations"
 @attribute [Authorize(Roles = "Admin, Manager")]
-@using GestorTeocratico.Entities
+@using GestorTeocratico.Features.Common
 @using GestorTeocratico.Features.Congregations
 @using BlazorBlueprint.Components
 @using BlazorBlueprint.Primitives
 @using BlazorBlueprint.Icons.Lucide.Components
 
-@inject ICongregationService CongregationService
+@inject GetCongregationsHandler GetCongregations
+@inject CreateCongregationHandler CreateCongregation
+@inject UpdateCongregationHandler UpdateCongregation
 @inject ToastService Toasts
 
 <PageTitle>Congregación</PageTitle>
@@ -73,7 +75,7 @@
 </div>
 
 @code {
-    private Congregation _congregation = new() { Name = string.Empty };
+    private CongregationFormModel _congregation = new() { Name = string.Empty };
     private bool _isNew;
 
     private readonly SelectOption<DayOfWeek>[] _days =
@@ -89,15 +91,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var first = (await CongregationService.GetAllAsync()).FirstOrDefault();
+        var first = (await GetCongregations.HandleAsync()).FirstOrDefault();
         if (first is null)
         {
-            _congregation = new Congregation { Name = string.Empty };
+            _congregation = new CongregationFormModel { Name = string.Empty };
             _isNew = true;
         }
         else
         {
-            _congregation = first;
+            _congregation = first.ToFormModel();
             _isNew = false;
         }
     }
@@ -114,17 +116,34 @@
         {
             if (_isNew)
             {
-                await CongregationService.AddAsync(_congregation);
+                await CreateCongregation.HandleAsync(new CreateCongregationCommand(
+                    _congregation.Name,
+                    _congregation.MidweekMeetingDayEvenYear,
+                    _congregation.MidweekMeetingDayOddYear,
+                    _congregation.WeekendMeetingDayEvenYear,
+                    _congregation.WeekendMeetingDayOddYear,
+                    _congregation.Address,
+                    _congregation.City));
+
                 _isNew = false;
                 Toasts.Success("Congregación creada.", "Guardado");
             }
             else
             {
-                await CongregationService.UpdateAsync(_congregation);
+                await UpdateCongregation.HandleAsync(new UpdateCongregationCommand(
+                    _congregation.Id,
+                    _congregation.Name,
+                    _congregation.MidweekMeetingDayEvenYear,
+                    _congregation.MidweekMeetingDayOddYear,
+                    _congregation.WeekendMeetingDayEvenYear,
+                    _congregation.WeekendMeetingDayOddYear,
+                    _congregation.Address,
+                    _congregation.City));
+
                 Toasts.Success("Congregación actualizada.", "Guardado");
             }
         }
-        catch (InvalidOperationException ex)
+        catch (DuplicateEntityException ex)
         {
             Toasts.Warning(ex.Message, "Atención");
         }

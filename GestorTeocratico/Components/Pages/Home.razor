@@ -13,11 +13,11 @@
 @using BlazorBlueprint.Icons.Lucide.Components
 
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject IPublisherService PublisherService
-@inject IDepartmentService DepartmentService
-@inject IResponsibilityService ResponsibilityService
-@inject IMeetingScheduleService MeetingScheduleService
-@inject ICongregationService CongregationService
+@inject GetPublishersHandler GetPublishers
+@inject GetDepartmentsHandler GetDepartments
+@inject GetResponsibilitiesHandler GetResponsibilities
+@inject GetAllMeetingSchedulesHandler GetAllSchedules
+@inject GetCongregationsHandler GetCongregations
 
 <PageTitle>Inicio - Gestor Teocrático</PageTitle>
 
@@ -134,7 +134,7 @@
     private int _departments;
     private int _responsibilities;
     private int _congregations;
-    private List<GestorTeocratico.Entities.MeetingSchedule> _upcoming = [];
+    private List<MeetingScheduleDto> _upcoming = [];
 
     private IEnumerable<Kpi> Kpis =>
     [
@@ -165,16 +165,16 @@
     {
         _loading = true;
 
-        var publishers = (await PublisherService.GetAllAsync()).ToList();
+        var publishers = await GetPublishers.HandleAsync();
         _publishers = publishers.Count;
         _elders = publishers.Count(p => p.Privilege == Privilege.Elder);
         _servants = publishers.Count(p => p.Privilege == Privilege.MinisterialServant);
 
-        _departments = (await DepartmentService.GetAllAsync()).Count();
-        _responsibilities = (await ResponsibilityService.GetAllAsync()).Count();
-        _congregations = (await CongregationService.GetAllAsync()).Count();
+        _departments = (await GetDepartments.HandleAsync()).Count;
+        _responsibilities = (await GetResponsibilities.HandleAsync()).Count;
+        _congregations = (await GetCongregations.HandleAsync()).Count;
 
-        var schedules = await MeetingScheduleService.GetAllAsync();
+        var schedules = await GetAllSchedules.HandleAsync();
         var today = DateOnly.FromDateTime(DateTime.Today);
         _upcoming = schedules
             .Where(s => s.Date >= today)
