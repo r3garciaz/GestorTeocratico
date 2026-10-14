@@ -1,0 +1,74 @@
+@inherits LayoutComponentBase
+
+@*
+    Shell de las páginas de autenticación (login): split-screen con panel de marca
+    a la izquierda (solo escritorio) y columna de contenido a la derecha.
+
+    Igual que IndexLayout, estas páginas son estáticas ([ExcludeFromInteractiveRouting]),
+    por eso los controles de tema se montan como isla con @rendermode.
+    Todo el estilo usa utilidades Tailwind sobre los tokens del tema: sin CSS propio.
+*@
+
+<div class="grid min-h-svh lg:grid-cols-2">
+
+    <!-- Panel de marca (escritorio) -->
+    <aside class="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-primary-foreground lg:flex">
+        <div aria-hidden="true"
+             class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,color-mix(in_oklch,var(--primary-foreground)_10%,transparent)_1px,transparent_1px)] [background-size:24px_24px]">
+        </div>
+
+        <div class="relative flex items-center gap-2.5 text-lg font-semibold">
+            <span class="flex size-10 items-center justify-center rounded-xl bg-primary-foreground/10">
+                <LucideIcon Name="book-open" Class="size-5"/>
+            </span>
+            Gestor Teocrático
+        </div>
+
+        <div class="relative flex max-w-md flex-col gap-5">
+            <p class="text-xl leading-snug font-medium">
+                Tu congregación, organizada sin hojas de cálculo.
+            </p>
+            <ul class="flex flex-col gap-3 text-sm">
+                @foreach (var benefit in Benefits)
+                {
+                    <li class="flex items-center gap-2.5 opacity-90">
+                        <LucideIcon Name="circle-check" Class="size-4.5 shrink-0 opacity-80"/>
+                        @benefit
+                    </li>
+                }
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Columna del contenido -->
+    <main class="relative flex flex-col items-center justify-center bg-background px-6 py-20">
+        <div class="absolute top-6 left-6 flex items-center gap-2 lg:hidden">
+            <span class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <LucideIcon Name="book-open" Class="size-4"/>
+            </span>
+            <span class="font-semibold">Gestor Teocrático</span>
+        </div>
+
+        <div class="absolute top-5 right-5">
+            <PublicThemeControls @rendermode="InteractiveServer"/>
+        </div>
+
+        <div class="flex w-full max-w-sm flex-col gap-6">
+            @Body
+
+            <div class="text-center text-sm text-muted-foreground">
+                <a href="/" class="underline underline-offset-4 hover:text-foreground">Volver al inicio</a>
+            </div>
+        </div>
+    </main>
+
+</div>
+
+@code {
+    private static readonly string[] Benefits =
+    [
+        "Publicadores y departamentos",
+        "Responsabilidades y asignaciones",
+        "Programación de reuniones",
+    ];
+}
