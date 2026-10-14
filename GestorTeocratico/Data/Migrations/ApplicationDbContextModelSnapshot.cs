@@ -17,7 +17,7 @@ namespace GestorTeocratico.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.5")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -134,6 +134,9 @@ namespace GestorTeocratico.Data.Migrations
 
                     b.HasKey("CongregationId");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("Congregations");
                 });
 
@@ -155,6 +158,10 @@ namespace GestorTeocratico.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("DepartmentId");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.HasIndex("ResponsiblePublisherId");
 
@@ -228,6 +235,10 @@ namespace GestorTeocratico.Data.Migrations
 
                     b.HasKey("PublisherId");
 
+                    b.HasIndex("FirstName", "LastName")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
+
                     b.ToTable("Publishers");
                 });
 
@@ -270,6 +281,10 @@ namespace GestorTeocratico.Data.Migrations
                     b.HasKey("ResponsibilityId");
 
                     b.HasIndex("DepartmentId");
+
+                    b.HasIndex("Name", "DepartmentId")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("Responsibilities");
                 });

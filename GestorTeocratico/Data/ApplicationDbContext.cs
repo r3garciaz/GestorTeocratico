@@ -11,13 +11,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
     
-    public DbSet<Congregation> Congregations { get; set; }
-    public DbSet<Department> Departments { get; set; }
-    public DbSet<MeetingSchedule> MeetingSchedules { get; set; }
-    public DbSet<Publisher> Publishers { get; set; }
-    public DbSet<PublisherResponsibility> PublisherResponsibilities { get; set; }
-    public DbSet<Responsibility> Responsibilities { get; set; }
-    public DbSet<ResponsibilityAssignment> ResponsibilityAssignments { get; set; }
+    public DbSet<Congregation> Congregations { get; set; } = null!;
+    public DbSet<Department> Departments { get; set; } = null!;
+    public DbSet<MeetingSchedule> MeetingSchedules { get; set; } = null!;
+    public DbSet<Publisher> Publishers { get; set; } = null!;
+    public DbSet<PublisherResponsibility> PublisherResponsibilities { get; set; } = null!;
+    public DbSet<Responsibility> Responsibilities { get; set; } = null!;
+    public DbSet<ResponsibilityAssignment> ResponsibilityAssignments { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,11 +68,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(c => c.WeekendMeetingDayOddYear).IsRequired().HasConversion<string>();
             entity.Property(p => p.Address).HasMaxLength(500);
             entity.Property(p => p.City).HasMaxLength(250);
+
+            // Only one congregation (and one name) is allowed.
+            entity.HasIndex(c => c.Name).IsUnique();
         });
         
         modelBuilder.Entity<Department>(entity =>
         {
             entity.Property(p => p.Name).HasMaxLength(250).IsRequired();
+
+            // Unique name among non-soft-deleted departments.
+            entity.HasIndex(d => d.Name).IsUnique().HasFilter("\"IsDeleted\" = false");
 
             entity.HasOne(d => d.ResponsiblePublisher)
                 .WithMany(p => p.ResponsibleDepartments)
@@ -118,6 +124,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithOne(d => d.ResponsiblePublisher)
                 .HasForeignKey(d => d.ResponsiblePublisherId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Unique full name among non-soft-deleted publishers.
+            entity.HasIndex(p => new { p.FirstName, p.LastName }).IsUnique().HasFilter("\"IsDeleted\" = false");
         });
 
         modelBuilder.Entity<PublisherResponsibility>(entity =>
@@ -141,6 +150,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithOne(pr => pr.Responsibility)
                 .HasForeignKey(pr => pr.ResponsibilityId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Unique name within the same department, among non-soft-deleted responsibilities.
+            entity.HasIndex(r => new { r.Name, r.DepartmentId }).IsUnique().HasFilter("\"IsDeleted\" = false");
         });
 
         modelBuilder.Entity<ResponsibilityAssignment>(entity =>
