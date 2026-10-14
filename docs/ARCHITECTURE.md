@@ -115,8 +115,11 @@ Consequences to remember:
 - `MainLayout.razor` — authenticated shell: `BbSidebarProvider` + sidebar (`NavMenu`) +
   inset with a header (sidebar trigger, page title, theme switcher/dark toggle) and a footer
   showing the user's `public_id`.
-- `IndexLayout.razor` — public shell (landing + account pages): header with brand, theme
+- `IndexLayout.razor` — public shell (landing): header with brand, theme
   controls, login button; footer.
+- `AuthLayout.razor` — split-screen shell for the login page: brand panel on the left
+  (desktop only, `bg-primary` with a dotted pattern) and the form column on the right, with a
+  mobile brand mark, theme controls island, and a "Volver al inicio" link.
 - Interactive providers are rendered **once** at the end of `MainLayout`:
   `BbPortalHost`, `BbToastProvider`, `BbDialogProvider`. Toasts are consumed via the injected
   `ToastService` (`Toasts.Success/Error`).

@@ -40,8 +40,9 @@ npm run build:css   # before committing (minified)
 `wwwroot/styles/themes/default.css` defines light (`:root`) and dark (`.dark`) values for the
 shadcn tokens (background, foreground, card, popover, primary, secondary, muted, accent,
 destructive, border, input, ring, sidebar-*, chart-*, alert-*). Customize there to restyle the
-whole app. Brand accent used across the shell is **purple** (`bg-purple-600/10 text-purple-600`
-with the `book-open` Lucide icon).
+whole app. The brand accent used across the shell is the theme `primary`
+(`bg-primary/10 text-primary` with the `book-open` Lucide icon). Do not hardcode Tailwind
+palette colors for branding: use the semantic tokens so light/dark keep working.
 
 ## Icons
 

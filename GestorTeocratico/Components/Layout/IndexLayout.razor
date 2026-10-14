@@ -12,7 +12,7 @@
     <header class="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div class="container flex h-16 items-center justify-between gap-4">
             <a href="/" class="flex items-center gap-2">
-                <span class="flex size-8 items-center justify-center rounded-lg bg-purple-600/10 text-purple-600">
+                <span class="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <LucideIcon Name="book-open" Class="size-5"/>
                 </span>
                 <span class="font-semibold">Gestor Teocrático</span>
@@ -20,7 +20,8 @@
             <div class="flex items-center gap-2">
                 <PublicThemeControls @rendermode="InteractiveServer"/>
                 <BbButton Href="/Account/Login" Variant="ButtonVariant.Default">
-                    Iniciar sesión
+                    <Icon><LucideIcon Name="log-in"/></Icon>
+                    <ChildContent>Iniciar sesión</ChildContent>
                 </BbButton>
             </div>
         </div>

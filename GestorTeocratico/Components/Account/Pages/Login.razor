@@ -1,4 +1,5 @@
 ﻿@page "/Account/Login"
+@layout Layout.AuthLayout
 
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Authentication
@@ -14,55 +15,50 @@
 
 <PageTitle>Iniciar sesión</PageTitle>
 
-<AuthCard Title="Bienvenido" Description="Accede con tu cuenta de Google para continuar." Icon="log-in">
-    <StatusMessage Message="@errorMessage"/>
+<div class="flex flex-col gap-1.5">
+    <h1 class="text-2xl font-bold tracking-tight">Iniciar sesión</h1>
+    <p class="text-sm text-muted-foreground">Accede con tu cuenta para continuar.</p>
+</div>
 
-    <ExternalLoginPicker/>
+<StatusMessage Message="@errorMessage"/>
 
-    <div class="relative">
-        <div class="absolute inset-0 flex items-center">
-            <span class="w-full border-t"></span>
+<ExternalLoginPicker/>
+
+<details class="group border-t pt-4">
+    <summary class="flex cursor-pointer list-none items-center justify-center gap-1.5 text-sm font-medium text-muted-foreground marker:content-none hover:text-foreground [&::-webkit-details-marker]:hidden">
+        <LucideIcon Name="chevron-down" Class="size-4 shrink-0 transition-transform group-open:rotate-180"/>
+        Iniciar sesión con una cuenta local
+    </summary>
+    <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login" class="mt-4 space-y-4">
+        <DataAnnotationsValidator/>
+        <ValidationSummary class="text-sm text-destructive" role="alert"/>
+        <div class="space-y-2">
+            <BbLabel For="Input.Email">Correo electrónico</BbLabel>
+            <InputText @bind-Value="Input.Email" id="Input.Email" class="@InputClass"
+                       autocomplete="username" placeholder="nombre@ejemplo.com" required/>
+            <ValidationMessage For="() => Input.Email" class="text-sm text-destructive"/>
         </div>
-        <div class="relative flex justify-center text-xs uppercase">
-            <span class="bg-card px-2 text-muted-foreground">o</span>
+        <div class="space-y-2">
+            <BbLabel For="Input.Password">Contraseña</BbLabel>
+            <InputText @bind-Value="Input.Password" id="Input.Password" type="password" class="@InputClass"
+                       autocomplete="current-password" placeholder="••••••••" required/>
+            <ValidationMessage For="() => Input.Password" class="text-sm text-destructive"/>
         </div>
-    </div>
+        <div class="flex items-center gap-2">
+            <InputCheckbox @bind-Value="Input.RememberMe" id="Input.RememberMe" class="size-4"/>
+            <BbLabel For="Input.RememberMe" Class="font-normal">Recordarme</BbLabel>
+        </div>
+        <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Class="w-full font-semibold">
+            <ChildContent>Entrar</ChildContent>
+        </BbButton>
+    </EditForm>
+</details>
 
-    <details class="group">
-        <summary class="cursor-pointer list-none text-center text-sm text-muted-foreground hover:text-foreground">
-            Iniciar sesión con cuenta local
-        </summary>
-        <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login" class="mt-4 space-y-4">
-            <DataAnnotationsValidator/>
-            <ValidationSummary class="text-sm text-destructive" role="alert"/>
-            <div class="space-y-2">
-                <BbLabel For="Input.Email">Correo electrónico</BbLabel>
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="@InputClass"
-                           autocomplete="username" placeholder="name@example.com" required/>
-                <ValidationMessage For="() => Input.Email" class="text-sm text-destructive"/>
-            </div>
-            <div class="space-y-2">
-                <BbLabel For="Input.Password">Contraseña</BbLabel>
-                <InputText @bind-Value="Input.Password" id="Input.Password" type="password" class="@InputClass"
-                           autocomplete="current-password" placeholder="••••••••" required/>
-                <ValidationMessage For="() => Input.Password" class="text-sm text-destructive"/>
-            </div>
-            <div class="flex items-center gap-2">
-                <InputCheckbox @bind-Value="Input.RememberMe" id="Input.RememberMe" class="size-4"/>
-                <BbLabel For="Input.RememberMe" Class="font-normal">Recordarme</BbLabel>
-            </div>
-            <BbButton Type="BlazorBlueprint.Components.ButtonType.Submit" Variant="ButtonVariant.Outline" Class="w-full">
-                <ChildContent>Iniciar sesión</ChildContent>
-            </BbButton>
-        </EditForm>
-    </details>
-
-    <div class="text-center text-sm">
-        <a href="Account/ForgotPassword" class="text-muted-foreground underline underline-offset-4 hover:text-foreground">
-            ¿Olvidaste tu contraseña?
-        </a>
-    </div>
-</AuthCard>
+<div class="text-center text-sm">
+    <a href="Account/ForgotPassword" class="text-muted-foreground underline underline-offset-4 hover:text-foreground">
+        ¿Olvidaste tu contraseña?
+    </a>
+</div>
 
 @code {
     private const string InputClass =

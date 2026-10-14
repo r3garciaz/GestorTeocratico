@@ -34,20 +34,20 @@
             </BbTypographyLead>
         </div>
 
-        <div class="flex flex-col items-center justify-center gap-4 sm:flex-row">
+        <div class="flex flex-wrap items-center justify-center gap-4 sm:flex-row">
             <BbButton Href="/Account/Login" Size="ButtonSize.Large">
                 <Icon><LucideIcon Name="log-in"/></Icon>
-                <ChildContent>Continuar con Google</ChildContent>
+                <ChildContent>Iniciar sesión</ChildContent>
             </BbButton>
-            <BbButton Href="#features" Variant="ButtonVariant.Outline" Size="ButtonSize.Large">
-                <Icon><LucideIcon Name="arrow-down"/></Icon>
-                <ChildContent>Ver funciones</ChildContent>
+            <BbButton Href="#caracteristicas" Variant="ButtonVariant.Outline" Size="ButtonSize.Large">
+                <Icon><LucideIcon Name="arrow-right"/></Icon>
+                <ChildContent>Ver características</ChildContent>
             </BbButton>
         </div>
     </section>
 
     <!-- Features -->
-    <section id="features" class="mx-auto max-w-5xl space-y-10">
+    <section id="caracteristicas" class="mx-auto max-w-5xl scroll-mt-20 space-y-10">
         <div class="space-y-4 text-center">
             <h2 class="text-3xl font-semibold tracking-tight sm:text-4xl">
                 Todo lo que tu congregación necesita
@@ -77,16 +77,16 @@
 
     <!-- CTA -->
     <section class="mx-auto max-w-5xl">
-        <div class="rounded-xl bg-primary p-8 text-center text-primary-foreground md:p-16">
-            <div class="mx-auto max-w-2xl space-y-6">
-                <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">¿Listo para empezar?</h2>
-                <p class="text-lg text-primary-foreground/80">
-                    Entra con tu cuenta de Google y comienza a organizar tu congregación hoy.
+        <div class="rounded-2xl border bg-muted/40 px-6 py-12 text-center">
+            <div class="mx-auto max-w-xl space-y-3">
+                <h2 class="text-2xl font-bold tracking-tight sm:text-3xl">¿Listo para empezar?</h2>
+                <p class="text-muted-foreground">
+                    Entra y comienza a organizar tu congregación hoy mismo.
                 </p>
-                <div class="flex items-center justify-center">
-                    <BbButton Href="/Account/Login" Size="ButtonSize.Large" Variant="ButtonVariant.Secondary">
+                <div class="flex justify-center pt-3">
+                    <BbButton Href="/Account/Login" Size="ButtonSize.Large">
                         <Icon><LucideIcon Name="log-in"/></Icon>
-                        <ChildContent>Continuar con Google</ChildContent>
+                        <ChildContent>Iniciar sesión</ChildContent>
                     </BbButton>
                 </div>
             </div>
