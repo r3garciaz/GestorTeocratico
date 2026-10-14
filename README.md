@@ -58,10 +58,10 @@ A single ASP.NET Core project (`GestorTeocratico/`) organized by **feature**:
 ```
 GestorTeocratico/
 ├── Components/     # Blazor UI: Account, Layout (shell), Pages (features), Ui
-├── Features/       # Business logic per domain (interface + implementation)
+├── Features/       # Vertical slices per domain (Shared/ + one folder per use case)
+│   ├── Common/     # Shared domain exceptions
 │   ├── Congregations/ Departments/ Publishers/ Responsibilities/
-│   ├── PublisherResponsibilities/ ResponsibilityAssignments/
-│   ├── MeetingSchedules/ (+ Endpoints/)
+│   ├── MeetingSchedules/ (+ Endpoints/)   # schedules + responsibility assignments
 │   ├── PdfExport/ (+ Models/)
 │   └── Roles/
 ├── Data/           # ApplicationDbContext, ApplicationUser, seeders, Migrations/
@@ -72,8 +72,9 @@ GestorTeocratico/
 └── Program.cs      # Composition root (DI, auth, pipeline, seeding, endpoints)
 ```
 
-- Services use `IDbContextFactory<ApplicationDbContext>` (one short-lived context per operation),
-  which keeps long-lived Blazor Server circuits safe under concurrency.
+- Handlers (and the remaining services) use `IDbContextFactory<ApplicationDbContext>` (one
+  short-lived context per operation), which keeps long-lived Blazor Server circuits safe under
+  concurrency. Read models are DTOs; EF entities are never exposed to the UI.
 - Soft-deletable entities are excluded from queries by global EF query filters.
 - Full details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
@@ -196,13 +197,13 @@ See [`docs/API.md`](docs/API.md). There is **no REST/JWT API**.
 | [`docs/README.md`](docs/README.md) | Documentation map |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Composition, DI, render modes, pipeline |
 | [`docs/DATA-MODEL.md`](docs/DATA-MODEL.md) | Entities, relationships, soft delete, migrations |
-| [`docs/FEATURES.md`](docs/FEATURES.md) | Service/page/endpoint map and business rules |
+| [`docs/FEATURES.md`](docs/FEATURES.md) | Handler/page/endpoint map and business rules |
 | [`docs/UI-GUIDE.md`](docs/UI-GUIDE.md) | Blazor Blueprint + Tailwind conventions |
 | [`docs/AUTH.md`](docs/AUTH.md) | Google OAuth, Identity, roles, claims |
 | [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Setup, env vars, migrations, seeding, Docker, CI |
 | [`docs/API.md`](docs/API.md) | HTTP endpoints |
 | [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md) | Coding standards |
-| [`docs/TESTING.md`](docs/TESTING.md) | Testing status and strategy |
+| [`docs/TESTING.md`](docs/TESTING.md) | Test project, strategy and scenarios |
 | [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) | Known pitfalls and fixes |
 | [`docs/PRD.md`](docs/PRD.md) | Product requirements |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Status and next steps |
@@ -215,11 +216,12 @@ See [`docs/API.md`](docs/API.md). There is **no REST/JWT API**.
 - Conventional Commits with Spanish subjects (e.g. `feat(ui): ...`).
 - Branch names: `feat/...`, `fix/...`, `refactor/...`, `docs/...`.
 - Update the relevant doc under `docs/` when behavior, routes, schema, or config change.
-- **Note:** there is currently no test project in the solution — see
+- Tests live in [`GestorTeocratico.Tests`](GestorTeocratico.Tests) — run `dotnet test`; see
   [`docs/TESTING.md`](docs/TESTING.md).
 
 ```bash
 dotnet build
+dotnet test
 npm run build:css
 ```
 

@@ -37,6 +37,7 @@ monthly schedule as a **PDF**.
 | PDF | QuestPDF | `2025.7.0` (Community license) |
 | Email | Resend | `0.1.5` (optional; falls back to a no-op sender) |
 | Containers | Docker + Docker Compose | .NET 10 base images |
+| Tests | xUnit + EF Core SQLite (in-memory) | `GestorTeocratico.Tests` |
 | CI | GitHub Actions | builds & pushes image on `main` |
 
 > The root `README.md` and the old `Shared/PRD.md` were historically stale. They have been
@@ -50,6 +51,7 @@ monthly schedule as a **PDF**.
 # .NET
 dotnet restore                       # restore packages
 dotnet build                         # build solution
+dotnet test                          # run tests (GestorTeocratico.Tests, xUnit)
 dotnet run --project GestorTeocratico # run the app (https://localhost:7095)
 dotnet ef migrations add <Name> --project GestorTeocratico
 dotnet ef database update --project GestorTeocratico
@@ -65,30 +67,37 @@ docker compose up --build            # app on :8080, PostgreSQL on :54332
 
 - Migrations and seeding run automatically at startup (Dev uses `DataSeederDevelopment`,
   Prod uses `DataSeeder`). See `docs/DEVELOPMENT.md`.
-- There is **no test project** in the solution today (see `docs/TESTING.md`).
+- Tests live in **`GestorTeocratico.Tests`** (xUnit + SQLite in-memory); run with `dotnet test`.
+  See `docs/TESTING.md`.
 
 ---
 
 ## 4. Hard rules / invariants (do not break)
 
-1. **Data access uses `IDbContextFactory<ApplicationDbContext>`.** Services never inject a
+1. **Data access uses `IDbContextFactory<ApplicationDbContext>`.** Handlers never inject a
    scoped `ApplicationDbContext`. Always `await using var context = await _contextFactory.CreateDbContextAsync();`.
    Reason: the app runs long-lived Blazor Server circuits; a scoped context would be shared
    across concurrent circuit operations.
 2. **Soft delete.** `Congregation`, `Department`, `Publisher`, `Responsibility` inherit
-   `SoftDeleteEntity` (`IsDeleted`). `DeleteAsync` sets `IsDeleted = true` — never hard-delete
-   these. Global query filters exclude deleted rows automatically (including on the join
-   entities). Use `.IgnoreQueryFilters()` only in seeding/lookup as already done.
+   `SoftDeleteEntity` (`IsDeleted`). Their `Delete*Handler` sets `IsDeleted = true` — never
+   hard-delete these. `MeetingSchedule` and the join rows (`PublisherResponsibility`,
+   `ResponsibilityAssignment`) are hard-deleted. Global query filters exclude deleted rows
+   automatically (including on the join entities). Use `.IgnoreQueryFilters()` only in
+   seeding/lookup as already done.
 3. **Primary keys:** `Guid.CreateVersion7()` (UUIDv7). Identity uses composite keys:
    - `PublisherResponsibility` → `(PublisherId, ResponsibilityId)`
-   - `ResponsibilityAssignment` → `(MeetingScheduleId, ResponsibilityId, PublisherId)`
-4. **Single congregation.** `CongregationService.AddAsync` throws if a congregation already
-   exists; `DeleteAsync` throws `NotSupportedException`. Do not add multi-congregation CRUD.
+   - `ResponsibilityAssignment` → `(MeetingScheduleId, ResponsibilityId)` (`PublisherId` is a
+     plain FK column — **one publisher per responsibility per meeting**, enforced by the PK)
+4. **Single congregation.** `CreateCongregationHandler` throws `DuplicateEntityException` if a
+   congregation already exists; a unique index on `Congregation.Name` backs it up. There is no
+   delete path. Do not add multi-congregation CRUD.
 5. **UI components:** only **Blazor Blueprint** `Bb*` components + Lucide icons + Tailwind
    utility classes. **Radzen and Bootstrap were removed — do not reintroduce them.**
 6. **Authorization:** protect pages with `@attribute [Authorize]` or
-   `[Authorize(Roles = "Admin, Manager")]`. Define roles via `Shared.Roles` constants
-   (`Admin`, `Manager`, `User`) — never hard-code role strings where the constants fit.
+   `[Authorize(Roles = "Admin, Manager")]`. A global `FallbackPolicy` requires an authenticated
+   user on every endpoint; anonymous surfaces use `[AllowAnonymous]` (landing, not-found, error,
+   account pages) or `.AllowAnonymous()` (static assets, login/logout). Define roles via
+   `Shared.Roles` constants (`Admin`, `Manager`, `User`) — never hard-code role strings.
 7. **UI language is Spanish.** Keep user-facing text in Spanish; keep code/comments in English.
 8. **Tailwind scanning:** utility classes are only generated for paths listed in
    `wwwroot/css/app-input.css` (`@source`). If you add a folder with `.razor` files, add a
@@ -107,22 +116,26 @@ GestorTeocratico/
 │   │                           #   Publisher, Responsibility, MeetingSchedule, Administration
 │   ├── Ui/                     # Small shared components (EntityChips)
 │   ├── App.razor / Routes.razor / _Imports.razor
-├── Features/                   # Business logic, one folder per domain
+├── Features/                   # Vertical slices, one folder per domain
+│   ├── Common/                 # Shared domain exceptions (DuplicateEntityException)
 │   ├── Congregations/ | Departments/ | Publishers/ | Responsibilities/
-│   ├── PublisherResponsibilities/ | ResponsibilityAssignments/
-│   ├── MeetingSchedules/ (+ Endpoints/) 
-│   ├── PdfExport/ (+ Models/) 
-│   └── Roles/
+│   │                           #   each: Shared/ + one folder per use case (handler)
+│   ├── MeetingSchedules/       # schedules + responsibility assignments (+ Endpoints/)
+│   ├── PdfExport/ (+ Models/)  # document generation (consumes sliced handlers)
+│   └── Roles/                  # thin adapter over RoleManager
 ├── Data/                       # ApplicationDbContext, ApplicationUser, seeders, Migrations/
 ├── Entities/                   # Domain models (+ SoftDeleteEntity)
 ├── Services/                   # Cross-cutting: ResendEmailSender, ResendOptions
-├── Shared/                     # Roles.cs, Enums/  (PRD.md is now a pointer stub)
+├── Shared/                     # Roles.cs, Enums/  (PRD.md is a pointer stub)
 ├── wwwroot/                    # css (Tailwind in/out), styles/themes, images
 └── Program.cs                  # Composition root (DI, auth, pipeline, seeding, endpoints)
 ```
 
-Feature folder convention: `IFeatureService.cs` (contract) + `FeatureService.cs`
-(implementation). Register in `Program.cs`.
+Feature folder convention (vertical slice): a `Shared/` folder holds contracts (DTOs/records),
+mappings and sync helpers; **one folder per use case** holds the query/command record and its
+handler (e.g. `CreatePublisher/CreatePublisherHandler.cs`). Read models are DTOs — never expose
+EF entities. Register each handler in `Program.cs` as scoped. `Roles` and `PdfExport` are the only
+remaining "services" (Identity adapter and document generation respectively).
 
 ---
 
@@ -133,12 +146,16 @@ Feature folder convention: `IFeatureService.cs` (contract) + `FeatureService.cs`
    `Data/ApplicationDbContext.cs` (max lengths, `OnDelete(DeleteBehavior.Restrict)`,
    string-converted enums). Query filters are applied automatically for soft-delete types.
 3. **Migration** — `dotnet ef migrations add <Name> --project GestorTeocratico` and verify.
-4. **Service** — add `Features/<Domain>/I<X>Service.cs` + `<X>Service.cs` using
-   `IDbContextFactory`. Validate inputs; log with `ILogger`; throw for not-found/duplicate.
-5. **DI** — register `builder.Services.AddScoped<I<X>Service, <X>Service>();` in `Program.cs`.
+4. **Slice** — under `Features/<Domain>/` add a `Shared/` folder (contracts/mappings) and one
+   folder per use case with its command/query + handler using `IDbContextFactory` (see
+   `Features/Publishers/CreatePublisher/` as the reference). Handlers return DTOs, validate
+   inputs, log with `ILogger`, and throw domain exceptions (`DuplicateEntityException`,
+   `KeyNotFoundException`) or return `bool` per contract.
+5. **DI** — register each handler: `builder.Services.AddScoped<XHandler>();` in `Program.cs`.
 6. **UI** — add a page under `Components/Pages/<Domain>/`, `@page "/route"`,
-   `@attribute [Authorize(...)]`, inject the interface, use `BbDataTable` + `BbDialog` +
-   `EditForm`. Follow `docs/UI-GUIDE.md`.
+   `@attribute [Authorize(...)]`, inject the handler(s), use `BbDataTable` + `BbDialog` +
+   `EditForm`. Own a `CancellationTokenSource` and pass `_cts.Token` to handler calls. Follow
+   `docs/UI-GUIDE.md`.
 7. **Nav** — add an entry in `Components/Layout/NavMenu.razor` if it is a top-level section.
 8. **Docs** — update `docs/FEATURES.md` (and `docs/DATA-MODEL.md` if schema changed).
 
@@ -149,7 +166,10 @@ Feature folder convention: `IFeatureService.cs` (contract) + `FeatureService.cs`
 Short list — full detail in [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING.md):
 
 - **Detached entities** copied across contexts make EF re-insert the graph. Assign only
-  foreign keys (see `CopyAssignmentsToWeekAsync`).
+  foreign keys (see `CopyWeekAssignmentsHandler`).
+- **Unique indexes are partial** (`WHERE "IsDeleted" = false`). Adding one over columns that
+  already contain duplicates fails at migration time — dedupe the data first
+  (`AddUniqueIndexes`).
 - **OAuth `redirect_uri_mismatch` behind a proxy:** `UseForwardedHeaders()` must run before
   `UseAuthentication()`; they are registered explicitly in `Program.cs`.
 - **Layout must not query the DB per render**; `public_id` is surfaced via a claim
@@ -164,15 +184,15 @@ Short list — full detail in [`docs/TROUBLESHOOTING.md`](./docs/TROUBLESHOOTING
 | Doc | Purpose |
 |---|---|
 | [docs/README.md](./docs/README.md) | Doc map and conventions for these docs |
-| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Layers, DI, render modes, request pipeline |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Vertical slices, DI, render modes, request pipeline |
 | [docs/DATA-MODEL.md](./docs/DATA-MODEL.md) | Entities, keys, relationships, soft delete, migrations |
-| [docs/FEATURES.md](./docs/FEATURES.md) | Service ↔ page ↔ endpoint map and business rules |
+| [docs/FEATURES.md](./docs/FEATURES.md) | Handler ↔ page ↔ endpoint map and business rules |
 | [docs/UI-GUIDE.md](./docs/UI-GUIDE.md) | Blazor Blueprint + Tailwind patterns and page template |
 | [docs/AUTH.md](./docs/AUTH.md) | Google OAuth, Identity, roles, claims, emergency admin |
 | [docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md) | Setup, env vars, migrations, seeding, Docker, CI |
 | [docs/API.md](./docs/API.md) | The real HTTP endpoints |
 | [docs/CONVENTIONS.md](./docs/CONVENTIONS.md) | Coding, naming, and error-handling conventions |
-| [docs/TESTING.md](./docs/TESTING.md) | Test status and proposed strategy |
+| [docs/TESTING.md](./docs/TESTING.md) | Test project, strategy and scenarios |
 | [docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md) | Known issues and fixes |
 | [docs/PRD.md](./docs/PRD.md) | Product requirements (refreshed) |
 | [docs/ROADMAP.md](./docs/ROADMAP.md) | Current state and next steps |

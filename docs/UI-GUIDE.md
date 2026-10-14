@@ -89,7 +89,7 @@ private readonly SelectOption<Gender>[] _genderOptions =
 
 Feature pages follow a consistent pattern (see `Publisher/Publishers.razor`):
 
-1. `@page "/route"` + `@attribute [Authorize(Roles = "Admin, Manager")]` + `@inject` services.
+1. `@page "/route"` + `@attribute [Authorize(Roles = "Admin, Manager")]` + `@inject` the handler(s).
 2. A heading (`h1` + muted subtitle) inside `<div class="space-y-6">`.
 3. `BbDataTable TData="T" Data="@items"` with a `<ToolbarActions>` create button and
    `<Columns>` with `BbDataTableColumn`s. Relation columns render `EntityChips`; action columns
@@ -98,7 +98,9 @@ Feature pages follow a consistent pattern (see `Publisher/Publishers.razor`):
    **details**.
 5. `@code` block with `_items`, `_formOpen/_isNew/_editing/_selected*/_formError`,
    `_deleteOpen/_deleteTarget`, `_detailsOpen/_detailsTarget`; `LoadAsync` on init; `SaveAsync`
-   calls the service then reloads; delete confirms then reloads.
+   calls the handler then reloads; delete confirms then reloads. Own a `CancellationTokenSource`
+   (`@implements IDisposable`), pass `_cts.Token` to handler calls, and cancel/dispose it in
+   `Dispose()`.
 
 Screen real estate convention: pages use `space-y-6`, tables sit in `overflow-x-auto` containers,
 and content is Spanish.
@@ -107,7 +109,8 @@ and content is Spanish.
 
 - Use `new CultureInfo("es-ES")` for month/day names and comparers
   (`StringComparer.Create(new CultureInfo("es-ES"), true)`).
-- Short publisher names in PDFs are built by `PdfExportService.GetPublisherShortName`.
+- Short publisher names in PDFs come from `AssignmentDto.PublisherShortName` (built by
+  `MeetingScheduleMappings`).
 
 ## Adding an interactive island to a static page
 

@@ -14,8 +14,9 @@ Generates and downloads the monthly schedule PDF.
 - **Group:** `/api` → `MapGroup("/meeting-schedules")` →
   `Features/MeetingSchedules/Endpoints/MeetingSchedulesEndpoints.cs`.
 - **Route values:** `year` int (2020–2030), `month` int (1–12).
-- **Auth:** none declared on the group (no `[Authorize]`, no JWT). Note the pipeline still runs
-  authentication/authorization, but this endpoint does not require a user.
+- **Auth:** **required** — the `/api` group has `.RequireAuthorization()` and a global
+  `FallbackPolicy` requires an authenticated user. Anonymous surfaces opt out explicitly with
+  `[AllowAnonymous]`/`.AllowAnonymous()` (login, static assets, landing, error, not-found).
 - **Success:** `200` with `application/pdf` and a `Content-Disposition` filename
   `Programacion_{Mes}_{Year}.pdf` (month name in Spanish).
 - **Errors:** `400` when month/year are out of range; `Problem(...)` if generation throws.
@@ -46,17 +47,18 @@ These are intended for the UI forms (they use cookies/antiforgery), not as a pro
 
 If you need to build on the app programmatically today, these are the stable seams:
 
-- **Feature service interfaces** (`Features/*/I*Service.cs`) resolved from DI — use them inside
-  the app (a new endpoint, a HostedService, etc.) rather than calling HTTP.
+- **Slice handlers** (`Features/<Domain>/<UseCase>/<UseCase>Handler.cs`) resolved from DI — use
+  them inside the app (a new endpoint, a HostedService, etc.) rather than calling HTTP. `Roles`
+  (`IRoleService`) and `PdfExport` (`IPdfExportService`) remain interface-based services.
 - **Database** — read/write through `ApplicationDbContext` with the soft-delete filters in mind.
 
 ## `PdfExportHttpClient`
 
-`Features/PdfExport/PdfExportHttpClient.cs` is an in-app `HttpClient` wrapper whose base address
-is `https://localhost:7095`. It requests `/api/pdf/monthly-schedule/{year}/{month}` — note this
-path does **not** match the implemented route (`/api/meeting-schedules/monthly-schedule/...`), so
-it is effectively **unused/broken**. Prefer `IPdfExportService` directly, or fix the wrapper if
-you adopt it.
+`Features/PdfExport/PdfExportHttpClient.cs` is an in-app `HttpClient` wrapper. Its base address
+comes from configuration (`PdfExport:BaseAddress`, default `https://localhost:7095`) and it
+requests `/api/meeting-schedules/monthly-schedule/{year}/{month}`, matching the implemented
+route. It is currently unused by the UI (which navigates to the endpoint); prefer
+`IPdfExportService` in-process.
 
 ## Not implemented (do not assume)
 
