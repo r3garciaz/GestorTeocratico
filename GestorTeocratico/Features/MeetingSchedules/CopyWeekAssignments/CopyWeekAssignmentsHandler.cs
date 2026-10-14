@@ -6,7 +6,11 @@ namespace GestorTeocratico.Features.MeetingSchedules;
 
 public sealed record CopyWeekAssignmentsCommand(int SourceWeek, int SourceYear, int TargetWeek, int TargetYear);
 
-/// <summary>Command: copy/synchronize the assignments of one week onto another.</summary>
+/// <summary>
+/// Command: copy/synchronize the assignments of one week onto another. There is at most one
+/// publisher per responsibility (primary key is MeetingScheduleId + ResponsibilityId), so the
+/// target is synchronized by responsibility.
+/// </summary>
 public sealed class CopyWeekAssignmentsHandler(
     IDbContextFactory<ApplicationDbContext> contextFactory,
     ILogger<CopyWeekAssignmentsHandler> logger)
@@ -29,37 +33,36 @@ public sealed class CopyWeekAssignmentsHandler(
                 continue;
             }
 
-            // Use only foreign keys: the DTOs are detached, so assigning navigations would make
-            // EF treat the whole graph as Added and cause duplicate key errors.
+            // Desired state: responsibility -> publisher (keep one publisher per responsibility).
             var desired = sourceSchedule.Assignments
-                .Select(a => (a.ResponsibilityId, a.PublisherId))
-                .Distinct()
-                .ToList();
+                .GroupBy(a => a.ResponsibilityId)
+                .ToDictionary(g => g.Key, g => g.First().PublisherId);
 
             var existing = await context.ResponsibilityAssignments
                 .Where(ra => ra.MeetingScheduleId == targetSchedule.Id)
                 .ToListAsync(cancellationToken);
 
-            var existingKeys = existing
-                .Select(a => (a.ResponsibilityId, a.PublisherId))
-                .ToHashSet();
-
+            // Remove responsibilities that are no longer assigned in the source week.
             context.ResponsibilityAssignments.RemoveRange(
-                existing.Where(a => !desired.Contains((a.ResponsibilityId, a.PublisherId))));
+                existing.Where(ra => !desired.ContainsKey(ra.ResponsibilityId)));
 
             foreach (var (responsibilityId, publisherId) in desired)
             {
-                if (existingKeys.Contains((responsibilityId, publisherId)))
+                var current = existing.FirstOrDefault(ra => ra.ResponsibilityId == responsibilityId);
+                if (current is null)
                 {
-                    continue;
+                    context.ResponsibilityAssignments.Add(new ResponsibilityAssignment
+                    {
+                        MeetingScheduleId = targetSchedule.Id,
+                        ResponsibilityId = responsibilityId,
+                        PublisherId = publisherId
+                    });
                 }
-
-                context.ResponsibilityAssignments.Add(new ResponsibilityAssignment
+                else if (current.PublisherId != publisherId)
                 {
-                    MeetingScheduleId = targetSchedule.Id,
-                    ResponsibilityId = responsibilityId,
-                    PublisherId = publisherId
-                });
+                    // Update in place (same key) instead of remove + add.
+                    current.PublisherId = publisherId;
+                }
             }
         }
 

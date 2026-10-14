@@ -157,7 +157,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<ResponsibilityAssignment>(entity =>
         {
-            entity.HasKey(ra => new { ra.MeetingScheduleId, ra.ResponsibilityId, ra.PublisherId });
+            // One publisher per responsibility per meeting; PublisherId is a normal FK column.
+            entity.HasKey(ra => new { ra.MeetingScheduleId, ra.ResponsibilityId });
             
             entity.HasOne(ra => ra.MeetingSchedule)
                 .WithMany(ms => ms.ResponsibilityAssignments)

@@ -1,8 +1,10 @@
+using GestorTeocratico.Entities;
 using GestorTeocratico.Features.MeetingSchedules;
 using GestorTeocratico.Features.Publishers;
 using GestorTeocratico.Features.Responsibilities;
 using GestorTeocratico.Shared.Enums;
 using GestorTeocratico.Tests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -80,7 +82,7 @@ public class MeetingScheduleHandlersTests
             new CreateResponsibilityCommand("Oración", null, null, []));
 
         await assign.HandleAsync(new AssignResponsibilityCommand(midweek.Id, responsibilityId, publisherId));
-        Assert.True(await unassign.HandleAsync(new UnassignResponsibilityCommand(midweek.Id, responsibilityId, publisherId)));
+        Assert.True(await unassign.HandleAsync(new UnassignResponsibilityCommand(midweek.Id, responsibilityId)));
 
         var assignments = await getAssignments.HandleAsync(new GetAssignmentsByMeetingScheduleQuery(midweek.Id));
         Assert.Empty(assignments);
@@ -115,5 +117,46 @@ public class MeetingScheduleHandlersTests
         var targetAssignments = await getAssignments.HandleAsync(new GetAssignmentsByMeetingScheduleQuery(target.Id));
         Assert.Single(targetAssignments);
         Assert.Equal(publisherId, targetAssignments[0].PublisherId);
+    }
+
+    [Fact]
+    public async Task PrimaryKey_prevents_two_assignments_for_same_responsibility()
+    {
+        using var factory = new SqliteTestDbContextFactory();
+        var week = new GetOrCreateWeekSchedulesHandler(factory);
+        var createPublisher = CreatePublisher(factory);
+        var createResponsibility = CreateResponsibility(factory);
+
+        var schedules = await week.HandleAsync(new GetOrCreateWeekSchedulesQuery(20, 2026));
+        var midweek = schedules.First(s => s.MeetingType == MeetingType.Midweek);
+
+        var firstId = await createPublisher.HandleAsync(new CreatePublisherCommand(
+            "Pk", "Uno", null, null, null, Gender.Male, null, [], []));
+        var secondId = await createPublisher.HandleAsync(new CreatePublisherCommand(
+            "Pk", "Dos", null, null, null, Gender.Male, null, [], []));
+        var responsibilityId = await createResponsibility.HandleAsync(
+            new CreateResponsibilityCommand("Única", null, null, []));
+
+        await using (var context = factory.CreateDbContext())
+        {
+            context.ResponsibilityAssignments.Add(new ResponsibilityAssignment
+            {
+                MeetingScheduleId = midweek.Id,
+                ResponsibilityId = responsibilityId,
+                PublisherId = firstId
+            });
+            await context.SaveChangesAsync();
+        }
+
+        // A second row with the same (MeetingScheduleId, ResponsibilityId) must be rejected by the primary key.
+        await using var conflicting = factory.CreateDbContext();
+        conflicting.ResponsibilityAssignments.Add(new ResponsibilityAssignment
+        {
+            MeetingScheduleId = midweek.Id,
+            ResponsibilityId = responsibilityId,
+            PublisherId = secondId
+        });
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => conflicting.SaveChangesAsync());
     }
 }

@@ -300,7 +300,7 @@ namespace GestorTeocratico.Data.Migrations
                     b.Property<Guid>("PublisherId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("MeetingScheduleId", "ResponsibilityId", "PublisherId");
+                    b.HasKey("MeetingScheduleId", "ResponsibilityId");
 
                     b.HasIndex("PublisherId");
 

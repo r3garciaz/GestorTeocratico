@@ -7,8 +7,9 @@ namespace GestorTeocratico.Features.MeetingSchedules;
 public sealed record AssignResponsibilityCommand(Guid MeetingScheduleId, Guid ResponsibilityId, Guid PublisherId);
 
 /// <summary>
-/// Command: assign a publisher to a responsibility of a meeting. Keeps a single publisher per
-/// responsibility by replacing any previous assignment. Returns false when an entity is missing.
+/// Command: assign a publisher to a responsibility of a meeting. The primary key is
+/// (MeetingScheduleId, ResponsibilityId), so there is at most one publisher per responsibility;
+/// assigning a new publisher replaces the previous one. Returns false when an entity is missing.
 /// </summary>
 public sealed class AssignResponsibilityHandler(
     IDbContextFactory<ApplicationDbContext> contextFactory,
@@ -34,21 +35,23 @@ public sealed class AssignResponsibilityHandler(
         }
 
         var existing = await context.ResponsibilityAssignments
-            .Where(ra => ra.MeetingScheduleId == command.MeetingScheduleId
-                         && ra.ResponsibilityId == command.ResponsibilityId)
-            .ToListAsync(cancellationToken);
+            .FirstOrDefaultAsync(ra => ra.MeetingScheduleId == command.MeetingScheduleId
+                                       && ra.ResponsibilityId == command.ResponsibilityId, cancellationToken);
 
-        if (existing.Count > 0)
+        if (existing is not null)
         {
-            context.ResponsibilityAssignments.RemoveRange(existing);
+            // Update in place to avoid tracking two entities with the same key at once.
+            existing.PublisherId = command.PublisherId;
         }
-
-        context.ResponsibilityAssignments.Add(new ResponsibilityAssignment
+        else
         {
-            MeetingScheduleId = command.MeetingScheduleId,
-            ResponsibilityId = command.ResponsibilityId,
-            PublisherId = command.PublisherId
-        });
+            context.ResponsibilityAssignments.Add(new ResponsibilityAssignment
+            {
+                MeetingScheduleId = command.MeetingScheduleId,
+                ResponsibilityId = command.ResponsibilityId,
+                PublisherId = command.PublisherId
+            });
+        }
 
         await context.SaveChangesAsync(cancellationToken);
         return true;

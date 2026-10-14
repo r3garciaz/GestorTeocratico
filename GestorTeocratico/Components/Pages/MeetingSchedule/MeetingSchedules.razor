@@ -393,7 +393,7 @@
             if (_currentAssignment is not null)
             {
                 await UnassignResponsibility.HandleAsync(new UnassignResponsibilityCommand(
-                    _currentAssignment.MeetingScheduleId, _currentAssignment.ResponsibilityId, _currentAssignment.PublisherId));
+                    _currentAssignment.MeetingScheduleId, _currentAssignment.ResponsibilityId));
             }
 
             if (_selectedPublisherId.HasValue)
@@ -422,7 +422,7 @@
         try
         {
             await UnassignResponsibility.HandleAsync(new UnassignResponsibilityCommand(
-                _currentAssignment.MeetingScheduleId, _currentAssignment.ResponsibilityId, _currentAssignment.PublisherId));
+                _currentAssignment.MeetingScheduleId, _currentAssignment.ResponsibilityId));
             Toasts.Success("Asignación eliminada.", "Guardado");
             _assignOpen = false;
             await LoadDataAsync();
