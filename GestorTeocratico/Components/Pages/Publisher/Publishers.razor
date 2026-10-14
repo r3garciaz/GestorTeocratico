@@ -1,5 +1,6 @@
 @page "/publishers"
 @attribute [Authorize(Roles = "Admin, Manager")]
+@implements IDisposable
 @using System.Globalization
 @using GestorTeocratico.Features.Common
 @using GestorTeocratico.Features.Publishers
@@ -214,6 +215,7 @@
     private List<PublisherDto> _publishers = [];
     private SelectOption<Guid>[] _responsibilityOptions = [];
     private SelectOption<Guid>[] _departmentOptions = [];
+    private readonly CancellationTokenSource _cts = new();
 
     private readonly SelectOption<Gender>[] _genderOptions =
     [
@@ -244,17 +246,30 @@
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+
     private async Task LoadAsync()
     {
-        _publishers = (await GetPublishers.HandleAsync()).ToList();
+        try
+        {
+            _publishers = (await GetPublishers.HandleAsync(_cts.Token)).ToList();
 
-        var options = await GetPublisherOptions.HandleAsync();
-        _responsibilityOptions = options.Responsibilities
-            .Select(r => new SelectOption<Guid>(r.Id, r.Name))
-            .OrderBy(o => o.Text, NameComparer).ToArray();
-        _departmentOptions = options.Departments
-            .Select(d => new SelectOption<Guid>(d.Id, d.Name))
-            .OrderBy(o => o.Text, NameComparer).ToArray();
+            var options = await GetPublisherOptions.HandleAsync(_cts.Token);
+            _responsibilityOptions = options.Responsibilities
+                .Select(r => new SelectOption<Guid>(r.Id, r.Name))
+                .OrderBy(o => o.Text, NameComparer).ToArray();
+            _departmentOptions = options.Departments
+                .Select(d => new SelectOption<Guid>(d.Id, d.Name))
+                .OrderBy(o => o.Text, NameComparer).ToArray();
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
     }
 
     private void OpenCreate()

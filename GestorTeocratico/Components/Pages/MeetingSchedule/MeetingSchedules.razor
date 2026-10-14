@@ -1,5 +1,6 @@
 @page "/meeting-schedules"
 @attribute [Authorize(Roles = "Admin, Manager")]
+@implements IDisposable
 @using System.Globalization
 @using GestorTeocratico.Features.MeetingSchedules
 @using GestorTeocratico.Features.Responsibilities
@@ -265,6 +266,7 @@
 
     private List<ResponsibilityDto> _responsibilities = [];
     private List<WeeklyScheduleDto> _weeklySchedules = [];
+    private readonly CancellationTokenSource _cts = new();
 
     // Assignment dialog
     private bool _assignOpen;
@@ -290,8 +292,21 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _responsibilities = (await GetResponsibilities.HandleAsync()).ToList();
-        await LoadDataAsync();
+        try
+        {
+            _responsibilities = (await GetResponsibilities.HandleAsync(_cts.Token)).ToList();
+            await LoadDataAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
     }
 
     private async Task LoadDataAsync()
@@ -301,9 +316,9 @@
             List<MeetingScheduleDto> schedules = _selectedViewType switch
             {
                 "week" => (await GetOrCreateWeek.HandleAsync(
-                    new GetOrCreateWeekSchedulesQuery(_selectedWeek, _selectedYear))).ToList(),
+                    new GetOrCreateWeekSchedulesQuery(_selectedWeek, _selectedYear), _cts.Token)).ToList(),
                 "month" => await LoadMonthDataAsync(),
-                _ => (await GetAllSchedules.HandleAsync()).ToList()
+                _ => (await GetAllSchedules.HandleAsync(_cts.Token)).ToList()
             };
 
             _weeklySchedules = schedules
@@ -320,6 +335,10 @@
                     Assignments = ms.Assignments.ToList()
                 })
                 .ToList();
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
         }
         catch
         {
@@ -344,8 +363,12 @@
             try
             {
                 var weekSchedules = await GetOrCreateWeek.HandleAsync(
-                    new GetOrCreateWeekSchedulesQuery(week, _selectedYear));
+                    new GetOrCreateWeekSchedulesQuery(week, _selectedYear), _cts.Token);
                 result.AddRange(weekSchedules.Where(ws => ws.Month == _selectedMonth && ws.Year == _selectedYear));
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch
             {

@@ -1,5 +1,6 @@
 @page "/responsibilities"
 @attribute [Authorize(Roles = "Admin, Manager")]
+@implements IDisposable
 @using System.Globalization
 @using GestorTeocratico.Features.Common
 @using GestorTeocratico.Features.Responsibilities
@@ -181,6 +182,7 @@
     private List<ResponsibilityDto> _responsibilities = [];
     private SelectOption<Guid?>[] _departmentOptions = [];
     private SelectOption<Guid>[] _publisherOptions = [];
+    private readonly CancellationTokenSource _cts = new();
 
     private bool _formOpen;
     private bool _isNew;
@@ -196,19 +198,32 @@
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+
     private async Task LoadAsync()
     {
-        _responsibilities = (await GetResponsibilities.HandleAsync()).ToList();
+        try
+        {
+            _responsibilities = (await GetResponsibilities.HandleAsync(_cts.Token)).ToList();
 
-        var options = await GetResponsibilityOptions.HandleAsync();
-        _departmentOptions = options.Departments
-            .Select(d => new SelectOption<Guid?>(d.Id, d.Name))
-            .OrderBy(o => o.Text)
-            .ToArray();
-        _publisherOptions = options.Publishers
-            .Select(p => new SelectOption<Guid>(p.Id, p.Name))
-            .OrderBy(o => o.Text, NameComparer)
-            .ToArray();
+            var options = await GetResponsibilityOptions.HandleAsync(_cts.Token);
+            _departmentOptions = options.Departments
+                .Select(d => new SelectOption<Guid?>(d.Id, d.Name))
+                .OrderBy(o => o.Text)
+                .ToArray();
+            _publisherOptions = options.Publishers
+                .Select(p => new SelectOption<Guid>(p.Id, p.Name))
+                .OrderBy(o => o.Text, NameComparer)
+                .ToArray();
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
     }
 
     private void OpenCreate()

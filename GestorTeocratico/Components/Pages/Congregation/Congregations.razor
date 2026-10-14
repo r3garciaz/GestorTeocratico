@@ -1,5 +1,6 @@
 @page "/congregations"
 @attribute [Authorize(Roles = "Admin, Manager")]
+@implements IDisposable
 @using GestorTeocratico.Features.Common
 @using GestorTeocratico.Features.Congregations
 @using BlazorBlueprint.Components
@@ -77,6 +78,7 @@
 @code {
     private CongregationFormModel _congregation = new() { Name = string.Empty };
     private bool _isNew;
+    private readonly CancellationTokenSource _cts = new();
 
     private readonly SelectOption<DayOfWeek>[] _days =
     [
@@ -91,17 +93,30 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var first = (await GetCongregations.HandleAsync()).FirstOrDefault();
-        if (first is null)
+        try
         {
-            _congregation = new CongregationFormModel { Name = string.Empty };
-            _isNew = true;
+            var first = (await GetCongregations.HandleAsync(_cts.Token)).FirstOrDefault();
+            if (first is null)
+            {
+                _congregation = new CongregationFormModel { Name = string.Empty };
+                _isNew = true;
+            }
+            else
+            {
+                _congregation = first.ToFormModel();
+                _isNew = false;
+            }
         }
-        else
+        catch (OperationCanceledException)
         {
-            _congregation = first.ToFormModel();
-            _isNew = false;
+            // The component was disposed while loading.
         }
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
     }
 
     private async Task SaveAsync()
