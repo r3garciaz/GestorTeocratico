@@ -43,7 +43,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(o => o.SignIn.RequireConfirmed
 
 ## Google sign-in flow (`ExternalLogin.razor`)
 
-1. `Login.razor` shows `ExternalLoginPicker` (Google) plus a collapsible **local** login form.
+1. `Login.razor` renders under `AuthLayout` (split-screen: brand panel + form) and shows
+   `ExternalLoginPicker` (Google) plus a collapsible **local** login form.
 2. POST `/Account/PerformExternalLogin` → challenge provider → Google → callback
    `/signin-google` → `/Account/ExternalLogin?Action=LoginCallback`.
 3. `OnLoginCallbackAsync`:

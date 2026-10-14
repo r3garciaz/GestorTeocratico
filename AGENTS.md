@@ -111,7 +111,7 @@ docker compose up --build            # app on :8080, PostgreSQL on :54332
 GestorTeocratico/
 ├── Components/                 # Blazor UI
 │   ├── Account/                # Identity pages + helpers (Google login, manage account)
-│   ├── Layout/                 # MainLayout (sidebar shell), NavMenu, IndexLayout (public)
+│   ├── Layout/                 # MainLayout (sidebar shell), NavMenu, IndexLayout (public), AuthLayout (login)
 │   ├── Pages/                  # Feature pages: Home(dashboard), Congregation, Department,
 │   │                           #   Publisher, Responsibility, MeetingSchedule, Administration
 │   ├── Ui/                     # Small shared components (EntityChips)

@@ -141,7 +141,7 @@ registered as scoped in `Program.cs`.
 | `/meeting-schedules` | MeetingSchedules | Admin, Manager |
 | `/administration/users` | Users | Admin, Manager |
 | `/administration/roles` | Roles | Admin, Manager |
-| `/Account/*` | Identity pages | Registration, login, manage account (anonymous) |
+| `/Account/*` | Identity pages | Registration, login (`AuthLayout`), manage account (anonymous) |
 | `/api/meeting-schedules/monthly-schedule/{year}/{month}` | Minimal API | PDF download (authenticated) |
 | `/not-found` | NotFound | Anonymous |
 | `/Error` | Error | Anonymous |
