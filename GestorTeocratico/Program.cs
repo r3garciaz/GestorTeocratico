@@ -10,10 +10,8 @@ using GestorTeocratico.Features.Congregations;
 using GestorTeocratico.Features.Departments;
 using GestorTeocratico.Features.Publishers;
 using GestorTeocratico.Features.Responsibilities;
-using GestorTeocratico.Features.PublisherResponsibilities;
 using GestorTeocratico.Features.MeetingSchedules;
 using GestorTeocratico.Features.MeetingSchedules.Endpoints;
-using GestorTeocratico.Features.ResponsibilityAssignments;
 using Resend;
 
 using GestorTeocratico.Features.PdfExport;
@@ -94,11 +92,13 @@ builder.Services.ConfigureApplicationCookie(options => {
     options.SlidingExpiration = true;
 });
 
-builder.Services.AddAuthorization(option =>
+builder.Services.AddAuthorization(options =>
 {
-    // option.FallbackPolicy = new AuthorizationPolicyBuilder()
-    //     .RequireAuthenticatedUser()
-    //     .Build();
+    // Require an authenticated user by default for every endpoint. Endpoints that must be
+    // anonymous (login, static assets, landing page, not-found) declare [AllowAnonymous].
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
@@ -119,13 +119,44 @@ builder.Services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, Applica
 builder.Services.AddDataProtection()
     .PersistKeysToDbContext<ApplicationDbContext>();
 
-builder.Services.AddScoped<ICongregationService, CongregationService>();
-builder.Services.AddScoped<IDepartmentService, DepartmentService>();
-builder.Services.AddScoped<IPublisherService, PublisherService>();
-builder.Services.AddScoped<IResponsibilityService, ResponsibilityService>();
-builder.Services.AddScoped<IPublisherResponsibilityService, PublisherResponsibilityService>();
-builder.Services.AddScoped<IMeetingScheduleService, MeetingScheduleService>();
-builder.Services.AddScoped<IResponsibilityAssignmentService, ResponsibilityAssignmentService>();
+// Congregations feature (vertical slice): one handler per use case.
+builder.Services.AddScoped<GetCongregationsHandler>();
+builder.Services.AddScoped<CreateCongregationHandler>();
+builder.Services.AddScoped<UpdateCongregationHandler>();
+
+// Responsibilities feature (vertical slice): one handler per use case.
+builder.Services.AddScoped<GetResponsibilitiesHandler>();
+builder.Services.AddScoped<GetResponsibilityByIdHandler>();
+builder.Services.AddScoped<GetResponsibilityOptionsHandler>();
+builder.Services.AddScoped<CreateResponsibilityHandler>();
+builder.Services.AddScoped<UpdateResponsibilityHandler>();
+builder.Services.AddScoped<DeleteResponsibilityHandler>();
+
+// Departments feature (vertical slice): one handler per use case.
+builder.Services.AddScoped<GetDepartmentsHandler>();
+builder.Services.AddScoped<GetDepartmentByIdHandler>();
+builder.Services.AddScoped<GetDepartmentOptionsHandler>();
+builder.Services.AddScoped<CreateDepartmentHandler>();
+builder.Services.AddScoped<UpdateDepartmentHandler>();
+builder.Services.AddScoped<DeleteDepartmentHandler>();
+
+// Publishers feature (vertical slice): one handler per use case.
+builder.Services.AddScoped<GetPublishersHandler>();
+builder.Services.AddScoped<GetPublisherByIdHandler>();
+builder.Services.AddScoped<GetPublisherOptionsHandler>();
+builder.Services.AddScoped<CreatePublisherHandler>();
+builder.Services.AddScoped<UpdatePublisherHandler>();
+builder.Services.AddScoped<DeletePublisherHandler>();
+
+// Meeting schedules + responsibility assignments feature (vertical slice).
+builder.Services.AddScoped<GetAllMeetingSchedulesHandler>();
+builder.Services.AddScoped<GetMeetingSchedulesByMonthHandler>();
+builder.Services.AddScoped<GetOrCreateWeekSchedulesHandler>();
+builder.Services.AddScoped<GetAssignmentsByMeetingScheduleHandler>();
+builder.Services.AddScoped<AssignResponsibilityHandler>();
+builder.Services.AddScoped<UnassignResponsibilityHandler>();
+builder.Services.AddScoped<CopyWeekAssignmentsHandler>();
+
 builder.Services.AddScoped<IPdfExportService, PdfExportService>();
 builder.Services.AddScoped<GestorTeocratico.Features.Roles.IRoleService, GestorTeocratico.Features.Roles.RoleService>();
 
@@ -146,11 +177,11 @@ else
     builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 }
 // Configure HttpClient for PDF downloads
+var pdfExportBaseAddress = builder.Configuration["PdfExport:BaseAddress"] ?? "https://localhost:7095";
 builder.Services.AddHttpClient<PdfExportHttpClient>(client =>
 {
-    // This will be the base URL for the same application
-    // In production, you might want to configure this differently
-    client.BaseAddress = new Uri("https://localhost:7095"); // Adjust as needed
+    // Base URL for the same application; configure PdfExport:BaseAddress per environment.
+    client.BaseAddress = new Uri(pdfExportBaseAddress);
 });
 
 // Add this after var builder = WebApplication.CreateBuilder(args);

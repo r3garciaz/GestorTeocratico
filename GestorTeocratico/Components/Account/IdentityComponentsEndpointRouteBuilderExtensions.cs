@@ -40,7 +40,8 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
 
             var properties = signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
             return TypedResults.Challenge(properties, [provider]);
-        });
+        })
+        .AllowAnonymous();
 
         accountGroup.MapPost("/Logout", async (
             ClaimsPrincipal user,
@@ -50,7 +51,8 @@ internal static class IdentityComponentsEndpointRouteBuilderExtensions
             await signInManager.SignOutAsync();
             // return TypedResults.LocalRedirect($"~/{returnUrl}");
             return TypedResults.LocalRedirect($"~/");
-        });
+        })
+        .AllowAnonymous();
 
         var manageGroup = accountGroup.MapGroup("/Manage").RequireAuthorization();
 

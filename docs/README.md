@@ -12,13 +12,13 @@ design. When a doc and the code disagree, the code wins — then fix the doc.
 |---|---|---|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Composition root, DI lifetimes, render modes, request pipeline | You touch `Program.cs`, DI, or app startup |
 | [DATA-MODEL.md](./DATA-MODEL.md) | Entities, keys, relationships, soft delete, EF configuration, migrations | You change schema or write queries |
-| [FEATURES.md](./FEATURES.md) | Every domain: service, page, rules | You add or modify a feature |
+| [FEATURES.md](./FEATURES.md) | Every domain: handlers, page, rules | You add or modify a feature |
 | [UI-GUIDE.md](./UI-GUIDE.md) | Blazor Blueprint + Tailwind conventions and the CRUD page template | You build or restyle UI |
 | [AUTH.md](./AUTH.md) | Google OAuth, Identity, roles, claims, emergency admin | You touch login/authorization |
 | [DEVELOPMENT.md](./DEVELOPMENT.md) | Setup, commands, env vars, migrations, seeding, Docker, CI | You set up or run the project |
 | [API.md](./API.md) | Real HTTP endpoints | You expose or consume HTTP |
 | [CONVENTIONS.md](./CONVENTIONS.md) | C# style, naming, logging, error handling | You write any C#/Razor |
-| [TESTING.md](./TESTING.md) | Current test gap and proposed strategy | You add tests |
+| [TESTING.md](./TESTING.md) | Test project, strategy and scenarios | You add tests |
 | [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) | Known pitfalls and fixes | Something is broken |
 | [PRD.md](./PRD.md) | Product requirements | You need the "why"/scope |
 | [ROADMAP.md](./ROADMAP.md) | Status and next steps | You plan work |

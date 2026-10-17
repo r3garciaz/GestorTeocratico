@@ -114,11 +114,21 @@ Seeders are idempotent (fixed GUIDs / existence checks), so restarting is safe.
 > In Development, every publisher is qualified for every responsibility to make manual testing
 > easier.
 
+## Tests
+
+```bash
+dotnet test
+```
+
+Tests live in `GestorTeocratico.Tests` (xUnit + SQLite in-memory) and cover the slice handlers;
+see [TESTING.md](./TESTING.md).
+
 ## CI
 
 `.github/workflows/docker-build.yml` builds a multi-arch image and pushes to Docker Hub
 (`r3garciaz/gestor-teocratico`) on pushes to `main` (build only on PRs). It requires
-`DOCKER_USERNAME` / `DOCKER_PASSWORD` secrets. There is no separate build/test workflow yet.
+`DOCKER_USERNAME` / `DOCKER_PASSWORD` secrets. It does **not** run the tests yet — run
+`dotnet test` locally (or add a test step) — see [TESTING.md](./TESTING.md).
 
 ## Repository conventions
 

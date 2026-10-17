@@ -9,20 +9,20 @@ logic live in the same process. Persistence is PostgreSQL through EF Core.
 ```
 Browser ──(SignalR circuit / SSR)──> ASP.NET Core (Program.cs)
                                        ├─ Blazor components (Components/)
-                                       ├─ Feature services (Features/)  ── IDbContextFactory ──> PostgreSQL
+                                       ├─ Feature slices / handlers (Features/) ── IDbContextFactory ──> PostgreSQL
                                        ├─ Identity + Google OAuth
                                        ├─ Minimal API endpoints (/api/...)
                                        └─ QuestPDF / Resend (outbound)
 ```
 
-- **Not a layered/clean-architecture solution.** Code is organized by **feature folder**, not
-  by technical layer. "Layers" exist by convention:
+- The code is organized as a **Vertical Slice architecture**: one folder per feature, and within
+  it one folder per use case (a query/command + handler). "Layers" exist by convention:
   - `Components/` — presentation (Razor).
-  - `Features/` — business logic + data access per domain.
+  - `Features/` — vertical slices: contracts, handlers and data access per domain.
   - `Entities/` — domain models.
   - `Data/` — EF Core context, Identity user, seeders, migrations.
-- The legacy PRD called this "Clean Architecture"; in practice it is **feature-based with a
-  service layer**.
+- The legacy PRD called this "Clean Architecture"; an earlier iteration used a per-entity CRUD
+  service layer, which was replaced by the slices (only `Roles` and `PdfExport` remain services).
 
 ## Composition root — `Program.cs`
 
@@ -32,57 +32,60 @@ Startup order (important parts):
 2. `AddRazorComponents().AddInteractiveServerComponents()` + `AddBlazorBlueprintComponents()`.
 3. Authentication: default scheme `IdentityConstants.ApplicationScheme`, **Google** OAuth
    provider, `AddIdentityCookies()`; cookie lifetime 5 days, sliding.
-4. `AddDbContextFactory<ApplicationDbContext>(... UseNpgsql(connectionString))`.
-5. `AddIdentityCore<ApplicationUser>()` + roles + EF stores + sign-in manager + token providers
+4. `AddAuthorization` with a global **`FallbackPolicy`** (`RequireAuthenticatedUser`).
+5. `AddDbContextFactory<ApplicationDbContext>(... UseNpgsql(connectionString))`.
+6. `AddIdentityCore<ApplicationUser>()` + roles + EF stores + sign-in manager + token providers
    (`SignIn.RequireConfirmedAccount = true`).
-6. `ApplicationUserClaimsPrincipalFactory` (adds the `public_id` claim).
-7. `AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>()`.
-8. Feature service registrations (see table below).
-9. Resend email (only if `RESEND:APITOKEN` is set; otherwise `IdentityNoOpEmailSender`).
-10. `HttpClient` for `PdfExportHttpClient`.
-11. `ForwardedHeadersOptions` (proxy support).
-12. Build app → **run migrations + seed** (Dev seed vs Prod seed).
-13. `SeedEmergencyAdminAsync`.
-14. Pipeline: `UseForwardedHeaders()` → status code pages → `UseHttpsRedirection()` →
+7. `ApplicationUserClaimsPrincipalFactory` (adds the `public_id` claim).
+8. `AddDataProtection().PersistKeysToDbContext<ApplicationDbContext>()`.
+9. Vertical slice handler registrations (see table below).
+10. Resend email (only if `RESEND:APITOKEN` is set; otherwise `IdentityNoOpEmailSender`).
+11. `HttpClient` for `PdfExportHttpClient` (base address from `PdfExport:BaseAddress`).
+12. `ForwardedHeadersOptions` (proxy support).
+13. Build app → **run migrations + seed** (Dev seed vs Prod seed).
+14. `SeedEmergencyAdminAsync`.
+15. Pipeline: `UseForwardedHeaders()` → status code pages → `UseHttpsRedirection()` →
     `UseAuthentication()` → `UseAuthorization()` → `UseAntiforgery()` → static assets →
     `MapRazorComponents<App>()` → Identity endpoints → `/api` group.
 
-### Service registrations (`Program.cs`)
+### Handler registrations (`Program.cs`)
 
-| Interface | Implementation | Lifetime |
-|---|---|---|
-| `ICongregationService` | `CongregationService` | Scoped |
-| `IDepartmentService` | `DepartmentService` | Scoped |
-| `IPublisherService` | `PublisherService` | Scoped |
-| `IResponsibilityService` | `ResponsibilityService` | Scoped |
-| `IPublisherResponsibilityService` | `PublisherResponsibilityService` | Scoped |
-| `IMeetingScheduleService` | `MeetingScheduleService` | Scoped |
-| `IResponsibilityAssignmentService` | `ResponsibilityAssignmentService` | Scoped |
-| `IPdfExportService` | `PdfExportService` | Scoped |
-| `IRoleService` | `RoleService` | Scoped |
-| `IEmailSender<ApplicationUser>` | `ResendEmailSender` **or** `IdentityNoOpEmailSender` | Scoped / Singleton |
+Handlers are registered **by concrete type** (one class per use case), plus two remaining services:
 
-All services are **scoped** because they are used per Blazor circuit/request. They are safe to
-be long-lived *per circuit* precisely because they do **not** hold a `DbContext` — they hold
-the singleton factory.
+| Registration | Kind |
+|---|---|
+| `GetPublishersHandler`, `GetPublisherByIdHandler`, `GetPublisherOptionsHandler`, `CreatePublisherHandler`, `UpdatePublisherHandler`, `DeletePublisherHandler` | Publishers slice |
+| `GetDepartmentsHandler`, `GetDepartmentByIdHandler`, `GetDepartmentOptionsHandler`, `CreateDepartmentHandler`, `UpdateDepartmentHandler`, `DeleteDepartmentHandler` | Departments slice |
+| `GetResponsibilitiesHandler`, `GetResponsibilityByIdHandler`, `GetResponsibilityOptionsHandler`, `CreateResponsibilityHandler`, `UpdateResponsibilityHandler`, `DeleteResponsibilityHandler` | Responsibilities slice |
+| `GetCongregationsHandler`, `CreateCongregationHandler`, `UpdateCongregationHandler` | Congregations slice |
+| `GetAllMeetingSchedulesHandler`, `GetMeetingSchedulesByMonthHandler`, `GetOrCreateWeekSchedulesHandler`, `GetAssignmentsByMeetingScheduleHandler`, `AssignResponsibilityHandler`, `UnassignResponsibilityHandler`, `CopyWeekAssignmentsHandler` | Meeting schedules + assignments slice |
+| `IPdfExportService` → `PdfExportService` | Service (document generation) |
+| `IRoleService` → `RoleService` | Service (Identity adapter) |
+| `IEmailSender<ApplicationUser>` → `ResendEmailSender` **or** `IdentityNoOpEmailSender` | Scoped / Singleton |
+
+Everything is **scoped** because it is used per Blazor circuit/request. Handlers are safe to be
+long-lived *per circuit* precisely because they do **not** hold a `DbContext` — they hold the
+singleton factory.
 
 ## Data access pattern: `IDbContextFactory`
 
-Every feature service follows the same shape:
+Every handler follows the same shape:
 
 ```csharp
-public class PublisherService : IPublisherService
+public sealed class GetPublishersHandler(IDbContextFactory<ApplicationDbContext> contextFactory)
 {
-    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
-    private readonly ILogger<PublisherService> _logger;
-
-    public PublisherService(IDbContextFactory<ApplicationDbContext> contextFactory,
-                            ILogger<PublisherService> logger) { ... }
-
-    public async Task<IEnumerable<Publisher>> GetAllAsync()
+    public async Task<IReadOnlyList<PublisherDto>> HandleAsync(CancellationToken cancellationToken = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
-        return await context.Publishers.Include(...).ToListAsync();
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+
+        var publishers = await context.Publishers
+            .AsNoTracking()
+            .Include(p => p.ResponsibleDepartments)
+            .Include(p => p.PublisherResponsibilities).ThenInclude(pr => pr.Responsibility)
+            .OrderBy(p => p.FirstName).ThenBy(p => p.LastName)
+            .ToListAsync(cancellationToken);
+
+        return publishers.Select(p => p.ToDto()).ToList();
     }
 }
 ```
@@ -93,11 +96,12 @@ would break under concurrency. The factory gives each operation its own short-li
 
 Consequences to remember:
 
-- Entities returned are **detached** once the context is disposed. Don't rely on lazy loading
-  after the service returns; `Include` the navigations you need. UI code reads navigations the
-  service already loaded.
-- Do not pass a context between services. Each method opens its own.
-- `SaveChangesAsync` is called inside each mutating method.
+- Read queries use `AsNoTracking()`; handlers map to **DTOs** and never return EF entities.
+- Mutating handlers re-load the tracked entity and copy **scalar** values (`CurrentValues.SetValues`
+  or field-by-field) instead of `context.Update(detachedGraph)`, so related entities are not
+  re-marked.
+- Do not pass a context between handlers. Each handler opens its own.
+- Accept and propagate a `CancellationToken` (components cancel it on disposal).
 
 ## Render modes
 
@@ -130,23 +134,28 @@ Consequences to remember:
   `UseAuthentication()`/`UseAuthorization()` on purpose: behind a TLS-terminating reverse
   proxy the OAuth callback (`/signin-google`) must see `https`, otherwise Google returns
   `redirect_uri_mismatch`.
-- `MapStaticAssets()` is anonymous; razor components require auth per page attribute.
-- Status-code pages re-execute `/not-found` (`Components/Pages/NotFound.razor`).
+- A global `FallbackPolicy` requires an authenticated user on **every** endpoint. Anonymous
+  surfaces declare intent explicitly: `[AllowAnonymous]` on the landing, not-found, error and
+  account pages, and `.AllowAnonymous()` on static assets and the login/logout endpoints.
+- Status-code pages re-execute `/not-found` (`Components/Pages/NotFound.razor`); unhandled
+  exceptions re-execute `/Error` (`Components/Pages/Error.razor`) — both anonymous.
 
 ## PDF generation
 
 `PdfExportService` composes a `MonthlyScheduleDocument` (QuestPDF `IDocument`) from
-`MonthlySchedulePdfModel` and returns bytes. `GetMonthlyScheduleDataAsync` gathers schedules,
-responsibilities, and the (single) congregation, then computes the actual meeting day per week
-from the congregation's even/odd-year day settings (`GetDayOfMeeting`). The minimal API endpoint
-streams the bytes.
+`MonthlySchedulePdfModel` and returns bytes. It consumes the slice handlers
+(`GetMeetingSchedulesByMonthHandler`, `GetResponsibilitiesHandler`, `GetCongregationsHandler`),
+then computes the actual meeting day per week from the congregation's even/odd-year day settings
+(`GetDayOfMeeting`). The minimal API endpoint (authenticated) streams the bytes.
 
-There is also a `PdfExportHttpClient` wrapper (registered `HttpClient` pointing at
-`https://localhost:7095`), but the UI now triggers the endpoint via navigation instead.
+There is also a `PdfExportHttpClient` wrapper whose base address comes from configuration
+(`PdfExport:BaseAddress`, default `https://localhost:7095`); its route matches the endpoint
+(`/api/meeting-schedules/monthly-schedule/{year}/{month}`). The UI triggers the endpoint via
+navigation instead.
 
 ## Cross-cutting concerns
 
-- **Logging:** `ILogger<T>` in services and components; startup migration/seed logs.
+- **Logging:** `ILogger<T>` in handlers and components; startup migration/seed logs.
 - **Email:** `ResendEmailSender` (HTML + text templates, Spanish) or no-op fallback.
 - **Data Protection:** keys persisted in the database (`DataProtectionKeys` table).
 - **Culture:** Spanish formatting is applied locally where needed (`new CultureInfo("es-ES")`).

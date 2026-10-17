@@ -1,14 +1,20 @@
 @page "/departments"
 @attribute [Authorize(Roles = "Admin, Manager")]
+@implements IDisposable
 @using System.Globalization
-@using GestorTeocratico.Entities
+@using GestorTeocratico.Features.Common
 @using GestorTeocratico.Features.Departments
 @using BlazorBlueprint.Components
 @using BlazorBlueprint.Primitives
 @using BlazorBlueprint.Icons.Lucide.Components
 @using ButtonSize = BlazorBlueprint.Components.ButtonSize
 
-@inject IDepartmentService DepartmentService
+@inject GetDepartmentsHandler GetDepartments
+@inject GetDepartmentByIdHandler GetDepartmentById
+@inject GetDepartmentOptionsHandler GetDepartmentOptions
+@inject CreateDepartmentHandler CreateDepartment
+@inject UpdateDepartmentHandler UpdateDepartment
+@inject DeleteDepartmentHandler DeleteDepartment
 
 <PageTitle>Departamentos</PageTitle>
 
@@ -18,7 +24,7 @@
         <p class="text-sm text-muted-foreground">Departamentos, responsables y sus responsabilidades.</p>
     </div>
 
-    <BbDataTable TData="Department" Data="@_departments" InitialPageSize="10" AriaLabel="Departamentos">
+    <BbDataTable TData="DepartmentDto" Data="@_departments" InitialPageSize="10" AriaLabel="Departamentos">
         <ToolbarActions>
             <BbButton OnClick="OpenCreate">
                 <Icon><LucideIcon Name="plus"/></Icon>
@@ -26,17 +32,17 @@
             </BbButton>
         </ToolbarActions>
         <Columns>
-            <BbDataTableColumn TData="Department" TValue="string" Property="@(d => d.Name)"
+            <BbDataTableColumn TData="DepartmentDto" TValue="string" Property="@(d => d.Name)"
                                Header="Nombre" Sortable="true" Filterable="true"/>
-            <BbDataTableColumn TData="Department" TValue="string" Header="Publicador responsable" Width="240px">
+            <BbDataTableColumn TData="DepartmentDto" TValue="string" Header="Publicador responsable" Width="240px">
                 <CellTemplate Context="d">
-                    @if (d.ResponsiblePublisher is not null)
+                    @if (d.ResponsiblePublisherName is not null)
                     {
                         <span class="inline-flex items-center gap-2">
                             <BbAvatar Size="AvatarSize.Small">
-                                <BbAvatarFallback>@Initials(PublisherName(d.ResponsiblePublisher))</BbAvatarFallback>
+                                <BbAvatarFallback>@Initials(d.ResponsiblePublisherName)</BbAvatarFallback>
                             </BbAvatar>
-                            <span class="truncate">@PublisherName(d.ResponsiblePublisher)</span>
+                            <span class="truncate">@d.ResponsiblePublisherName</span>
                         </span>
                     }
                     else
@@ -45,12 +51,12 @@
                     }
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Department" TValue="string" Header="Responsabilidades" Width="240px">
+            <BbDataTableColumn TData="DepartmentDto" TValue="string" Header="Responsabilidades" Width="240px">
                 <CellTemplate Context="d">
-                    <EntityChips Items="@(d.Responsibilities?.OrderBy(r => r.Name, NameComparer).Select(r => r.Name).ToList() ?? [])" Max="int.MaxValue"/>
+                    <EntityChips Items="@d.ResponsibilityNames" Max="int.MaxValue"/>
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Department" TValue="string" Header="Acciones" Width="150px">
+            <BbDataTableColumn TData="DepartmentDto" TValue="string" Header="Acciones" Width="150px">
                 <CellTemplate Context="d">
                     <div class="flex items-center gap-1">
                         <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Ver"
@@ -146,13 +152,13 @@
             <dl class="grid grid-cols-[170px_1fr] gap-x-4 gap-y-2 text-sm">
                 <dt class="text-muted-foreground">Publicador responsable</dt>
                 <dd>
-                    @if (_detailsTarget.ResponsiblePublisher is not null)
+                    @if (_detailsTarget.ResponsiblePublisherName is not null)
                     {
                         <span class="inline-flex items-center gap-2">
                             <BbAvatar Size="AvatarSize.Small">
-                                <BbAvatarFallback>@Initials(PublisherName(_detailsTarget.ResponsiblePublisher))</BbAvatarFallback>
+                                <BbAvatarFallback>@Initials(_detailsTarget.ResponsiblePublisherName)</BbAvatarFallback>
                             </BbAvatar>
-                            <span>@PublisherName(_detailsTarget.ResponsiblePublisher)</span>
+                            <span>@_detailsTarget.ResponsiblePublisherName</span>
                         </span>
                     }
                     else
@@ -161,7 +167,7 @@
                     }
                 </dd>
                 <dt class="text-muted-foreground">Responsabilidades</dt>
-                <dd><EntityChips Items="@(_detailsTarget.Responsibilities?.OrderBy(r => r.Name, NameComparer).Select(r => r.Name).ToList() ?? [])" Max="int.MaxValue"/></dd>
+                <dd><EntityChips Items="@_detailsTarget.ResponsibilityNames" Max="int.MaxValue"/></dd>
             </dl>
         }
         <BbDialogFooter>
@@ -173,57 +179,79 @@
 </BbDialog>
 
 @code {
-    private List<Department> _departments = [];
-    private List<Responsibility> _responsibilities = [];
+    private List<DepartmentDto> _departments = [];
     private SelectOption<Guid>[] _responsibilityOptions = [];
     private SelectOption<Guid?>[] _publisherOptions = [];
+    private readonly CancellationTokenSource _cts = new();
 
     private bool _formOpen;
     private bool _isNew;
-    private Department _editing = new();
+    private DepartmentFormModel _editing = new();
     private IEnumerable<Guid> _selectedResponsibilities = [];
     private string? _formError;
 
     private bool _deleteOpen;
-    private Department? _deleteTarget;
+    private DepartmentDto? _deleteTarget;
 
     private bool _detailsOpen;
-    private Department? _detailsTarget;
+    private DepartmentDto? _detailsTarget;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+
     private async Task LoadAsync()
     {
-        _departments = (await DepartmentService.GetAllAsync()).ToList();
-        _responsibilities = (await DepartmentService.GetAvailableResponsibilitiesAsync()).ToList();
-        _responsibilityOptions = _responsibilities
-            .Select(r => new SelectOption<Guid>(r.ResponsibilityId, r.Name))
-            .OrderBy(o => o.Text, NameComparer).ToArray();
+        try
+        {
+            _departments = (await GetDepartments.HandleAsync(_cts.Token)).ToList();
 
-        var publishers = await DepartmentService.GetAvailablePublishersAsync();
-        _publisherOptions = publishers
-            .Select(p => new SelectOption<Guid?>(p.PublisherId, PublisherName(p)))
-            .OrderBy(o => o.Text, NameComparer)
-            .ToArray();
+            var options = await GetDepartmentOptions.HandleAsync(_cts.Token);
+            _responsibilityOptions = options.Responsibilities
+                .Select(r => new SelectOption<Guid>(r.Id, r.Name))
+                .OrderBy(o => o.Text, NameComparer).ToArray();
+            _publisherOptions = options.Publishers
+                .Select(p => new SelectOption<Guid?>(p.Id, p.Name))
+                .OrderBy(o => o.Text, NameComparer)
+                .ToArray();
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
     }
 
     private void OpenCreate()
     {
         _isNew = true;
-        _editing = new Department { Name = string.Empty };
+        _editing = new DepartmentFormModel { Name = string.Empty };
         _selectedResponsibilities = [];
         _formError = null;
         _formOpen = true;
     }
 
-    private async Task OpenEdit(Department department)
+    private async Task OpenEdit(DepartmentDto department)
     {
         _isNew = false;
-        _editing = await DepartmentService.GetByIdAsync(department.DepartmentId) ?? new Department();
-        _selectedResponsibilities = SortByOptionText(_editing.Responsibilities.Select(r => r.ResponsibilityId), _responsibilityOptions);
+        var dto = await GetDepartmentById.HandleAsync(department.Id);
+        _editing = MapToForm(dto);
+        _selectedResponsibilities = SortByOptionText(dto?.ResponsibilityIds ?? [], _responsibilityOptions);
         _formError = null;
         _formOpen = true;
     }
+
+    private static DepartmentFormModel MapToForm(DepartmentDto? dto) => dto is null
+        ? new DepartmentFormModel()
+        : new DepartmentFormModel
+        {
+            Id = dto.Id,
+            Name = dto.Name,
+            ResponsiblePublisherId = dto.ResponsiblePublisherId
+        };
 
     private async Task SaveAsync()
     {
@@ -235,21 +263,32 @@
             return;
         }
 
+        var responsibilityIds = _selectedResponsibilities.ToArray();
+
         try
         {
             if (_isNew)
             {
-                await DepartmentService.AddAsync(_editing);
+                await CreateDepartment.HandleAsync(new CreateDepartmentCommand(
+                    _editing.Name,
+                    _editing.ResponsiblePublisherId,
+                    responsibilityIds));
             }
             else
             {
-                await DepartmentService.UpdateAsync(_editing);
+                await UpdateDepartment.HandleAsync(new UpdateDepartmentCommand(
+                    _editing.Id,
+                    _editing.Name,
+                    _editing.ResponsiblePublisherId,
+                    responsibilityIds));
             }
-
-            await DepartmentService.UpdateDepartmentResponsibilitiesAsync(_editing.DepartmentId, _selectedResponsibilities);
 
             _formOpen = false;
             await LoadAsync();
+        }
+        catch (DuplicateEntityException ex)
+        {
+            _formError = ex.Message;
         }
         catch
         {
@@ -257,7 +296,7 @@
         }
     }
 
-    private void OpenDelete(Department department)
+    private void OpenDelete(DepartmentDto department)
     {
         _deleteTarget = department;
         _deleteOpen = true;
@@ -272,7 +311,7 @@
 
         try
         {
-            await DepartmentService.DeleteAsync(_deleteTarget.DepartmentId);
+            await DeleteDepartment.HandleAsync(_deleteTarget.Id);
         }
         catch
         {
@@ -283,7 +322,7 @@
         await LoadAsync();
     }
 
-    private void OpenDetails(Department department)
+    private void OpenDetails(DepartmentDto department)
     {
         _detailsTarget = department;
         _detailsOpen = true;
@@ -305,14 +344,6 @@
 
     private static readonly StringComparer NameComparer =
         StringComparer.Create(CultureInfo.GetCultureInfo("es-ES"), true);
-
-    private static string PublisherName(Publisher publisher)
-    {
-        var name = publisher.FirstName;
-        if (!string.IsNullOrEmpty(publisher.LastName)) name += $" {publisher.LastName}";
-        if (!string.IsNullOrEmpty(publisher.MotherLastName)) name += $" {publisher.MotherLastName}";
-        return name;
-    }
 
     private static string Initials(string name)
     {

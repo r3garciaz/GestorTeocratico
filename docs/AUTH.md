@@ -43,7 +43,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(o => o.SignIn.RequireConfirmed
 
 ## Google sign-in flow (`ExternalLogin.razor`)
 
-1. `Login.razor` shows `ExternalLoginPicker` (Google) plus a collapsible **local** login form.
+1. `Login.razor` renders under `AuthLayout` (split-screen: brand panel + form) and shows
+   `ExternalLoginPicker` (Google) plus a collapsible **local** login form.
 2. POST `/Account/PerformExternalLogin` → challenge provider → Google → callback
    `/signin-google` → `/Account/ExternalLogin?Action=LoginCallback`.
 3. `OnLoginCallbackAsync`:
@@ -82,11 +83,14 @@ compete with the page's own `DbContext` usage). `MainLayout.razor` reads
   - `[Authorize]` — dashboard and account pages.
   - `[Authorize(Roles = "Admin, Manager")]` — Congregations, Departments, Responsibilities,
     Publishers, Meeting Schedules, Users, Roles.
-  - `[AllowAnonymous]` — landing (`/`) and NotFound.
+  - `[AllowAnonymous]` — landing (`/`), NotFound and Error.
 - Prefer `Shared.Roles` constants (`Roles.Admin`, `Roles.Manager`, `Roles.User`) over literals
   where possible. Pages currently use the string form in attributes.
 - `Routes.razor` uses `AuthorizeRouteView` with `RedirectToLogin` for unauthenticated users.
-- The default `FallbackPolicy` is commented out — pages are protected per-attribute, not globally.
+- A global **`FallbackPolicy`** (`RequireAuthenticatedUser`) protects every endpoint. Anonymous
+  surfaces opt out explicitly: `[AllowAnonymous]` on pages (landing, not-found, error, account)
+  and `.AllowAnonymous()` on endpoints (static assets, `POST /Account/PerformExternalLogin`,
+  `POST /Account/Logout`). The `/api` group additionally calls `.RequireAuthorization()`.
 
 ## Email sender
 

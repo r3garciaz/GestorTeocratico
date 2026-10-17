@@ -15,7 +15,7 @@ Persistence is PostgreSQL 17 via EF Core 10, configured in
 | `Responsibility` | `Responsibilities` | ✅ | `ResponsibilityId` (Guid v7) |
 | `MeetingSchedule` | `MeetingSchedules` | ❌ | `MeetingScheduleId` (Guid v7) |
 | `PublisherResponsibility` (join) | `PublisherResponsibilities` | ❌ | `(PublisherId, ResponsibilityId)` |
-| `ResponsibilityAssignment` (join) | `ResponsibilityAssignments` | ❌ | `(MeetingScheduleId, ResponsibilityId, PublisherId)` |
+| `ResponsibilityAssignment` (join) | `ResponsibilityAssignments` | ❌ | `(MeetingScheduleId, ResponsibilityId)` |
 | `ApplicationUser` | Identity | ❌ | Identity `Id` (+ unique `PublicId`) |
 | `DataProtectionKey` | Identity/DP | ❌ | Data Protection |
 
@@ -26,20 +26,24 @@ IDs are created with `Guid.CreateVersion7()` (UUIDv7 — time-ordered).
 - **Congregation** — `Name` (250, required), four meeting-day fields
   (`MidweekMeetingDayEvenYear`, `MidweekMeetingDayOddYear`, `WeekendMeetingDayEvenYear`,
   `WeekendMeetingDayOddYear`, all `DayOfWeek`, stored as string), `Address` (500), `City` (250).
-  **Only one congregation is allowed** (enforced in `CongregationService`, not by a DB
-  constraint).
+  **Only one congregation is allowed**: `CreateCongregationHandler` throws
+  `DuplicateEntityException`, backed by a **unique index on `Congregation.Name`**.
 - **Department** — `Name` (250, required), optional `ResponsiblePublisherId` → `Publisher`
-  (`OnDelete: Restrict`). Has many `Responsibilities`.
+  (`OnDelete: Restrict`). Has many `Responsibilities`. Unique index on `Name` (non-deleted).
 - **Publisher** — `FirstName`/`LastName` (250, required), `MotherLastName` (250), `Phone` (15),
   `Email` (250), `Gender` (`Gender`, required, string), `Privilege` (`Privilege?`, string).
-  Has many `ResponsibleDepartments` and `PublisherResponsibilities`.
+  Has many `ResponsibleDepartments` and `PublisherResponsibilities`. Unique index on
+  `(FirstName, LastName)` (non-deleted).
 - **Responsibility** — `Name` (100, required), `Description` (500), optional `DepartmentId`.
+  Unique index on `(Name, DepartmentId)` (non-deleted).
 - **MeetingSchedule** — `Date` (`DateOnly`), plus derived `Month`, `Year`, `WeekOfYear`
   (ISO-8601 week, computed in the `Date` setter), and `MeetingType` (`MeetingType`, string).
   Has many `ResponsibilityAssignments`. **Not** soft-deletable.
 - **PublisherResponsibility** — which publishers are *qualified* for a responsibility (N:N).
 - **ResponsibilityAssignment** — an actual assignment for a meeting: links a `MeetingSchedule`,
-  a `Responsibility`, and a `Publisher`. This is the core of the "programación".
+  a `Responsibility`, and a `Publisher`. The primary key is
+  `(MeetingScheduleId, ResponsibilityId)` — **at most one publisher per responsibility per
+  meeting**; `PublisherId` is a plain FK column. This is the core of the "programación".
 
 ## Enums (`GestorTeocratico/Shared/Enums/`)
 
@@ -65,6 +69,22 @@ MeetingSchedule (1) ──< ResponsibilityAssignment >── (1) Responsibility
 - All FK delete behaviors are **`Restrict`** — deletions are logical, not cascading.
 - `ResponsibilityAssignment` uses the **FKs** (non-nullable) to establish required
   relationships, while navigations are declared `null!` for convenience.
+
+## Uniqueness indexes
+
+Uniqueness is enforced in the database with **partial unique indexes** filtered to
+non-soft-deleted rows (`WHERE "IsDeleted" = false`), so a deleted row does not block re-creating
+the same value:
+
+| Entity | Index |
+|---|---|
+| `Congregation` | `Name` (unique) |
+| `Department` | `Name` (unique, non-deleted) |
+| `Publisher` | `(FirstName, LastName)` (unique, non-deleted) |
+| `Responsibility` | `(Name, DepartmentId)` (unique, non-deleted) |
+
+The handler layer also checks for duplicates and throws `DuplicateEntityException` (friendly
+message) as the first line of defence; the index is the concurrency-proof backstop.
 
 ## Soft delete
 
@@ -95,8 +115,8 @@ Implications for agents:
 - A soft-deleted `Publisher`/`Responsibility` disappears from its join rows automatically.
 - To read deleted rows (e.g. for idempotent seeding) use `.IgnoreQueryFilters()` — already used
   in `DataSeederDevelopment` for Department/Responsibility/Publisher existence checks.
-- `DeleteAsync` on soft-delete services sets `IsDeleted = true` and saves; it does **not**
-  call `Remove`.
+- The soft-delete `Delete*Handler` sets `IsDeleted = true` and saves; it does **not** call
+  `Remove`.
 
 ## Identity data
 
@@ -113,9 +133,16 @@ Implications for agents:
 | `20250805235204_publisher_modify_properties` | Publisher field changes |
 | `20250811214431_AddDataProtectionPersistInDatabase` | Persist Data Protection keys |
 | `20250819175958_ApplicationUserAddPublicId` | Add `ApplicationUser.PublicId` |
+| `AddUniqueIndexes` | Partial unique indexes on Congregation/Department/Publisher/Responsibility |
+| `OneResponsibilityPerMeeting` | Change `ResponsibilityAssignment` PK to `(MeetingScheduleId, ResponsibilityId)` and collapse duplicates |
 
 Apply with `dotnet ef database update --project GestorTeocratico`. In Development/Production the
 app applies migrations automatically at startup (`dbContext.Database.MigrateAsync()`).
+
+> **Data prerequisite:** `AddUniqueIndexes` fails if existing rows already violate uniqueness
+> (same department name, publisher full name, or responsibility name within a department).
+> Deduplicate those rows before applying it. `OneResponsibilityPerMeeting` handles its own
+> duplicates (it keeps one assignment per responsibility before switching the PK).
 
 ## Seeding
 

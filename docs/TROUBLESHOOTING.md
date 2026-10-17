@@ -14,12 +14,12 @@ whole graph as `Added` and re-insert existing rows → `duplicate key value viol
 constraint "PK_MeetingSchedules"` (or similar).
 
 **Fix / pattern:** build join rows from **foreign keys only** (see
-`MeetingScheduleService.CopyAssignmentsToWeekAsync`):
+`CopyWeekAssignmentsHandler`):
 
 ```csharp
 context.ResponsibilityAssignments.Add(new ResponsibilityAssignment
 {
-    MeetingScheduleId = targetSchedule.MeetingScheduleId,
+    MeetingScheduleId = targetSchedule.Id,
     ResponsibilityId = responsibilityId,
     PublisherId = publisherId
 });
@@ -29,15 +29,15 @@ Never attach detached entities you did not fetch from the current context.
 
 ### DbContext concurrency / "A second operation was started on this context"
 
-Do not inject a scoped `ApplicationDbContext` into Blazor components or services. Use
+Do not inject a scoped `ApplicationDbContext` into Blazor components or handlers. Use
 `IDbContextFactory<ApplicationDbContext>` and open a context per operation. The layout reads the
 user's `public_id` from a **claim** (`ApplicationUserClaimsPrincipalFactory`) precisely to avoid a
 per-render DB query.
 
-### Entities are missing after returning from a service
+### Entities are missing after returning from a handler
 
 Entities are detached once the context is disposed; lazy loading is off. `Include` the
-navigations the UI needs inside the service. If a navigation is unexpectedly `null`, a missing
+navigations the UI needs inside the handler. If a navigation is unexpectedly `null`, a missing
 `Include` is the usual cause.
 
 ### Soft-deleted data still (or no longer) appears
@@ -126,7 +126,8 @@ Run `npm install` and `npm run build:css` so `wwwroot/css/app.css` exists.
 
 ### `dotnet test` finds nothing
 
-There is no test project (see [TESTING.md](./TESTING.md)).
+Make sure you run from the repository root and the test project builds: `dotnet test`. Tests live
+in `GestorTeocratico.Tests` (see [TESTING.md](./TESTING.md)).
 
 ## Related docs
 

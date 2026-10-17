@@ -1,5 +1,6 @@
 ﻿@page "/dashboard"
 @attribute [Authorize]
+@implements IDisposable
 @using System.Globalization
 @using System.Security.Claims
 @using GestorTeocratico.Features.Publishers
@@ -13,11 +14,11 @@
 @using BlazorBlueprint.Icons.Lucide.Components
 
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject IPublisherService PublisherService
-@inject IDepartmentService DepartmentService
-@inject IResponsibilityService ResponsibilityService
-@inject IMeetingScheduleService MeetingScheduleService
-@inject ICongregationService CongregationService
+@inject GetPublishersHandler GetPublishers
+@inject GetDepartmentsHandler GetDepartments
+@inject GetResponsibilitiesHandler GetResponsibilities
+@inject GetAllMeetingSchedulesHandler GetAllSchedules
+@inject GetCongregationsHandler GetCongregations
 
 <PageTitle>Inicio - Gestor Teocrático</PageTitle>
 
@@ -134,7 +135,8 @@
     private int _departments;
     private int _responsibilities;
     private int _congregations;
-    private List<GestorTeocratico.Entities.MeetingSchedule> _upcoming = [];
+    private List<MeetingScheduleDto> _upcoming = [];
+    private readonly CancellationTokenSource _cts = new();
 
     private IEnumerable<Kpi> Kpis =>
     [
@@ -159,28 +161,41 @@
         await LoadAsync();
     }
 
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+
     private async Task RefreshDashboard() => await LoadAsync();
 
     private async Task LoadAsync()
     {
         _loading = true;
 
-        var publishers = (await PublisherService.GetAllAsync()).ToList();
-        _publishers = publishers.Count;
-        _elders = publishers.Count(p => p.Privilege == Privilege.Elder);
-        _servants = publishers.Count(p => p.Privilege == Privilege.MinisterialServant);
+        try
+        {
+            var publishers = await GetPublishers.HandleAsync(_cts.Token);
+            _publishers = publishers.Count;
+            _elders = publishers.Count(p => p.Privilege == Privilege.Elder);
+            _servants = publishers.Count(p => p.Privilege == Privilege.MinisterialServant);
 
-        _departments = (await DepartmentService.GetAllAsync()).Count();
-        _responsibilities = (await ResponsibilityService.GetAllAsync()).Count();
-        _congregations = (await CongregationService.GetAllAsync()).Count();
+            _departments = (await GetDepartments.HandleAsync(_cts.Token)).Count;
+            _responsibilities = (await GetResponsibilities.HandleAsync(_cts.Token)).Count;
+            _congregations = (await GetCongregations.HandleAsync(_cts.Token)).Count;
 
-        var schedules = await MeetingScheduleService.GetAllAsync();
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        _upcoming = schedules
-            .Where(s => s.Date >= today)
-            .OrderBy(s => s.Date)
-            .Take(5)
-            .ToList();
+            var schedules = await GetAllSchedules.HandleAsync(_cts.Token);
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            _upcoming = schedules
+                .Where(s => s.Date >= today)
+                .OrderBy(s => s.Date)
+                .Take(5)
+                .ToList();
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
 
         _loading = false;
     }

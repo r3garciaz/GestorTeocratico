@@ -2,136 +2,217 @@
 
 **Product:** Gestor Teocrático
 **Status:** Active development (beta)
-**Last updated:** 2026 (refreshed from the original `Shared/PRD.md`, which described an obsolete
-Radzen/.NET 9 design and was corrupted).
+**Last updated:** 2026-10-14 (refreshed for the .NET 10 / vertical slice refactor)
 
 > This PRD describes **what the product is and should do**. For **how it is built today**, read
-> [ARCHITECTURE.md](./ARCHITECTURE.md), [DATA-MODEL.md](./DATA-MODEL.md), and
-> [FEATURES.md](./FEATURES.md). Scope marked *Planned* is not implemented yet
-> ([ROADMAP.md](./ROADMAP.md)).
+> [ARCHITECTURE.md](./ARCHITECTURE.md), [DATA-MODEL.md](./DATA-MODEL.md) and
+> [FEATURES.md](./FEATURES.md); agent-facing rules live in [AGENTS.md](../AGENTS.md).
 
 ---
 
-## 1. Overview
+## 1. Product Overview
 
-Gestor Teocrático is a web application that helps a religious congregation organize its
-operational work: who serves in each **department**, which **responsibilities** exist, which
-**publishers** are qualified for them, and the **meeting schedule** that assigns publishers to
-responsibilities week by week. It replaces spreadsheets with a single, role-aware, printable
-system.
+**Name:** Gestor Teocrático
+**Description:** A web application for managing religious congregations, their departments, publishers, responsibilities and meeting schedules. It enables user administration, task assignment, role control and management of the internal organization of a congregation.
 
-### Problem
+---
 
-Congregation scheduling is repetitive and error-prone when done in spreadsheets: qualifications,
-department ownership, and the weekly program are easy to desync, and there is no reliable way to
-print a clean monthly schedule.
+## 2. Architecture and Technologies
 
-### Goals
+### 2.1. General Architecture
 
-- Centralize publishers, departments, responsibilities, and schedules.
-- Make weekly assignment fast and safe (assign only *qualified* publishers; one publisher per
-  responsibility per meeting).
-- Produce a printable monthly schedule (PDF).
-- Control access by role and keep data recoverable (soft delete).
+- **Frontend:**
+  - Blazor Web App with **Interactive Server** render mode (ASP.NET Core).
+  - **BlazorBlueprint** component library (`BlazorBlueprint.Components` + `BlazorBlueprint.Icons.Lucide`) with Tailwind CSS.
+  - Razor components (`.razor`) for UI and presentation logic with reactive state.
+  - Dependency injection for handlers and navigation.
+  - Advanced form handling, real-time validation and interactive dialogs for entity CRUD.
+  - Responsive design with modern UI/UX patterns.
+  - Feature-based component organization (`Components/Pages/<Feature>`).
 
-### Non-goals (current)
+- **Backend:**
+  - **.NET 10** with **Entity Framework Core 10**.
+  - **Vertical Slice architecture**: each feature lives under `Features/<Feature>/` and exposes one
+    handler per use case (query/command) instead of a single "god service".
+  - Read models are **DTOs / records**; EF entities are never exposed to the UI.
+  - Minimal API endpoints for specialized operations (monthly schedule PDF).
+  - Authentication and authorization with ASP.NET Identity, roles and a global fallback policy.
+  - Automated email notifications with Resend.
+  - PDF generation with QuestPDF.
 
-- Multi-tenant / multi-congregation management (the app is a **singleton congregation**).
-- Public REST API / third-party integrations (see [API.md](./API.md)).
-- Native mobile apps.
+- **Persistence:**
+  - **PostgreSQL** via the `Npgsql` provider.
+  - EF Core migrations for schema management.
+  - Entities support **soft delete** (`SoftDeleteEntity.IsDeleted`) enforced through global query filters.
+  - **Unique indexes** (partial, `WHERE "IsDeleted" = false`) protect domain uniqueness (department name,
+    publisher full name, responsibility name within a department, congregation name).
+  - Data Protection keys stored in the database.
 
-## 2. Users and roles
+- **Infrastructure:**
+  - Docker and Docker Compose for containerized deployment.
+  - Multi-stage Dockerfile for optimized production builds.
+  - Environment-based configuration.
+  - Forwarded headers configuration for reverse proxy / load balancer support.
 
-| Role | Description | Can access |
-|---|---|---|
-| **Admin** | Congregation overseer / system owner. | Everything, including users & roles |
-| **Manager** | Department lead. | Configuration + meetings (same pages as Admin in the current UI) |
-| **User** | Regular authenticated member. | Dashboard and account only |
+### 2.2. Main Technologies
 
-- The **first account created becomes Admin** automatically.
-- A **break-glass local admin** can be provisioned via configuration when Google is unavailable.
-- Authentication is Google OAuth; a local password login exists as a fallback.
+| Concern | Technology |
+|---|---|
+| Language | C# / .NET 10 |
+| Web | ASP.NET Core 10, Blazor Web App (Interactive Server) |
+| UI | BlazorBlueprint.Components 4.x, BlazorBlueprint.Icons.Lucide, Tailwind CSS |
+| ORM | Entity Framework Core 10 |
+| Database | PostgreSQL |
+| Auth | ASP.NET Core Identity + Google OAuth |
+| PDF | QuestPDF |
+| Email | Resend |
 
-## 3. Key features
+---
 
-- **Congregation** — single record with meeting days (separate even/odd-year days for the midweek
-  and weekend meetings), address, and city.
-- **Departments** — CRUD; one responsible publisher; owns responsibilities.
-- **Publishers** — CRUD with contact data, gender, privilege (Elder / Ministerial Servant /
-  Pioneer), qualified responsibilities, and departments they oversee.
-- **Responsibilities** — CRUD; optionally owned by a department; qualified publishers.
-- **Meeting schedules** — one record per week + meeting type (midweek/weekend); weeks are created
-  on demand.
-- **Assignment** — assign a qualified publisher to a responsibility for a given meeting; copy a
-  whole week's assignments to another week.
-- **PDF export** — A4-landscape monthly schedule with responsibilities as columns and meetings as
-  rows.
-- **Dashboard** — KPI cards and the next meetings.
-- **Administration** — users (roles, lock state, search) and roles.
-- **Account** — registration, login, password reset, 2FA, external logins, personal-data download.
-- **Soft delete** — congregations/departments/publishers/responsibilities are logically deleted.
+## 3. Domain Entities and Relationships
 
-## 4. Functional requirements
+### 3.1. Entities
 
-### 4.1 Congregation
-- Exactly one congregation may exist; attempting to create a second or delete it is rejected.
-- Meeting day is configured per even/odd year for both meeting types; the PDF uses these to
-  compute the real meeting date for a given week.
+- **Congregation:** congregation data (name, address, meeting days). Only one is allowed.
+- **Department:** department within the congregation, with a responsible publisher and responsibilities.
+- **Publisher:** publisher with personal data, gender, privilege and assignments.
+- **Responsibility:** task linked to a department and to publishers.
+- **MeetingSchedule:** meeting schedule (date, type, week/month/year) with responsibility assignments.
+- **ResponsibilityAssignment:** assignment of a responsibility to a publisher for a specific meeting.
+- **PublisherResponsibility:** N:N relationship between publishers and responsibilities.
 
-### 4.2 Departments
-- Names are unique; duplicates are rejected (logged).
-- Assigning responsibilities to a department moves them; responsibilities can belong to at most
-  one department.
+All entities except the join/meeting ones derive from `SoftDeleteEntity` (soft delete with query filters).
 
-### 4.3 Publishers
-- `FirstName` + `Gender` are required; `Privilege` is optional.
-- Duplicate full names are rejected (logged).
-- Responsible-publisher assignment is exclusive: setting a publisher on departments clears it
-  elsewhere.
+### 3.2. Relationships
 
-### 4.4 Responsibilities
-- Names unique within a department.
-- Maintains the set of qualified publishers.
+- A **Department** has many **Responsibilities**.
+- A **Publisher** can be responsible for several **Departments**.
+- A **Responsibility** can be assigned to multiple **Publishers** (and vice versa).
+- A **MeetingSchedule** has many **ResponsibilityAssignments**.
+- **ResponsibilityAssignment** links a **MeetingSchedule**, a **Responsibility** and a **Publisher**.
 
-### 4.5 Meeting scheduling
-- A week has at most one midweek and one weekend schedule.
-- A responsibility has at most one assigned publisher per meeting.
-- Only publishers qualified for a responsibility can be assigned to it.
-- Assignments can be copied from a source week to a target week (target is synchronized).
+---
 
-### 4.6 PDF export
-- Input: month + year (2020–2030). Output: downloadable PDF named
-  `Programacion_{Mes}_{Year}.pdf`.
+## 4. Vertical Slices (feature map)
 
-### 4.7 Users and roles
-- Roles: `Admin`, `Manager`, `User`. Users can be searched by email/public ID and filtered by
-  role; lock state is visible and manageable.
+Each feature owns its DTOs, queries, commands and handlers under `Features/<Feature>/`:
 
-## 5. Non-functional requirements
+| Feature | Handlers |
+|---|---|
+| Congregations | Get, Create, Update |
+| Departments | Get, GetById, GetOptions, Create, Update, Delete |
+| Publishers | Get, GetById, GetOptions, Create, Update, Delete |
+| Responsibilities | Get, GetById, GetOptions, Create, Update, Delete |
+| MeetingSchedules (+ assignments) | GetAll, GetByMonth, GetOrCreateWeek, GetAssignments, AssignResponsibility, UnassignResponsibility, CopyWeekAssignments |
+| Roles | Thin adapter over `RoleManager<IdentityRole>` (Identity, not an EF entity) |
+| PdfExport | Document generation; consumes the Congregations/Responsibilities/MeetingSchedules handlers |
 
-- **Security:** OAuth + ASP.NET Identity; role-based page authorization; Data Protection keys in
-  the database; antiforgery on forms; safe redirects.
-- **Reliability / data safety:** soft delete; no cascading deletes; idempotent seeding.
-- **Usability:** responsive Blazor Blueprint UI; Spanish (es-ES); accessible components.
-- **Maintainability:** feature-based services behind interfaces; per-operation `DbContext`;
-  documented conventions.
-- **Portability:** Docker/Compose deployment; PostgreSQL 17.
-- **Performance:** server-side Blazor; indexed/limited queries; PDF rendered on demand.
+Shared building blocks live in `Features/Common` (e.g. `DuplicateEntityException`) and in each feature's
+`Shared/` folder (contracts, mappings, synchronization helpers).
 
-## 6. Data privacy
+---
 
-- Account personal data can be downloaded (`/Account/Manage/DownloadPersonalData`) and the account
-  deleted via Identity management pages.
-- Publisher records are soft-deleted to preserve history; hard deletion is not exposed.
+## 5. Key Features
 
-## 7. Success metrics
+- **Congregation Management:** CRUD for the single congregation configuration, including meeting days.
+- **Department Management:** CRUD, assignment of a responsible publisher and responsibilities.
+- **Publisher Management:** CRUD, assignment to departments and responsibilities, privilege management.
+- **Responsibility Management:** CRUD, department and publisher assignment.
+- **Meeting Scheduling:** per week/month management of meetings and responsibility assignments, including
+  "copy week" to clone assignments between weeks.
+- **PDF Export System:** professional monthly schedule reports with QuestPDF.
+- **Email Notification System:** account confirmation and password reset via Resend.
+- **Dashboard & Analytics:** metrics, statistics and upcoming meetings.
+- **Role-Based Access Control:** Admin, Manager and User roles.
+- **Soft Delete:** logical deletion with global query filters.
+- **Authentication and Authorization:** ASP.NET Identity with Google OAuth, global fallback policy.
+- **Personal Data Export:** GDPR-compliant data export.
 
-- Weekly assignment takes minutes, not hours, and never assigns an unqualified publisher.
-- A correct monthly PDF can be produced in one click.
-- No data loss from accidental deletion.
+---
 
-## 8. Related documents
+## 6. User Flows
 
-- [ROADMAP.md](./ROADMAP.md) — status and planned work
-- [FEATURES.md](./FEATURES.md) — implemented behavior in detail
-- [ARCHITECTURE.md](./ARCHITECTURE.md) · [DATA-MODEL.md](./DATA-MODEL.md) · [AUTH.md](./AUTH.md)
+- **Administrator:**
+  - Manages congregations, departments, publishers and responsibilities.
+  - Schedules meetings and assigns responsibilities, with "copy week" support.
+  - Generates and downloads monthly schedule PDFs.
+  - Manages users and roles.
+  - Monitors the dashboard.
+
+- **Manager:**
+  - Manages publishers and responsibilities within their domains.
+  - Schedules meetings and assigns responsibilities.
+  - Generates reports and exports data.
+
+- **Publisher:**
+  - Views assigned responsibilities and upcoming meetings.
+  - Receives email notifications for account events.
+  - Can export personal data.
+
+---
+
+## 7. Non-Functional Requirements
+
+- **Security:**
+  - ASP.NET Core Identity with role-based authorization.
+  - Global authorization fallback policy: every endpoint requires authentication unless it explicitly
+    allows anonymous access (login, static assets, landing page, not-found).
+  - Data Protection keys persisted in the database.
+  - Soft delete to prevent accidental data loss.
+
+- **Scalability:**
+  - Containerized deployment with Docker and Docker Compose.
+  - Feature-based (vertical slice) organization for maintainability and horizontal scaling.
+  - Efficient EF Core queries with `AsNoTracking` on read paths and cancellation-token propagation.
+
+- **Maintainability:**
+  - Clear separation between UI, use-case handlers and data access.
+  - One handler per use case; DTO boundaries between persistence and UI.
+  - EF Core migrations for controlled schema evolution.
+  - Automated tests backed by SQLite in-memory.
+
+- **Performance:**
+  - Server-side Blazor for rendering performance.
+  - Efficient PDF generation with QuestPDF.
+  - Cancellation-aware queries.
+
+- **Usability / Internationalization:**
+  - Responsive UI with BlazorBlueprint components.
+  - Spanish (`es-ES`) culture support for dates and numbers.
+
+---
+
+## 8. Testing & Quality
+
+- Test project `GestorTeocratico.Tests` (xUnit) with a SQLite in-memory `IDbContextFactory` so relational
+  features (transactions, unique indexes, query filters) behave like production.
+- Coverage focused on handlers: create/update/delete, duplicate detection, soft delete, assignment
+  synchronization and the "update must not modify related entities" regression.
+- Build is expected to be warning-aware and produce 0 errors.
+
+---
+
+## 9. Deployment
+
+- `Dockerfile` (multi-stage) and `compose.yaml` (PostgreSQL + app).
+- Environment variables / user secrets for connection strings and provider secrets
+  (`RESEND:APITOKEN`, `Authentication:Schemes:GoogleOidc`, `PdfExport:BaseAddress`, emergency admin).
+- Migrations and seeding run at startup per environment.
+
+---
+
+## 10. Extensibility
+
+- **Modular architecture:** add a new domain by creating a new feature folder with its contracts and handlers.
+- **Handler-based extensibility:** each use case is independent and easily testable/replaceable.
+- **UI component system:** BlazorBlueprint components enable rapid new screens.
+- **Database evolution:** EF Core migrations support schema changes.
+- **Security framework:** role-based access can be extended with custom policies.
+- **Notifications:** email infrastructure can be extended to SMS/push.
+- **Reporting:** the PDF framework can be extended to more document formats.
+
+The system is well-suited for:
+- Integration with AI agents and automation.
+- Adding new business features and workflows.
+- Scaling to larger congregations and future multi-tenant scenarios.
+- Advanced analytics and reporting.

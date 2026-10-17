@@ -1,14 +1,20 @@
 @page "/responsibilities"
 @attribute [Authorize(Roles = "Admin, Manager")]
+@implements IDisposable
 @using System.Globalization
-@using GestorTeocratico.Entities
+@using GestorTeocratico.Features.Common
 @using GestorTeocratico.Features.Responsibilities
 @using BlazorBlueprint.Components
 @using BlazorBlueprint.Primitives
 @using BlazorBlueprint.Icons.Lucide.Components
 @using ButtonSize = BlazorBlueprint.Components.ButtonSize
 
-@inject IResponsibilityService ResponsibilityService
+@inject GetResponsibilitiesHandler GetResponsibilities
+@inject GetResponsibilityByIdHandler GetResponsibilityById
+@inject GetResponsibilityOptionsHandler GetResponsibilityOptions
+@inject CreateResponsibilityHandler CreateResponsibility
+@inject UpdateResponsibilityHandler UpdateResponsibility
+@inject DeleteResponsibilityHandler DeleteResponsibility
 
 <PageTitle>Responsabilidades</PageTitle>
 
@@ -18,7 +24,7 @@
         <p class="text-sm text-muted-foreground">Responsabilidades por departamento y publicadores asignados.</p>
     </div>
 
-    <BbDataTable TData="Responsibility" Data="@_responsibilities" InitialPageSize="10" AriaLabel="Responsabilidades">
+    <BbDataTable TData="ResponsibilityDto" Data="@_responsibilities" InitialPageSize="10" AriaLabel="Responsabilidades">
         <ToolbarActions>
             <BbButton OnClick="OpenCreate">
                 <Icon><LucideIcon Name="plus"/></Icon>
@@ -26,9 +32,9 @@
             </BbButton>
         </ToolbarActions>
         <Columns>
-            <BbDataTableColumn TData="Responsibility" TValue="string" Property="@(r => r.Name)"
+            <BbDataTableColumn TData="ResponsibilityDto" TValue="string" Property="@(r => r.Name)"
                                Header="Nombre" Sortable="true" Filterable="true"/>
-            <BbDataTableColumn TData="Responsibility" TValue="string" Property="@(r => r.Description)"
+            <BbDataTableColumn TData="ResponsibilityDto" TValue="string" Property="@(r => r.Description)"
                                Header="Descripción" Filterable="true">
                 <CellTemplate Context="r">
                     @if (!string.IsNullOrEmpty(r.Description))
@@ -41,11 +47,11 @@
                     }
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Responsibility" TValue="string" Header="Departamento" Width="180px">
+            <BbDataTableColumn TData="ResponsibilityDto" TValue="string" Header="Departamento" Width="180px">
                 <CellTemplate Context="r">
-                    @if (r.Department is not null)
+                    @if (r.DepartmentName is not null)
                     {
-                        <span>@r.Department.Name</span>
+                        <span>@r.DepartmentName</span>
                     }
                     else
                     {
@@ -53,12 +59,12 @@
                     }
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Responsibility" TValue="string" Header="Publicadores asignados" Width="240px">
+            <BbDataTableColumn TData="ResponsibilityDto" TValue="string" Header="Publicadores asignados" Width="240px">
                 <CellTemplate Context="r">
-                    <EntityChips Items="@(r.PublisherResponsibilities?.OrderBy(pr => pr.Publisher?.LastName ?? string.Empty, NameComparer).ThenBy(pr => pr.Publisher?.MotherLastName ?? string.Empty, NameComparer).ThenBy(pr => pr.Publisher?.FirstName ?? string.Empty, NameComparer).Select(pr => PublisherName(pr.Publisher)).ToList() ?? [])"/>
+                    <EntityChips Items="@r.PublisherNames"/>
                 </CellTemplate>
             </BbDataTableColumn>
-            <BbDataTableColumn TData="Responsibility" TValue="string" Header="Acciones" Width="150px">
+            <BbDataTableColumn TData="ResponsibilityDto" TValue="string" Header="Acciones" Width="150px">
                 <CellTemplate Context="r">
                     <div class="flex items-center gap-1">
                         <BbButton Variant="ButtonVariant.Ghost" Size="ButtonSize.Icon" AriaLabel="Ver"
@@ -159,9 +165,9 @@
                 <dt class="text-muted-foreground">Descripción</dt>
                 <dd>@(string.IsNullOrEmpty(_detailsTarget.Description) ? "—" : _detailsTarget.Description)</dd>
                 <dt class="text-muted-foreground">Departamento</dt>
-                <dd>@(_detailsTarget.Department?.Name ?? "Sin departamento")</dd>
+                <dd>@(_detailsTarget.DepartmentName ?? "Sin departamento")</dd>
                 <dt class="text-muted-foreground">Publicadores</dt>
-                <dd><EntityChips Items="@(_detailsTarget.PublisherResponsibilities?.OrderBy(pr => pr.Publisher?.LastName ?? string.Empty, NameComparer).ThenBy(pr => pr.Publisher?.MotherLastName ?? string.Empty, NameComparer).ThenBy(pr => pr.Publisher?.FirstName ?? string.Empty, NameComparer).Select(pr => PublisherName(pr.Publisher)).ToList() ?? [])" Max="int.MaxValue"/></dd>
+                <dd><EntityChips Items="@_detailsTarget.PublisherNames" Max="int.MaxValue"/></dd>
             </dl>
         }
         <BbDialogFooter>
@@ -173,58 +179,81 @@
 </BbDialog>
 
 @code {
-    private List<Responsibility> _responsibilities = [];
+    private List<ResponsibilityDto> _responsibilities = [];
     private SelectOption<Guid?>[] _departmentOptions = [];
     private SelectOption<Guid>[] _publisherOptions = [];
+    private readonly CancellationTokenSource _cts = new();
 
     private bool _formOpen;
     private bool _isNew;
-    private Responsibility _editing = new();
+    private ResponsibilityFormModel _editing = new();
     private IEnumerable<Guid> _selectedPublishers = [];
     private string? _formError;
 
     private bool _deleteOpen;
-    private Responsibility? _deleteTarget;
+    private ResponsibilityDto? _deleteTarget;
 
     private bool _detailsOpen;
-    private Responsibility? _detailsTarget;
+    private ResponsibilityDto? _detailsTarget;
 
     protected override async Task OnInitializedAsync() => await LoadAsync();
 
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+    }
+
     private async Task LoadAsync()
     {
-        _responsibilities = (await ResponsibilityService.GetAllAsync()).ToList();
+        try
+        {
+            _responsibilities = (await GetResponsibilities.HandleAsync(_cts.Token)).ToList();
 
-        var departments = await ResponsibilityService.GetAvailableDepartmentsAsync();
-        _departmentOptions = departments
-            .Select(d => new SelectOption<Guid?>(d.DepartmentId, d.Name))
-            .OrderBy(o => o.Text)
-            .ToArray();
-
-        var publishers = await ResponsibilityService.GetAvailablePublishersAsync();
-        _publisherOptions = publishers
-            .Select(p => new SelectOption<Guid>(p.PublisherId, PublisherName(p)))
-            .OrderBy(o => o.Text, NameComparer)
-            .ToArray();
+            var options = await GetResponsibilityOptions.HandleAsync(_cts.Token);
+            _departmentOptions = options.Departments
+                .Select(d => new SelectOption<Guid?>(d.Id, d.Name))
+                .OrderBy(o => o.Text)
+                .ToArray();
+            _publisherOptions = options.Publishers
+                .Select(p => new SelectOption<Guid>(p.Id, p.Name))
+                .OrderBy(o => o.Text, NameComparer)
+                .ToArray();
+        }
+        catch (OperationCanceledException)
+        {
+            // The component was disposed while loading.
+        }
     }
 
     private void OpenCreate()
     {
         _isNew = true;
-        _editing = new Responsibility { Name = string.Empty };
+        _editing = new ResponsibilityFormModel { Name = string.Empty };
         _selectedPublishers = [];
         _formError = null;
         _formOpen = true;
     }
 
-    private async Task OpenEdit(Responsibility responsibility)
+    private async Task OpenEdit(ResponsibilityDto responsibility)
     {
         _isNew = false;
-        _editing = await ResponsibilityService.GetByIdAsync(responsibility.ResponsibilityId) ?? new Responsibility();
-        _selectedPublishers = SortByPublisherOrder(_editing.PublisherResponsibilities.Select(pr => pr.PublisherId));
+        var dto = await GetResponsibilityById.HandleAsync(responsibility.Id);
+        _editing = MapToForm(dto);
+        _selectedPublishers = SortByPublisherOrder(dto?.PublisherIds ?? []);
         _formError = null;
         _formOpen = true;
     }
+
+    private static ResponsibilityFormModel MapToForm(ResponsibilityDto? dto) => dto is null
+        ? new ResponsibilityFormModel()
+        : new ResponsibilityFormModel
+        {
+            Id = dto.Id,
+            Name = dto.Name,
+            Description = dto.Description,
+            DepartmentId = dto.DepartmentId
+        };
 
     private async Task SaveAsync()
     {
@@ -236,21 +265,34 @@
             return;
         }
 
+        var publisherIds = _selectedPublishers.ToArray();
+
         try
         {
             if (_isNew)
             {
-                await ResponsibilityService.AddAsync(_editing);
+                await CreateResponsibility.HandleAsync(new CreateResponsibilityCommand(
+                    _editing.Name,
+                    _editing.Description,
+                    _editing.DepartmentId,
+                    publisherIds));
             }
             else
             {
-                await ResponsibilityService.UpdateAsync(_editing);
+                await UpdateResponsibility.HandleAsync(new UpdateResponsibilityCommand(
+                    _editing.Id,
+                    _editing.Name,
+                    _editing.Description,
+                    _editing.DepartmentId,
+                    publisherIds));
             }
-
-            await ResponsibilityService.UpdateResponsibilityPublishersAsync(_editing.ResponsibilityId, _selectedPublishers);
 
             _formOpen = false;
             await LoadAsync();
+        }
+        catch (DuplicateEntityException ex)
+        {
+            _formError = ex.Message;
         }
         catch
         {
@@ -258,7 +300,7 @@
         }
     }
 
-    private void OpenDelete(Responsibility responsibility)
+    private void OpenDelete(ResponsibilityDto responsibility)
     {
         _deleteTarget = responsibility;
         _deleteOpen = true;
@@ -273,7 +315,7 @@
 
         try
         {
-            await ResponsibilityService.DeleteAsync(_deleteTarget.ResponsibilityId);
+            await DeleteResponsibility.HandleAsync(_deleteTarget.Id);
         }
         catch
         {
@@ -284,7 +326,7 @@
         await LoadAsync();
     }
 
-    private void OpenDetails(Responsibility responsibility)
+    private void OpenDetails(ResponsibilityDto responsibility)
     {
         _detailsTarget = responsibility;
         _detailsOpen = true;
@@ -306,12 +348,4 @@
 
     private static readonly StringComparer NameComparer =
         StringComparer.Create(CultureInfo.GetCultureInfo("es-ES"), true);
-
-    private static string PublisherName(Publisher publisher)
-    {
-        var name = publisher.FirstName;
-        if (!string.IsNullOrEmpty(publisher.LastName)) name += $" {publisher.LastName}";
-        if (!string.IsNullOrEmpty(publisher.MotherLastName)) name += $" {publisher.MotherLastName}";
-        return name;
-    }
 }
